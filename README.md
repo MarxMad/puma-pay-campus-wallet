@@ -1,73 +1,267 @@
-# Welcome to your Lovable project
 
-## Project info
+# PumaPay - Wallet Universitaria
 
-**URL**: https://lovable.dev/projects/d4c8d892-7d01-4ff4-a093-79acf4f8af50
+PumaPay es una aplicación wallet diseñada específicamente para pagos universitarios usando la stablecoin MXNB en la red Arbitrum. Permite a estudiantes realizar pagos diarios en cafeterías, papelerías y transporte escolar de manera rápida y segura.
 
-## How can I edit this code?
+## 🚀 Características Principales
 
-There are several ways of editing your application.
+### Integración Blockchain
+- **Red Arbitrum**: Transacciones rápidas y económicas
+- **Token MXNB**: Stablecoin pareada al peso mexicano
+- **Smart Contracts**: Interacción segura con contratos ERC20
 
-**Use Lovable**
+### Funcionalidades Core
+- 📱 **Pagos Instantáneos**: Transfers P2P y pagos a comercios
+- 💰 **Gestión de Saldo**: Visualización en tiempo real de MXNB y MXN fiat
+- 🏦 **Integración Bitso**: Depósitos y retiros fiat automáticos
+- 📊 **Historial**: Tracking completo de transacciones
+- 🔐 **Seguridad**: Wallet connection y manejo seguro de claves
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d4c8d892-7d01-4ff4-a093-79acf4f8af50) and start prompting.
+### Experiencia de Usuario
+- 🎨 **Diseño Moderno**: UI/UX optimizada para estudiantes mexicanos
+- 📱 **Responsive**: Compatible con móviles y desktop
+- ⚡ **Onboarding Simple**: Proceso de registro intuitivo
+- 🔔 **Notificaciones**: Confirmaciones en tiempo real
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠 Stack Tecnológico
 
-**Use your preferred IDE**
+### Frontend
+- **React 18** con TypeScript
+- **Tailwind CSS** para estilos
+- **Shadcn/UI** para componentes
+- **Lucide React** para iconografía
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Blockchain
+- **Wagmi** para interacción con Ethereum
+- **Ethers.js** para operaciones blockchain
+- **Arbitrum** como L2 solution
+- **MXNB Token** (ERC20) como stablecoin
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### APIs Externas
+- **Bitso Business API** para fiat gateway
+- **Web3Auth** para autenticación simplificada
+- **Arbitrum RPC** para conectividad blockchain
 
-Follow these steps:
+## 🏗 Arquitectura del Sistema
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```
+Frontend (React)
+├── Wallet Management (Wagmi/Ethers)
+├── UI Components (Shadcn)
+└── State Management (React Hooks)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Backend APIs
+├── Bitso Integration
+├── User Management
+└── Transaction Processing
 
-# Step 3: Install the necessary dependencies.
-npm i
+Blockchain Layer
+├── Arbitrum Network
+├── MXNB Smart Contract
+└── Payment Processing
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## 📦 Instalación y Desarrollo
+
+### Prerrequisitos
+- Node.js 18+
+- npm/yarn
+- Wallet compatible (MetaMask, etc.)
+
+### Setup Local
+```bash
+# Clonar repositorio
+git clone <your-repo-url>
+cd pumapay
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env.local
+
+# Iniciar desarrollo
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Variables de Entorno Requeridas
+```env
+VITE_ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
+VITE_MXNB_CONTRACT_ADDRESS=0x...
+VITE_BITSO_API_KEY=your_bitso_key
+VITE_WEB3AUTH_CLIENT_ID=your_web3auth_client_id
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔧 Configuración Blockchain
 
-**Use GitHub Codespaces**
+### Red Arbitrum
+- **Chain ID**: 42161
+- **RPC URL**: https://arb1.arbitrum.io/rpc
+- **Block Explorer**: https://arbiscan.io
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Contrato MXNB
+```solidity
+// Dirección del contrato MXNB en Arbitrum
+address constant MXNB_TOKEN = 0x...;
 
-## What technologies are used for this project?
+// ABI principales
+function balanceOf(address owner) view returns (uint256)
+function transfer(address to, uint256 amount) returns (bool)
+function approve(address spender, uint256 amount) returns (bool)
+```
 
-This project is built with:
+## 💼 Integración Bitso Business
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Funcionalidades
+- **Depósitos**: Conversión MXN → MXNB
+- **Retiros**: Conversión MXNB → MXN
+- **Cuentas**: Gestión de cuentas fiat por usuario
+- **Compliance**: KYC/AML automático
 
-## How can I deploy this project?
+### API Endpoints
+```javascript
+// Depósito fiat
+POST /api/deposits
+{
+  "user_id": "string",
+  "amount": "number",
+  "currency": "MXN"
+}
 
-Simply open [Lovable](https://lovable.dev/projects/d4c8d892-7d01-4ff4-a093-79acf4f8af50) and click on Share -> Publish.
+// Retiro a banco
+POST /api/withdrawals
+{
+  "user_id": "string", 
+  "amount": "number",
+  "account_id": "string"
+}
+```
 
-## Can I connect a custom domain to my Lovable project?
+## 🎯 Roadmap de Desarrollo
 
-Yes, you can!
+### Fase 1 - MVP (Hackathon)
+- [x] UI/UX básica
+- [x] Conexión wallet
+- [x] Pagos MXNB simulados
+- [x] Historial de transacciones
+- [ ] Integración Arbitrum real
+- [ ] Conexión Bitso API
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Fase 2 - Beta
+- [ ] QR code payments
+- [ ] Multi-merchant integration
+- [ ] Push notifications
+- [ ] Enhanced security features
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Fase 3 - Producción
+- [ ] Campus partnerships
+- [ ] Advanced analytics
+- [ ] Loyalty programs
+- [ ] Cross-chain bridging
+
+## 🏛 Casos de Uso Universitarios
+
+### Para Estudiantes
+- 🍕 **Cafeterías**: Pagos rápidos sin efectivo
+- 📚 **Papelerías**: Compra de materiales académicos  
+- 🚌 **Transporte**: Pago de rutas universitarias
+- 👥 **P2P**: Transferencias entre compañeros
+
+### Para Padres
+- 💸 **Envío de Fondos**: Depósitos seguros a sus hijos
+- 📊 **Monitoreo**: Visibilidad de gastos estudiantiles
+- 🔒 **Control**: Límites y restricciones configurables
+
+### Para Comercios
+- ⚡ **Pagos Instantáneos**: Settlements en segundos
+- 💰 **Menores Comisiones**: Costos reducidos vs. tarjetas
+- 📱 **Integración Simple**: API fácil de implementar
+
+## 🛡 Seguridad y Compliance
+
+### Medidas de Seguridad
+- 🔐 **Wallet Security**: Claves privadas nunca en servidor
+- 🔒 **Transport Layer**: HTTPS y WSS encryption
+- 🛡 **Smart Contracts**: Auditorías de seguridad
+- 👤 **User Authentication**: Multi-factor authentication
+
+### Compliance
+- 📋 **KYC/AML**: Integración con Bitso compliance
+- 🏛 **Regulatorio**: Cumplimiento CNBV México
+- 📊 **Reporting**: Logs y auditoría completos
+- 🔍 **Monitoring**: Detección de actividades sospechosas
+
+## 📈 Métricas y Analytics
+
+### KPIs Principales
+- 👥 **Usuarios Activos**: DAU/MAU
+- 💰 **Volumen Transaccional**: MXNB procesados
+- ⚡ **Velocidad**: Tiempo promedio de transacción
+- 🎯 **Adopción**: % penetración por campus
+
+### Dashboard Analytics
+- 📊 **Transaction Volume**: Gráficos en tiempo real
+- 🗺 **Usage Heatmaps**: Patrones por ubicación  
+- 📈 **Growth Metrics**: Tendencias de crecimiento
+- 🔄 **Retention**: Análisis de retención usuarios
+
+## 🤝 Partnerships Estratégicos
+
+### Universidades Target
+- 🏛 **UNAM**: Campus Ciudad Universitaria
+- 🎓 **IPN**: Unidades Zacatenco y Santo Tomás
+- 🏫 **UAM**: Campus Xochimilco e Iztapalapa
+- 🎨 **La Salle**: Campus Benjamín Franklin
+
+### Comercios Campus
+- ☕ **Cafeterías**: Starbucks, cafés locales
+- 📚 **Librerías**: Gandhi, Porrúa, locales
+- 🚌 **Transporte**: Rutas y sistemas públicos
+- 🏪 **Tiendas**: OXXO, 7-Eleven, locales
+
+## 🚀 Despliegue y Distribución
+
+### Deployment Stack
+- **Frontend**: Vercel/Netlify
+- **Backend**: Railway/Render  
+- **Database**: PostgreSQL
+- **Cache**: Redis
+- **CDN**: Cloudflare
+
+### Distribución
+- 📱 **PWA**: Progressive Web App
+- 🌐 **Web Access**: Campus portals
+- 📲 **QR Codes**: Onboarding físico
+- 📧 **Email**: Campañas dirigidas
+
+## 📞 Soporte y Documentación
+
+### Para Desarrolladores
+- 📖 **API Docs**: Documentación completa
+- 🔧 **SDKs**: JavaScript/React SDK
+- 💻 **Sandbox**: Ambiente de pruebas
+- 🐛 **Issue Tracking**: GitHub Issues
+
+### Para Usuarios
+- ❓ **FAQ**: Preguntas frecuentes
+- 📞 **Support**: Chat en vivo
+- 🎥 **Tutorials**: Videos explicativos
+- 📱 **In-App Help**: Guías contextuales
+
+---
+
+## 🏆 Equipo y Contacto
+
+**PumaPay Team**
+- 💼 **Business**: [team@pumapay.mx](mailto:team@pumapay.mx)
+- 🛠 **Technical**: [dev@pumapay.mx](mailto:dev@pumapay.mx)
+- 🤝 **Partnerships**: [partners@pumapay.mx](mailto:partners@pumapay.mx)
+
+**Social Media**
+- 🐦 Twitter: [@PumaPayMX](https://twitter.com/PumaPayMX)
+- 📘 LinkedIn: [PumaPay](https://linkedin.com/company/pumapay)
+- 📱 Discord: [PumaPay Community](https://discord.gg/pumapay)
+
+---
+
+*PumaPay - Revolucionando los pagos universitarios en México 🇲🇽*
