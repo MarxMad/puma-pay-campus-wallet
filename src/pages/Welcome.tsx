@@ -17,7 +17,7 @@ const Welcome = () => {
         <div className="mb-8">
           <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-400/20 p-3">
             <div className="w-full h-full bg-white rounded-full flex items-center justify-center shadow-inner">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-18 w-18 object-contain" />
+              <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain" />
             </div>
           </div>
         </div>
