@@ -15,14 +15,12 @@ const Welcome = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <Card className="bg-gray-800 border-gray-700 p-8 max-w-sm w-full text-center">
         <div className="mb-8">
-          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-red-500 to-red-600 rounded-3xl flex items-center justify-center shadow-2xl">
-            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
-              <span className="text-4xl">🐾</span>
+          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-400/20 p-3">
+            <div className="w-full h-full bg-white rounded-full flex items-center justify-center shadow-inner">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-18 w-18 object-contain" />
             </div>
           </div>
         </div>
-        
-        <h1 className="text-3xl font-bold text-white mb-2">PumaPay</h1>
         <p className="text-gray-400 mb-8 leading-relaxed">
           Tu wallet estudiantil para pagos<br />
           rápidos y seguros en el campus
@@ -32,7 +30,7 @@ const Welcome = () => {
           <Button 
             onClick={() => navigate('/signup')}
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             <span>Crear cuenta nueva</span>
             <ArrowRight className="h-5 w-5" />
@@ -125,7 +123,7 @@ const Welcome = () => {
               variant="ghost"
               onClick={() => navigate('/login')}
               disabled={isLoading}
-              className="text-red-400 hover:text-red-300 underline disabled:opacity-50"
+              className="text-orange-400 hover:text-orange-300 underline disabled:opacity-50"
             >
               <Wallet className="h-4 w-4 mr-1" />
               Acceder con mi wallet

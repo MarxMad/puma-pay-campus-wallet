@@ -59,8 +59,10 @@ const Login = () => {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center">
-            <span className="text-2xl">🔐</span>
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-orange-400/20 p-2">
+            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
+            </div>
           </div>
           <h2 className="text-lg font-semibold text-white mb-2">Bienvenido de nuevo</h2>
           <p className="text-gray-400 text-sm">Accede a tu wallet estudiantil</p>
@@ -109,7 +111,7 @@ const Login = () => {
             </label>
             <button 
               type="button"
-              className="text-sm text-red-400 hover:text-red-300"
+              className="text-sm text-orange-400 hover:text-orange-300"
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -118,7 +120,7 @@ const Login = () => {
           <Button 
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 rounded-xl mt-6 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 rounded-xl mt-6 disabled:opacity-50"
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
@@ -218,7 +220,7 @@ Demo Apple Login
             <button 
               type="button"
               onClick={() => navigate('/signup')}
-              className="text-red-400 hover:text-red-300"
+              className="text-orange-400 hover:text-orange-300"
             >
               Crear cuenta
             </button>

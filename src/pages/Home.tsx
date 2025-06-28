@@ -86,7 +86,7 @@ const HomePage = () => {
   // Función handleDeposit eliminada - los depósitos se hacen en /receive
 
   const quickActions = [
-    { icon: ArrowUp, label: 'Enviar', color: 'bg-red-500', action: () => navigate('/send') },
+    { icon: ArrowUp, label: 'Enviar', color: 'bg-orange-500', action: () => navigate('/send') },
     { icon: ArrowDown, label: 'Recibir', color: 'bg-green-500', action: () => navigate('/receive') },
     { icon: ArrowLeftRight, label: 'Swap', color: 'bg-purple-500', action: () => navigate('/swap') }
   ];
@@ -127,7 +127,11 @@ const HomePage = () => {
         <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
           <User className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold">PumaPay</h1>
+        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg p-1">
+          <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-5 w-5 object-contain" />
+          </div>
+        </div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
           <Bell className="h-5 w-5" />
         </Button>
@@ -247,7 +251,7 @@ const HomePage = () => {
                       isToday 
                         ? 'text-blue-400 font-bold' 
                         : isHovered 
-                          ? 'text-red-400 font-semibold' 
+                          ? 'text-orange-400 font-semibold' 
                           : 'text-gray-400'
                     }`}>
                       {day.day}
@@ -265,7 +269,7 @@ const HomePage = () => {
                   <span>Hoy</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
                   <span>Otros días</span>
                 </div>
                 <div>
@@ -306,13 +310,13 @@ const HomePage = () => {
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
           {/* Gastos del mes */}
-          <Card className="bg-gradient-to-br from-red-600/20 to-red-500/10 border border-red-500/20 p-5 relative overflow-hidden group hover:from-red-600/30 hover:to-red-500/20 transition-all duration-300">
+                      <Card className="bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/20 p-5 relative overflow-hidden group hover:from-orange-600/30 hover:to-orange-500/20 transition-all duration-300">
             <div className="flex items-center space-x-3 mb-2">
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-red-300 text-sm font-medium">Gastos del mes</p>
+                <p className="text-orange-300 text-sm font-medium">Gastos del mes</p>
                 <p className="text-white font-bold text-xl">${totalExpenses.toFixed(2)}</p>
               </div>
             </div>
@@ -321,14 +325,14 @@ const HomePage = () => {
             {monthlyGoalProgress > 0 && (
               <div className="mt-2 w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
                 <div 
-                  className="h-1.5 bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-700"
+                  className="h-1.5 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(monthlyGoalProgress, 100)}%` }}
                 ></div>
               </div>
             )}
             
             {/* Background decoration */}
-            <div className="absolute -top-3 -right-3 w-12 h-12 bg-red-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                          <div className="absolute -top-3 -right-3 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           </Card>
           
           {/* Meta mensual */}
@@ -388,7 +392,7 @@ const HomePage = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-red-400 hover:text-red-300"
+              className="text-orange-400 hover:text-orange-300"
               onClick={() => navigate('/statistics')}
             >
               Ver todas
@@ -450,7 +454,7 @@ const HomePage = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-red-400 hover:text-red-300"
+            className="text-orange-400 hover:text-orange-300"
             onClick={() => navigate('/statistics')}
           >
             Ver todas
@@ -480,7 +484,7 @@ const HomePage = () => {
                     </div>
                     <div className="text-right">
                       <p className={`font-semibold ${
-                        displayTransaction.type === 'expense' ? 'text-red-400' : 'text-green-400'
+                        displayTransaction.type === 'expense' ? 'text-orange-400' : 'text-green-400'
                       }`}>
                         {displayTransaction.amount}
                       </p>
@@ -504,7 +508,7 @@ const HomePage = () => {
                 <Button 
                   onClick={() => navigate('/send')}
                   size="sm"
-                  className="bg-red-500 hover:bg-red-600"
+                  className="bg-orange-500 hover:bg-orange-600"
                 >
                   Enviar dinero
                 </Button>

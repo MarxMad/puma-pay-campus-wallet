@@ -141,9 +141,9 @@ const Statistics = () => {
             </div>
 
             {/* Gastos Card */}
-            <div className="bg-gradient-to-br from-red-600/20 to-red-500/10 border border-red-500/20 p-5 rounded-xl relative overflow-hidden group hover:from-red-600/30 hover:to-red-500/20 transition-all duration-300">
+                          <div className="bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/20 p-5 rounded-xl relative overflow-hidden group hover:from-orange-600/30 hover:to-orange-500/20 transition-all duration-300">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
                   <Banknote className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-red-300 text-sm font-medium">Gastos</span>
@@ -151,7 +151,7 @@ const Statistics = () => {
               <p className="text-3xl font-bold text-white mb-2">${totalExpenses.toFixed(2)}</p>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  budgetProgress.isOverBudget ? 'bg-red-500 animate-pulse' : 'bg-orange-400'
+                  budgetProgress.isOverBudget ? 'bg-orange-500 animate-pulse' : 'bg-orange-400'
                 }`}></div>
                 <span className={`text-xs font-medium ${
                   budgetProgress.isOverBudget ? 'text-red-400' : 'text-orange-400'
@@ -165,7 +165,7 @@ const Statistics = () => {
                 <div 
                   className={`h-1.5 rounded-full transition-all duration-700 ${
                     budgetProgress.isOverBudget 
-                      ? 'bg-gradient-to-r from-red-500 to-red-400' 
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-400' 
                       : 'bg-gradient-to-r from-orange-500 to-orange-400'
                   }`}
                   style={{ width: `${Math.min(budgetProgress.progress, 100)}%` }}
@@ -173,8 +173,8 @@ const Statistics = () => {
               </div>
               
               {/* Background decoration */}
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-red-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
-              <div className="absolute -bottom-2 -left-2 w-8 h-8 bg-red-400/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                              <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                <div className="absolute -bottom-2 -left-2 w-8 h-8 bg-orange-400/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ const Statistics = () => {
               <div className="text-right ml-4">
                 <div className="flex items-center space-x-2 mb-2 justify-end">
                   <div className={`w-3 h-3 rounded-full ${
-                    budgetProgress.remaining > 0 ? 'bg-green-500' : 'bg-red-500'
+                    budgetProgress.remaining > 0 ? 'bg-green-500' : 'bg-orange-500'
                   } animate-pulse`}></div>
                   <p className={`text-sm font-medium ${
                     budgetProgress.remaining > 0 ? 'text-green-300' : 'text-red-300'
@@ -224,7 +224,7 @@ const Statistics = () => {
                 <div 
                   className={`h-2 rounded-full transition-all duration-1000 ${
                     budgetProgress.isOverBudget 
-                      ? 'bg-gradient-to-r from-red-500 via-red-400 to-orange-400' 
+                      ? 'bg-gradient-to-r from-orange-500 via-orange-400 to-yellow-400' 
                       : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500'
                   }`}
                   style={{ width: `${Math.min(budgetProgress.progress, 100)}%` }}
@@ -330,7 +330,7 @@ const Statistics = () => {
               <span>Dentro del presupuesto</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-gradient-to-r from-red-600 to-red-400 rounded"></div>
+              <div className="w-3 h-3 bg-gradient-to-r from-orange-600 to-orange-400 rounded"></div>
               <span>Excede presupuesto</span>
             </div>
             <div className="flex items-center space-x-2">
@@ -405,7 +405,7 @@ const Statistics = () => {
                             fill="transparent"
                             stroke={category.color.includes('bg-') ? 
                               category.color === 'bg-blue-500' ? '#3b82f6' :
-                              category.color === 'bg-red-500' ? '#ef4444' :
+                              category.color === 'bg-orange-500' ? '#f97316' :
                               category.color === 'bg-green-500' ? '#22c55e' :
                               category.color === 'bg-yellow-500' ? '#eab308' :
                               category.color === 'bg-purple-500' ? '#a855f7' :

@@ -164,7 +164,7 @@ const Profile = () => {
         {/* Profile Info Card */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
           <div className="text-center mb-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-red-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-orange-400/20">
               <span className="text-3xl font-bold">
                 {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
               </span>

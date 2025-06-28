@@ -32,7 +32,7 @@ const SendPage = () => {
   const expenseCategories = getExpenseCategories();
   const availableIcons = ['📝', '🛍️', '🎯', '⚡', '🔧', '🎨', '🏃‍♂️', '🎪', '🔥', '💻'];
   const availableColors = [
-    'bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-yellow-500', 
+    'bg-blue-500', 'bg-green-500', 'bg-orange-500', 'bg-yellow-500', 
     'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
   ];
 
@@ -295,7 +295,7 @@ const SendPage = () => {
                 variant={formData.categoryId === category.id ? "default" : "outline"}
                 className={`p-3 rounded-xl flex items-center space-x-2 ${
                   formData.categoryId === category.id 
-                    ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' 
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500' 
                     : 'border-gray-600 text-gray-300 hover:bg-gray-700'
                 }`}
               >
@@ -322,7 +322,7 @@ const SendPage = () => {
 
         {/* Resumen */}
         {formData.amount && (
-          <Card className="bg-gradient-to-r from-red-500/20 to-red-600/20 border-red-500/30 p-6">
+          <Card className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-orange-500/30 p-6">
             <h3 className="text-white font-semibold mb-2">Resumen del envío</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -345,7 +345,7 @@ const SendPage = () => {
         <Button
           onClick={handleSend}
           disabled={!isFormValid || isLoading}
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl text-lg font-semibold"
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl text-lg font-semibold"
         >
           {isLoading ? (
             <div className="flex items-center space-x-2">
@@ -402,7 +402,7 @@ const SendPage = () => {
                       variant={newCategory.icon === icon ? "default" : "outline"}
                       className={`p-3 rounded-xl ${
                         newCategory.icon === icon 
-                          ? 'bg-red-500 hover:bg-red-600' 
+                          ? 'bg-orange-500 hover:bg-orange-600' 
                           : 'border-gray-600 hover:bg-gray-700'
                       }`}
                     >
@@ -457,7 +457,7 @@ const SendPage = () => {
                 <Button
                   onClick={handleAddCategory}
                   disabled={!newCategory.name.trim()}
-                  className="flex-1 bg-red-500 hover:bg-red-600 rounded-xl"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 rounded-xl"
                 >
                   Crear Categoría
                 </Button>

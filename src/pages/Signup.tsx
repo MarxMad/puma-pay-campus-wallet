@@ -118,10 +118,11 @@ const Signup = () => {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center">
-            <span className="text-2xl">🎓</span>
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-orange-400/20 p-2">
+            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
+            </div>
           </div>
-          <h2 className="text-lg font-semibold text-white mb-2">PumaPay</h2>
           <p className="text-gray-400 text-sm">Únete a la comunidad estudiantil</p>
         </div>
 
@@ -295,7 +296,7 @@ const Signup = () => {
             disabled={isLoading || !isFormValid}
             className={`w-full py-3 rounded-xl mt-6 transition-all duration-200 ${
               isFormValid 
-                ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white' 
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
           >
@@ -325,7 +326,7 @@ const Signup = () => {
             <button 
               type="button"
               onClick={() => navigate('/welcome')}
-              className="text-red-400 hover:text-red-300 transition-colors"
+              className="text-orange-400 hover:text-orange-300 transition-colors"
             >
               Inicia sesión
             </button>
