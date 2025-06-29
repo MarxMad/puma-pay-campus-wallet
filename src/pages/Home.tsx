@@ -314,17 +314,17 @@ const HomePage = () => {
       {/* Campus Map Feature */}
       <div className="px-4 mb-6">
         <Card 
-          className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20 backdrop-blur-xl border border-purple-500/30 p-6 text-white relative overflow-hidden group hover:from-purple-600/30 hover:via-blue-600/30 hover:to-cyan-600/30 transition-all duration-500 shadow-2xl shadow-purple-500/20 cursor-pointer"
+          className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden group hover:bg-gray-800/70 transition-all duration-500 shadow-2xl cursor-pointer"
           onClick={() => navigate('/campus-map')}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <MapPin className="h-7 w-7 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-1">🗺️ Descubre el Campus</h3>
-                <p className="text-purple-200 text-sm">
+                <p className="text-gray-300 text-sm">
                   Encuentra lugares que aceptan PumaPay
                 </p>
                 <div className="flex items-center space-x-4 mt-2 text-xs">
@@ -333,7 +333,7 @@ const HomePage = () => {
                     <span className="text-yellow-400 font-semibold">Descuentos exclusivos</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <span className="text-cyan-400">6 lugares disponibles</span>
+                    <span className="text-blue-400">6 lugares disponibles</span>
                   </div>
                 </div>
               </div>
@@ -343,7 +343,7 @@ const HomePage = () => {
               <div className="bg-green-500/20 border border-green-500/40 rounded-full px-3 py-1 mb-2">
                 <span className="text-green-400 text-xs font-bold">¡NUEVO!</span>
               </div>
-              <div className="flex items-center space-x-1 text-purple-300">
+              <div className="flex items-center space-x-1 text-gray-300">
                 <span className="text-sm">Ver mapa</span>
                 <ArrowUp className="h-4 w-4 rotate-45" />
               </div>
@@ -352,7 +352,7 @@ const HomePage = () => {
           
           {/* Popular places preview */}
           <div className="mt-4 flex items-center space-x-2">
-            <span className="text-xs text-purple-300">Populares:</span>
+            <span className="text-xs text-gray-400">Populares:</span>
             <div className="flex items-center space-x-1">
               <span className="text-lg">🍕</span>
               <span className="text-xs text-white">Cafetería</span>
@@ -368,9 +368,9 @@ const HomePage = () => {
           </div>
           
           {/* Animated background effects */}
-          <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-          <div className="absolute top-1/2 right-12 w-6 h-6 bg-cyan-400/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-gray-600/20 to-gray-700/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-gray-600/20 to-gray-700/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+          <div className="absolute top-1/2 right-12 w-6 h-6 bg-gray-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
         </Card>
       </div>
 
