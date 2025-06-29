@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3 } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -9,13 +9,14 @@ import { portalService } from '@/services/portal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
+import { SkeletonBalance } from '../components/SkeletonLoader';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [showBalance, setShowBalance] = useState(true);
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
   const { user, isAuthenticated } = useAuth();
-  
+
   // Hook de categorías para obtener datos reales
   const { 
     getRecentTransactions, 
@@ -86,9 +87,9 @@ const HomePage = () => {
   // Función handleDeposit eliminada - los depósitos se hacen en /receive
 
   const quickActions = [
-    { icon: ArrowUp, label: 'Enviar', color: 'bg-orange-500', action: () => navigate('/send') },
-    { icon: ArrowDown, label: 'Recibir', color: 'bg-green-500', action: () => navigate('/receive') },
-    { icon: ArrowLeftRight, label: 'Swap', color: 'bg-purple-500', action: () => navigate('/swap') }
+    { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600', action: () => navigate('/send') },
+    { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600', action: () => navigate('/receive') },
+    { icon: Repeat, label: 'Swap', color: 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600', action: () => navigate('/swap') }
   ];
 
   // Calcular gastos por día de la semana
@@ -123,7 +124,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between p-4 text-white">
+      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10 shadow-xl shadow-black/30">
         <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
           <User className="h-5 w-5" />
         </Button>
@@ -138,17 +139,17 @@ const HomePage = () => {
       </div>
 
       {/* Balance Card */}
-      <div className="p-4">
-        <Card className="bg-gradient-to-br from-gray-800 to-gray-700 border-gray-600 p-6 text-white relative overflow-hidden">
+      <div className="p-4 overflow-hidden">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-4">
             <div>
               <span className="text-gray-300 text-sm">Saldo disponible</span>
               {totalExpenses > 0 && (
-                <div className="flex items-center space-x-2 mt-1">
+              <div className="flex items-center space-x-2 mt-1">
                   <span className="text-gray-400 text-xs">
                     Gastado este mes: ${totalExpenses.toFixed(2)}
-                  </span>
-                </div>
+                </span>
+              </div>
               )}
             </div>
             <Button 
@@ -161,19 +162,14 @@ const HomePage = () => {
             </Button>
           </div>
           
-          <div className="text-4xl font-bold mb-6">
-            {balanceLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Cargando...</span>
-              </div>
-            ) : (
-              <>
-                {showBalance ? `$${available.toFixed(2)}` : '••••••'}
-                <span className="text-lg text-gray-400 ml-2">MXNB</span>
-              </>
-            )}
-          </div>
+          {balanceLoading ? (
+            <SkeletonBalance />
+          ) : (
+            <div className="text-4xl font-bold mb-6 transform transition-all duration-300 ease-out hover:brightness-110 hover:text-shadow-glow">
+              {showBalance ? `$${available.toFixed(2)}` : '••••••'}
+              <span className="text-lg text-gray-400 ml-2">MXNB</span>
+            </div>
+          )}
           
           {/* Weekly Chart */}
           <div className="mb-6">
@@ -289,10 +285,19 @@ const HomePage = () => {
               <Button 
                 key={index}
                 onClick={action.action}
-                className={`${action.color} hover:opacity-90 text-white p-4 rounded-xl flex flex-col items-center space-y-2 h-auto`}
+                className={`${action.color} text-white p-4 rounded-xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden`}
               >
-                <action.icon className="h-6 w-6" />
-                <span className="text-sm font-medium">{action.label}</span>
+                {/* Animated background effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-700 ease-out"></div>
+                
+                {/* Icon with tech effect */}
+                <action.icon className="h-6 w-6 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
+                
+                {/* Text with glow effect */}
+                <span className="text-sm font-medium relative z-10 group-hover:text-shadow-glow">{action.label}</span>
+                
+                {/* Corner accent */}
+                <div className="absolute top-1 right-1 w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/40 transition-colors duration-300"></div>
               </Button>
             ))}
           </div>
@@ -306,24 +311,87 @@ const HomePage = () => {
         </Card>
       </div>
 
+      {/* Campus Map Feature */}
+      <div className="px-4 mb-6">
+        <Card 
+          className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20 backdrop-blur-xl border border-purple-500/30 p-6 text-white relative overflow-hidden group hover:from-purple-600/30 hover:via-blue-600/30 hover:to-cyan-600/30 transition-all duration-500 shadow-2xl shadow-purple-500/20 cursor-pointer"
+          onClick={() => navigate('/campus-map')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <MapPin className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">🗺️ Descubre el Campus</h3>
+                <p className="text-purple-200 text-sm">
+                  Encuentra lugares que aceptan PumaPay
+                </p>
+                <div className="flex items-center space-x-4 mt-2 text-xs">
+                  <div className="flex items-center space-x-1">
+                    <Sparkles className="h-3 w-3 text-yellow-400" />
+                    <span className="text-yellow-400 font-semibold">Descuentos exclusivos</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-cyan-400">6 lugares disponibles</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-right">
+              <div className="bg-green-500/20 border border-green-500/40 rounded-full px-3 py-1 mb-2">
+                <span className="text-green-400 text-xs font-bold">¡NUEVO!</span>
+              </div>
+              <div className="flex items-center space-x-1 text-purple-300">
+                <span className="text-sm">Ver mapa</span>
+                <ArrowUp className="h-4 w-4 rotate-45" />
+              </div>
+            </div>
+          </div>
+          
+          {/* Popular places preview */}
+          <div className="mt-4 flex items-center space-x-2">
+            <span className="text-xs text-purple-300">Populares:</span>
+            <div className="flex items-center space-x-1">
+              <span className="text-lg">🍕</span>
+              <span className="text-xs text-white">Cafetería</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-lg">🏃‍♂️</span>
+              <span className="text-xs text-white">Gimnasio</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-lg">📚</span>
+              <span className="text-xs text-white">Librería</span>
+            </div>
+          </div>
+          
+          {/* Animated background effects */}
+          <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+          <div className="absolute top-1/2 right-12 w-6 h-6 bg-cyan-400/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+        </Card>
+      </div>
+
       {/* Spending Overview */}
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
           {/* Gastos del mes */}
-                      <Card className="bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/20 p-5 relative overflow-hidden group hover:from-orange-600/30 hover:to-orange-500/20 transition-all duration-300">
+                      <Card className="bg-orange-500/20 backdrop-blur-lg border border-orange-500/30 p-5 relative overflow-hidden group hover:bg-orange-500/30 transition-all duration-300 shadow-lg shadow-orange-500/10">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-orange-300 text-sm font-medium">Gastos del mes</p>
-                <p className="text-white font-bold text-xl">${totalExpenses.toFixed(2)}</p>
+                <p className="text-white text-sm font-medium">Gastos del mes</p>
+                                  <p className="text-white font-bold text-xl">${totalExpenses.toFixed(2)}</p>
               </div>
             </div>
             
             {/* Progress indicator */}
             {monthlyGoalProgress > 0 && (
-              <div className="mt-2 w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+              <div className="mt-2 w-full bg-orange-200 rounded-full h-1.5 overflow-hidden">
                 <div 
                   className="h-1.5 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(monthlyGoalProgress, 100)}%` }}
@@ -336,14 +404,14 @@ const HomePage = () => {
           </Card>
           
           {/* Meta mensual */}
-          <Card className="bg-gradient-to-br from-blue-600/20 to-blue-500/10 border border-blue-500/20 p-5 relative overflow-hidden group hover:from-blue-600/30 hover:to-blue-500/20 transition-all duration-300">
+          <Card className="bg-blue-500/20 backdrop-blur-lg border border-blue-500/30 p-5 relative overflow-hidden group hover:bg-blue-500/30 transition-all duration-300 shadow-lg shadow-blue-500/10">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-white text-lg">🎯</span>
               </div>
               <div className="flex-1">
-                <p className="text-blue-300 text-sm font-medium">Meta mensual</p>
-                <p className="text-white font-bold text-xl">{monthlyGoalProgress.toFixed(0)}%</p>
+                <p className="text-white text-sm font-medium">Meta mensual</p>
+                                  <p className="text-white font-bold text-xl">{monthlyGoalProgress.toFixed(0)}%</p>
               </div>
             </div>
             
@@ -355,7 +423,7 @@ const HomePage = () => {
                     cx="16"
                     cy="16"
                     r="12"
-                    stroke="rgb(55, 65, 81)"
+                    stroke="rgb(191, 219, 254)"
                     strokeWidth="3"
                     fill="transparent"
                   />
@@ -363,7 +431,7 @@ const HomePage = () => {
                     cx="16"
                     cy="16"
                     r="12"
-                    stroke="rgb(59, 130, 246)"
+                    stroke="rgb(30, 64, 175)"
                     strokeWidth="3"
                     fill="transparent"
                     strokeDasharray={`${(monthlyGoalProgress / 100) * 75.4} 75.4`}
@@ -372,7 +440,7 @@ const HomePage = () => {
                 </svg>
               </div>
               <div className="text-right">
-                <p className="text-xs text-blue-400">
+                <p className="text-xs text-white">
                   ${budgetProgress.remaining.toFixed(0)} restante
                 </p>
               </div>
@@ -467,28 +535,28 @@ const HomePage = () => {
               const displayTransaction = formatTransactionForDisplay(transaction);
               return (
                 <Card key={displayTransaction.id} className="bg-gray-800 border-gray-700 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-xl">
                         {displayTransaction.icon}
-                      </div>
-                      <div>
+                  </div>
+                  <div>
                         <p className="text-white font-medium">{displayTransaction.merchant}</p>
-                        <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                           <p className="text-gray-400 text-sm">{displayTransaction.time}</p>
                           <span className="text-xs text-gray-500">
                             {transaction.currency}
-                          </span>
-                        </div>
-                      </div>
+                        </span>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`font-semibold ${
                         displayTransaction.type === 'expense' ? 'text-orange-400' : 'text-green-400'
-                      }`}>
+                  }`}>
                         {displayTransaction.amount}
-                      </p>
-                    </div>
+                  </p>
+                </div>
                   </div>
                 </Card>
               );
@@ -530,6 +598,9 @@ const HomePage = () => {
         <div className="flex items-center justify-around py-2">
           <Button variant="ghost" size="sm">
             <Home className="h-5 w-5 text-white" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/campus-map')}>
+            <MapPin className="h-5 w-5 text-gray-400" />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate('/statistics')}>
             <Search className="h-5 w-5 text-gray-400" />

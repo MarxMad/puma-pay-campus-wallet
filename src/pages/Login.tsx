@@ -45,7 +45,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <Card className="bg-gray-800 border-gray-700 p-8 max-w-sm w-full">
+      <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 max-w-sm w-full shadow-2xl shadow-black/50">
         <div className="flex items-center mb-6">
           <Button 
             variant="ghost" 

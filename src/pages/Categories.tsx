@@ -36,9 +36,9 @@ const CategoriesPage = () => {
 
   const availableIcons = ['📝', '🍕', '🚌', '📚', '🎮', '✏️', '🏥', '💼', '🛍️', '🎯', '⚡', '🔧', '🎨', '🏃‍♂️', '🎪', '🔥', '💻', '💰', '🎓', '🎁', '📈', '💎', '🏆', '⭐', '🌟'];
   const availableColors = [
-    'bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 
+    'bg-orange-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 
     'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500',
-    'bg-orange-500', 'bg-cyan-500', 'bg-lime-500', 'bg-emerald-500'
+    'bg-red-500', 'bg-cyan-500', 'bg-lime-500', 'bg-emerald-500'
   ];
 
   const expenseCategories = getExpenseCategories();
@@ -58,7 +58,7 @@ const CategoriesPage = () => {
       setFormData({
         name: '',
         icon: activeTab === 'expense' ? '📝' : '💰',
-        color: activeTab === 'expense' ? 'bg-red-500' : 'bg-green-500'
+        color: activeTab === 'expense' ? 'bg-orange-500' : 'bg-green-500'
       });
     }
     setShowModal(true);
@@ -139,7 +139,7 @@ const CategoriesPage = () => {
                 onClick={() => handleDelete(category.id)}
                 variant="ghost"
                 size="sm"
-                className="text-red-400 hover:text-red-300"
+                className="text-orange-400 hover:text-orange-300"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -188,15 +188,15 @@ const CategoriesPage = () => {
 
       {/* Presupuesto Global */}
       <div className="px-4 mt-6 mb-6">
-        <Card className="bg-gradient-to-r from-indigo-500/20 to-purple-600/20 border-indigo-500/30 p-6">
+        <Card className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-orange-500/30 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <PiggyBank className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-white text-lg font-semibold">Presupuesto Mensual</h3>
-                <p className="text-gray-400 text-sm">Control global de gastos</p>
+                <h3 className="text-gray-800 text-lg font-semibold">Presupuesto Mensual</h3>
+                <p className="text-gray-600 text-sm">Control global de gastos</p>
               </div>
             </div>
             <Button
@@ -206,7 +206,7 @@ const CategoriesPage = () => {
               }}
               variant="ghost"
               size="sm"
-              className="text-indigo-300 hover:text-indigo-200"
+              className="text-gray-600 hover:text-gray-800"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -216,30 +216,30 @@ const CategoriesPage = () => {
             {/* Progreso del presupuesto */}
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-gray-800">
                   ${budgetProgress.current.toFixed(2)}
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-600 text-sm">
                   de ${budgetProgress.limit.toFixed(2)} MXNB
                 </p>
               </div>
               <div className="text-right">
                 <p className={`text-lg font-semibold ${
-                  budgetProgress.isOverBudget ? 'text-red-400' : 'text-green-400'
+                  budgetProgress.isOverBudget ? 'text-orange-400' : 'text-green-400'
                 }`}>
                   {budgetProgress.progress.toFixed(0)}%
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-600 text-sm">
                   {budgetProgress.isOverBudget ? 'Excedido' : 'Utilizado'}
                 </p>
               </div>
             </div>
 
             {/* Barra de progreso */}
-            <div className="w-full bg-gray-700 rounded-full h-3">
+            <div className="w-full bg-gray-300 rounded-full h-3">
               <div 
                 className={`h-3 rounded-full transition-all duration-300 ${
-                  budgetProgress.isOverBudget ? 'bg-red-500' :
+                  budgetProgress.isOverBudget ? 'bg-orange-500' :
                   budgetProgress.progress > 80 ? 'bg-yellow-500' : 'bg-green-500'
                 }`}
                 style={{ width: `${Math.min(budgetProgress.progress, 100)}%` }}
@@ -248,10 +248,10 @@ const CategoriesPage = () => {
 
             {/* Estado del presupuesto */}
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">
+              <span className="text-gray-600">
                 {budgetProgress.isOverBudget ? 'Exceso:' : 'Restante:'}
               </span>
-              <span className={budgetProgress.isOverBudget ? 'text-red-400' : 'text-green-400'}>
+              <span className={budgetProgress.isOverBudget ? 'text-orange-400' : 'text-green-400'}>
                 ${Math.abs(budgetProgress.remaining).toFixed(2)}
               </span>
             </div>
@@ -266,7 +266,7 @@ const CategoriesPage = () => {
             onClick={() => setActiveTab('expense')}
             className={`rounded-lg py-3 text-sm font-medium transition-all ${
               activeTab === 'expense'
-                ? 'bg-red-500 text-white shadow-lg'
+                ? 'bg-orange-500 text-white shadow-lg'
                 : 'text-gray-400 hover:text-white'
             }`}
           >
@@ -293,7 +293,7 @@ const CategoriesPage = () => {
           onClick={() => openModal()}
           className={`w-full py-4 rounded-xl text-lg font-semibold ${
             activeTab === 'expense' 
-              ? 'bg-red-500 hover:bg-red-600' 
+                                  ? 'bg-orange-500 hover:bg-orange-600' 
               : 'bg-green-500 hover:bg-green-600'
           }`}
         >
@@ -317,7 +317,7 @@ const CategoriesPage = () => {
                 </p>
                 <Button
                   onClick={() => openModal()}
-                  className="bg-red-500 hover:bg-red-600"
+                  className="bg-orange-500 hover:bg-orange-600"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Crear categoría
@@ -393,7 +393,7 @@ const CategoriesPage = () => {
                       variant={formData.icon === icon ? "default" : "outline"}
                       className={`p-3 rounded-xl aspect-square ${
                         formData.icon === icon 
-                          ? `${activeTab === 'expense' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}` 
+                          ? `${activeTab === 'expense' ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-500 hover:bg-green-600'}` 
                           : 'border-gray-600 hover:bg-gray-700'
                       }`}
                     >
@@ -451,7 +451,7 @@ const CategoriesPage = () => {
                   disabled={!formData.name.trim()}
                   className={`flex-1 rounded-xl ${
                     activeTab === 'expense' 
-                      ? 'bg-red-500 hover:bg-red-600' 
+                      ? 'bg-orange-500 hover:bg-orange-600' 
                       : 'bg-green-500 hover:bg-green-600'
                   }`}
                 >

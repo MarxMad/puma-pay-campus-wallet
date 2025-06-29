@@ -21,6 +21,7 @@ import WalletSetup from "./pages/WalletSetup";
 import Statistics from "./pages/Statistics";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
+import CampusMap from "./pages/CampusMap";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

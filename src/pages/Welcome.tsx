@@ -13,7 +13,7 @@ const Welcome = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <Card className="bg-gray-800 border-gray-700 p-8 max-w-sm w-full text-center">
+      <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 max-w-sm w-full text-center shadow-2xl shadow-black/50">
         <div className="mb-8">
           <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-400/20 p-3">
             <div className="w-full h-full bg-white rounded-full flex items-center justify-center shadow-inner">

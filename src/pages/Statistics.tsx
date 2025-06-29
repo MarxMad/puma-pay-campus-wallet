@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronDown, TrendingUp, Search, Home, Settings, ArrowLeft, Calendar, Filter, Banknote, PieChart, BarChart3 } from 'lucide-react';
+import { ChevronDown, TrendingUp, Search, Home, Settings, ArrowLeft, Calendar, Filter, Banknote, PieChart, BarChart3, Activity, Zap, Sparkles, Target, Layers } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
@@ -107,7 +107,7 @@ const Statistics = () => {
 
       <div className="p-4 space-y-6">
         {/* Balance Overview */}
-        <Card className="bg-gray-800 border-gray-700 p-6 text-white">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Resumen Financiero</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-400">
@@ -144,7 +144,7 @@ const Statistics = () => {
                           <div className="bg-gradient-to-br from-orange-600/20 to-orange-500/10 border border-orange-500/20 p-5 rounded-xl relative overflow-hidden group hover:from-orange-600/30 hover:to-orange-500/20 transition-all duration-300">
               <div className="flex items-center space-x-3 mb-3">
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Banknote className="h-4 w-4 text-white" />
+                  <Activity className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-red-300 text-sm font-medium">Gastos</span>
               </div>
@@ -242,10 +242,10 @@ const Statistics = () => {
         </Card>
 
         {/* Monthly Chart */}
-        <Card className="bg-gray-800 border-gray-700 p-6 text-white">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-blue-400" />
+              <Activity className="h-5 w-5 text-blue-400" />
               <h3 className="text-lg font-semibold">Gastos por Mes</h3>
             </div>
             <div className="text-sm text-gray-400">
@@ -265,12 +265,15 @@ const Statistics = () => {
                   onMouseEnter={() => setHoveredMonth(index)}
                   onMouseLeave={() => setHoveredMonth(null)}
                 >
-                  {/* Tooltip */}
+                  {/* Enhanced Tooltip */}
                   {isHovered && month.spent > 0 && (
-                    <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-xs whitespace-nowrap z-10 shadow-lg">
-                      <div className="text-white font-semibold">${month.spent.toFixed(2)}</div>
-                      <div className="text-gray-400">
+                    <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/95 backdrop-blur-lg border border-gray-600/50 rounded-xl px-4 py-3 text-xs whitespace-nowrap z-20 shadow-2xl shadow-black/50 animate-in fade-in-0 zoom-in-95 duration-200">
+                      <div className="text-white font-bold text-sm">${month.spent.toFixed(2)}</div>
+                      <div className="text-gray-300 font-medium">
                         {((month.spent / month.budget) * 100).toFixed(1)}% del presupuesto
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {month.spent > month.budget ? 'Excede por' : 'Restante'}: ${Math.abs(month.budget - month.spent).toFixed(2)}
                       </div>
                       <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                     </div>
@@ -281,24 +284,38 @@ const Statistics = () => {
                     {/* Budget Line */}
                     <div className="absolute w-full h-0.5 bg-yellow-400/30 top-0 left-0"></div>
                     
-                    {/* Actual Bar */}
+                    {/* Enhanced Bar */}
                     {month.spent > 0 ? (
                       <div 
                         className={`w-full absolute bottom-0 rounded-lg transition-all duration-700 ease-out transform ${
-                          isHovered ? 'scale-105' : 'scale-100'
+                          isHovered ? 'scale-105 shadow-2xl' : 'scale-100'
                         } ${
                           month.spent > month.budget 
-                            ? 'bg-gradient-to-t from-red-600 via-red-500 to-red-400' 
+                            ? 'bg-gradient-to-t from-orange-600 via-orange-500 to-orange-400' 
                             : 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400'
                         }`}
                         style={{ 
                           height: `${heightPercentage}%`,
                           animationDelay: `${index * 100}ms`,
-                          boxShadow: isHovered ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none'
+                          boxShadow: isHovered 
+                            ? month.spent > month.budget 
+                              ? '0 0 30px rgba(249, 115, 22, 0.6), 0 0 60px rgba(249, 115, 22, 0.3)' 
+                              : '0 0 30px rgba(59, 130, 246, 0.6), 0 0 60px rgba(59, 130, 246, 0.3)'
+                            : 'none'
                         }}
                       >
                         {/* Animated shine effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full animate-pulse"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 translate-x-full transition-transform duration-1000"></div>
+                        
+                        {/* Pulsing effect for exceeded budget */}
+                        {month.spent > month.budget && (
+                          <div className="absolute inset-0 bg-orange-400/20 rounded-lg animate-pulse"></div>
+                        )}
+                        
+                        {/* Hover glow effect */}
+                        {isHovered && (
+                          <div className="absolute inset-0 bg-white/10 rounded-lg animate-pulse"></div>
+                        )}
                       </div>
                     ) : (
                       <div className="w-full h-2 bg-gray-600 rounded-lg absolute bottom-0 opacity-50"></div>
@@ -349,10 +366,10 @@ const Statistics = () => {
         </Card>
 
         {/* Categories */}
-        <Card className="bg-gray-800 border-gray-700 p-6 text-white">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
-              <PieChart className="h-5 w-5 text-purple-400" />
+              <Target className="h-5 w-5 text-purple-400" />
               <h3 className="text-lg font-semibold">Gastos por Categoría</h3>
             </div>
             
@@ -413,14 +430,16 @@ const Statistics = () => {
                               category.color === 'bg-indigo-500' ? '#6366f1' :
                               '#06b6d4' : '#6366f1'
                             }
-                            strokeWidth="20"
+                            strokeWidth={hoveredCategory === category.name ? '26' : '20'}
                             strokeDasharray={strokeDasharray}
                             strokeDashoffset="0"
                             transform={`rotate(${rotation} 100 100)`}
-                            className="transition-all duration-500 ease-out"
+                            className="transition-all duration-500 ease-out cursor-pointer"
                             style={{
-                              filter: hoveredCategory === category.name ? 'brightness(1.2)' : 'brightness(1)',
-                              strokeWidth: hoveredCategory === category.name ? '24' : '20'
+                              filter: hoveredCategory === category.name 
+                                ? 'brightness(1.3) drop-shadow(0 0 8px currentColor)' 
+                                : 'brightness(1)',
+                              transformOrigin: '100px 100px'
                             }}
                             onMouseEnter={() => setHoveredCategory(category.name)}
                             onMouseLeave={() => setHoveredCategory(null)}
@@ -499,7 +518,7 @@ const Statistics = () => {
               {/* Category insights */}
               <div className="mt-6 p-4 bg-gray-700/30 rounded-xl border border-gray-600">
                 <div className="flex items-center space-x-2 mb-3">
-                  <TrendingUp className="h-4 w-4 text-blue-400" />
+                  <Sparkles className="h-4 w-4 text-blue-400" />
                   <span className="text-sm font-medium text-blue-400">Insights</span>
                 </div>
                 <div className="space-y-2 text-xs text-gray-300">
@@ -525,7 +544,7 @@ const Statistics = () => {
         </Card>
 
         {/* Search and Recent Transactions */}
-        <Card className="bg-gray-800 border-gray-700 p-6 text-white">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Transacciones Recientes</h3>
             <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
