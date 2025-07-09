@@ -3,7 +3,7 @@
 
 export const backendConfig = {
   // URL base del backend (cambiar según entorno)
-  baseUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000',
+  baseUrl: import.meta.env.VITE_BACKEND_URL || '',
   
   // Endpoints disponibles
   endpoints: {
