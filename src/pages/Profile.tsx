@@ -216,6 +216,83 @@ const Profile = () => {
     </Button>
   </div>
 )}
+{/* Formulario para registrar CLABE de retiro */}
+<Card className="bg-gray-700 border-gray-600 p-4 mt-4">
+  <h3 className="text-lg font-semibold text-white mb-2">Registrar cuenta bancaria (retiro a CLABE)</h3>
+  <form
+    onSubmit={async (e) => {
+      e.preventDefault();
+      setWithdrawMsg('');
+      if (!withdrawClabe || !withdrawName) {
+        setWithdrawMsg('Completa todos los campos.');
+        return;
+      }
+      if (!/^\d{18}$/.test(withdrawClabe)) {
+        setWithdrawMsg('La CLABE debe tener 18 dígitos.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/register-bank', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag: 'Retiro',
+            recipient_legal_name: withdrawName,
+            clabe: withdrawClabe,
+            ownership: 'THIRD_PARTY'
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setWithdrawMsg('Cuenta bancaria registrada correctamente.');
+          setWithdrawClabe('');
+          setWithdrawName('');
+        } else {
+          setWithdrawMsg(data.error?.message || 'Error al registrar la cuenta.');
+        }
+      } catch (err) {
+        setWithdrawMsg('Error de red. Intenta de nuevo.');
+      }
+    }}
+    className="space-y-3"
+  >
+    <div>
+      <label className="block text-gray-300 text-sm mb-1">CLABE (18 dígitos)</label>
+      <input
+        type="text"
+        value={withdrawClabe}
+        onChange={e => setWithdrawClabe(e.target.value)}
+        className="w-full rounded-lg bg-gray-800 border border-gray-600 text-white px-3 py-2"
+        maxLength={18}
+        minLength={18}
+        pattern="\d{18}"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-gray-300 text-sm mb-1">Nombre del titular</label>
+      <input
+        type="text"
+        value={withdrawName}
+        onChange={e => setWithdrawName(e.target.value)}
+        className="w-full rounded-lg bg-gray-800 border border-gray-600 text-white px-3 py-2"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-gray-300 text-sm mb-1">Propiedad</label>
+      <select
+        className="w-full rounded-lg bg-gray-800 border border-gray-600 text-white px-3 py-2"
+        value="THIRD_PARTY"
+        disabled
+      >
+        <option value="THIRD_PARTY">Tercero</option>
+      </select>
+    </div>
+    {withdrawMsg && <div className="text-sm text-yellow-300 mt-2">{withdrawMsg}</div>}
+    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 mt-2">Registrar cuenta</Button>
+  </form>
+</Card>
             </div>
         </Card>
 

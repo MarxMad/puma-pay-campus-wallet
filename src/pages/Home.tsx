@@ -399,24 +399,17 @@ const HomePage = () => {
             )}
           </div>
           
-          {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Acciones rápidas: Enviar y Recibir */}
+          <div className="flex justify-center items-center gap-6 my-8">
             {quickActions.map((action, index) => (
               <Button 
                 key={index}
                 onClick={action.action}
-                className={`${action.color} text-white p-4 rounded-xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden`}
+                className={`${action.color} text-white p-6 rounded-2xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden min-w-[120px]`}
               >
-                {/* Animated background effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-700 ease-out"></div>
-                
-                {/* Icon with tech effect */}
-                <action.icon className="h-6 w-6 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
-                
-                {/* Text with glow effect */}
-                <span className="text-sm font-medium relative z-10 group-hover:text-shadow-glow">{action.label}</span>
-                
-                {/* Corner accent */}
+                <action.icon className="h-8 w-8 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
+                <span className="text-base font-medium relative z-10 group-hover:text-shadow-glow">{action.label}</span>
                 <div className="absolute top-1 right-1 w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/40 transition-colors duration-300"></div>
               </Button>
             ))}
