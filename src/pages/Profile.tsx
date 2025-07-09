@@ -6,11 +6,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
+import { BottomNav } from '@/components/BottomNav';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [withdrawClabe, setWithdrawClabe] = useState('');
+  const [withdrawName, setWithdrawName] = useState('');
+  const [withdrawMsg, setWithdrawMsg] = useState('');
 
   // Hooks para datos reales
   const { getRecentTransactions, getTotalIncome } = useCategories();
@@ -149,7 +153,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
-      {/* Header */}
+          {/* Header */}
       <div className="flex items-center justify-between p-4 text-white">
         <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
           <Bell className="h-5 w-5" />
@@ -157,19 +161,19 @@ const Profile = () => {
         <h1 className="text-lg font-semibold">Mi Perfil</h1>
         <Button variant="ghost" size="sm" onClick={handleEditProfile}>
           <Edit className="h-4 w-4" />
-        </Button>
-      </div>
-
+              </Button>
+            </div>
+            
       <div className="p-4 space-y-6">
         {/* Profile Info Card */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
-          <div className="text-center mb-6">
+            <div className="text-center mb-6">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-orange-400/20">
-              <span className="text-3xl font-bold">
-                {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
-              </span>
-            </div>
-            <h1 className="text-xl font-bold">{user?.name || 'Usuario'}</h1>
+                <span className="text-3xl font-bold">
+                  {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
+                </span>
+              </div>
+              <h1 className="text-xl font-bold">{user?.name || 'Usuario'}</h1>
             <p className="text-gray-400 mb-2">{user?.email || 'Sin email'}</p>
             
             {/* Wallet Info */}
@@ -195,23 +199,27 @@ const Profile = () => {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* User Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            {userStats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="w-10 h-10 bg-gray-700 rounded-full mx-auto mb-2 flex items-center justify-center">
-                  <stat.icon className="h-5 w-5 text-red-400" />
-                </div>
-                <p className="text-sm font-semibold">{stat.value}</p>
-                <p className="text-xs text-gray-400">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+            {user?.clabe && (
+  <div className="bg-blue-50 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+    <div className="w-full text-center">
+      <div className="text-xl font-bold text-blue-900 mb-1">CLABE para depósitos SPEI:</div>
+      <div className="font-mono text-2xl text-blue-800 select-all tracking-widest mb-2" style={{ letterSpacing: '0.1em' }}>{user.clabe}</div>
+      <div className="text-blue-900 text-base">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+    </div>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => {navigator.clipboard.writeText(user.clabe!); alert('CLABE copiada al portapapeles')}}
+      className="ml-2 text-blue-700 hover:text-blue-900 font-bold"
+    >
+      Copiar
+    </Button>
+  </div>
+)}
+            </div>
         </Card>
 
-        {/* Menu Items */}
+          {/* Menu Items */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
           <h3 className="text-lg font-semibold mb-4">Configuración</h3>
           <div className="space-y-3">
@@ -231,42 +239,19 @@ const Profile = () => {
           </div>
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="bg-gray-800 border-gray-700 p-6 text-white">
-          <h3 className="text-lg font-semibold mb-4">Acciones Rápidas</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleExportData}
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 rounded-xl"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Datos
-            </Button>
-            <Button
-              onClick={() => navigate('/debug')}
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 rounded-xl"
-            >
-              <SettingsIcon className="h-4 w-4 mr-2" />
-              Debug Panel
-            </Button>
-          </div>
-        </Card>
-
         {/* Account Actions */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
           <h3 className="text-lg font-semibold mb-4">Cuenta</h3>
-          
-          {/* Logout Button */}
-          <div 
+            
+            {/* Logout Button */}
+            <div 
             onClick={handleLogout}
-            className="flex items-center space-x-4 p-4 bg-red-900/20 rounded-xl hover:bg-red-900/30 transition-colors cursor-pointer border border-red-800/30"
-          >
-            <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
-              <LogOut className="h-5 w-5 text-white" />
-            </div>
-            <span className="flex-1 font-medium text-red-400">Cerrar sesión</span>
+              className="flex items-center space-x-4 p-4 bg-red-900/20 rounded-xl hover:bg-red-900/30 transition-colors cursor-pointer border border-red-800/30"
+            >
+              <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+                <LogOut className="h-5 w-5 text-white" />
+              </div>
+              <span className="flex-1 font-medium text-red-400">Cerrar sesión</span>
             <ChevronRight className="w-4 h-4 text-red-400" />
           </div>
         </Card>
@@ -306,20 +291,7 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-            <Home className="h-5 w-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/statistics')}>
-            <Search className="h-5 w-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Settings className="h-5 w-5 text-white" />
-          </Button>
-        </div>
-      </div>
+        <BottomNav />
     </div>
   );
 };

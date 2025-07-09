@@ -51,25 +51,20 @@ class PortalService {
    * NOTA: En modo mock para desarrollo. Portal SDK requiere credenciales reales.
    */
   async createWallet(): Promise<{ address: string }> {
+    await this.initialize();
     try {
       console.log('🔄 Creando wallet MPC...');
-      
-      // Simular tiempo de creación de wallet
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generar dirección mock válida
-      const mockAddress = `0x${Math.random().toString(16).substr(2, 40)}`;
-      this.currentUser = { 
-        address: mockAddress,
-        provider: 'direct'
-      };
-      
-      console.log('✅ Wallet MPC creada exitosamente:', mockAddress);
-      return { address: mockAddress };
-      
+      if (this.portal) {
+        await this.portal.createWallet();
+        const ethAddress = await this.portal.getEip155Address();
+        this.currentUser = { address: ethAddress, provider: 'direct' };
+        console.log('✅ Wallet MPC (EVM) creada exitosamente:', ethAddress);
+        return { address: ethAddress };
+      }
+      throw new Error('Portal no inicializado');
     } catch (error) {
       console.error('❌ Error creando wallet:', error);
-      throw new Error('No se pudo crear la wallet MPC');
+      throw error;
     }
   }
 
@@ -108,17 +103,31 @@ class PortalService {
   }
 
   /**
-   * Obtener balance de MXNB (modo mock por ahora)
+   * Obtener balance de MXNB (real usando Portal SDK)
    */
   async getMXNBBalance(): Promise<number> {
     await this.initialize();
-    
     try {
-      // TODO: Implementar con Portal SDK cuando esté disponible
-      // return await this.portal.getBalance(MXNB_CONTRACT_ADDRESS);
-      
-      // Modo mock
-      return parseFloat((Math.random() * 1000 + 500).toFixed(2));
+      if (this.portal) {
+        const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as { rawBalance: string, decimals: number, contractAddress?: string }[];
+        console.log('[DEBUG] Balances recibidos:', balances);
+        const mxnb = balances.find((b) => b.contractAddress?.toLowerCase() === MXNB_CONTRACT_ADDRESS.toLowerCase());
+        console.log('[DEBUG] MXNB encontrado:', mxnb);
+        if (mxnb) {
+          // Usar rawBalance si existe, si no usar balance
+          const rawStr = mxnb.rawBalance !== undefined ? mxnb.rawBalance : mxnb['balance'];
+          const raw = parseFloat(rawStr);
+          // El balance ya viene en formato decimal, no dividir por 10^18
+          if (!isNaN(raw)) {
+            return raw;
+          } else {
+            console.warn('[DEBUG] rawBalance/balance no es un número válido:', rawStr);
+            return 0;
+          }
+        }
+        return 0;
+      }
+      return 0;
     } catch (error) {
       console.error('❌ Error obteniendo balance MXNB:', error);
       return 0;
@@ -265,30 +274,70 @@ class PortalService {
   }
 
   /**
-   * Obtener transacciones (modo mock por ahora)
+   * Obtener transacciones reales desde Portal SDK
    */
   async getTransactionHistory(): Promise<any[]> {
     await this.initialize();
-    
     try {
       if (this.portal) {
-        // const transactions = await this.portal.getTransactions(ARBITRUM_SEPOLIA_CHAIN_ID);
-        // return transactions || [];
+        const myAddress = await this.getWalletAddress();
+        const transactions = await this.portal.getTransactions(ARBITRUM_SEPOLIA_CHAIN_ID);
+        if (!Array.isArray(transactions)) return [];
+        console.log('[DEBUG] Transacciones crudas recibidas:', transactions);
+        return transactions.map((tx: any) => {
+          // Log de cada transacción para depuración
+          console.log('[DEBUG] TX:', {
+            hash: tx.hash,
+            value: tx.value,
+            tokenAddress: tx.tokenAddress,
+            contractAddress: tx.contractAddress,
+            symbol: tx.symbol,
+            tokenSymbol: tx.tokenSymbol,
+            decimals: tx.decimals
+          });
+          // ¿Es MXNB?
+          const isMXNB = tx.tokenAddress?.toLowerCase?.() === MXNB_CONTRACT_ADDRESS.toLowerCase();
+          // Símbolo y decimales
+          const symbol = isMXNB ? 'MXNB' : (tx.symbol || tx.tokenSymbol || 'ETH');
+          const decimals = typeof tx.decimals === 'number' ? tx.decimals : 18;
+          // Calcular amount seguro
+          let amount = 0;
+          if (typeof tx.value === 'string' && tx.value.match(/^\d+$/)) {
+            amount = parseFloat(tx.value) / Math.pow(10, decimals);
+          } else if (!isNaN(Number(tx.value))) {
+            amount = Number(tx.value) / Math.pow(10, decimals);
+          }
+          if (isNaN(amount)) amount = 0;
+          // Clasificación
+          const isExpense = tx.from?.toLowerCase() === myAddress?.toLowerCase();
+          const isIncome = tx.to?.toLowerCase() === myAddress?.toLowerCase();
+          // Fecha
+          let date: Date | null = null;
+          if (tx.timestamp && !isNaN(Number(tx.timestamp))) {
+            date = new Date(Number(tx.timestamp) * 1000);
+          }
+          return {
+            id: tx.hash,
+            txHash: tx.hash,
+            amount,
+            type: isExpense ? 'expense' : isIncome ? 'income' : 'other',
+            description: isExpense ? 'Envío' : isIncome ? 'Depósito' : 'Otro',
+            categoryId: '',
+            currency: symbol,
+            date,
+            from: tx.from,
+            to: tx.to,
+            status: (isNaN(amount) || !date) ? 'invalid' : (tx.status || 'confirmed'),
+            isMXNB,
+            tokenSymbol: symbol,
+            tokenAddress: tx.tokenAddress || '',
+            decimals,
+          };
+        });
       }
-      
-      // Modo mock para desarrollo
-      return [
-        {
-          hash: '0xabc123...',
-          from: this.currentUser?.address || '0x...',
-          to: '0xdef456...',
-          value: '100',
-          timestamp: Date.now() - 3600000,
-          status: 'confirmed'
-        }
-      ];
+      return [];
     } catch (error) {
-      console.error('❌ Error obteniendo transacciones:', error);
+      console.error('❌ Error obteniendo transacciones reales:', error);
       return [];
     }
   }
@@ -369,6 +418,17 @@ class PortalService {
   logout(): void {
     this.currentUser = null;
     console.log('Usuario deslogueado');
+  }
+
+  /**
+   * Esperar a que Portal esté listo
+   */
+  async onReady(): Promise<void> {
+    await this.initialize();
+    if (this.portal && typeof this.portal.onReady === 'function') {
+      return new Promise((resolve) => this.portal!.onReady(resolve));
+    }
+    return;
   }
 }
 

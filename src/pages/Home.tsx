@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -10,12 +9,58 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
 import { SkeletonBalance } from '../components/SkeletonLoader';
+import { BottomNav } from '@/components/BottomNav';
+import { junoService } from '@/services/junoService';
+
+// Extensión temporal del tipo Transaction para props extra de portalService
+type TransactionWithToken = import('@/types/categories').Transaction & { isMXNB?: boolean; tokenSymbol?: string };
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [showBalance, setShowBalance] = useState(true);
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
   const { user, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [bonusLoading, setBonusLoading] = useState(false);
+  const [bonusMsg, setBonusMsg] = useState('');
+
+  useEffect(() => {
+    setBonusClaimed(localStorage.getItem('pumapay_bonus_claimed') === 'true');
+  }, []);
+
+  const handleClaimBonus = async () => {
+    console.log('user:', user);
+    if (!user?.address || !user?.clabe || !user?.name) {
+      alert('No se encontró tu dirección de wallet o CLABE.');
+      return;
+    }
+    setBonusLoading(true);
+    setBonusMsg('Procesando bonus… puede tardar un momento en reflejarse en tu wallet.');
+    try {
+      // 1. Mock deposit a la CLABE del usuario
+      await junoService.createMockDeposit({
+        amount: 500,
+        receiver_clabe: user.clabe,
+        receiver_name: user.name,
+        sender_name: user.name
+      });
+      // 2. Withdrawal a la wallet del usuario
+      await junoService.sendOnchainWithdrawal({
+        address: user.address,
+        amount: 500,
+        asset: 'MXNB',
+        blockchain: 'ARBITRUM',
+        compliance: {}
+      });
+      setBonusMsg('¡Bonus de bienvenida enviado a tu wallet! Puede tardar unos segundos en reflejarse.');
+      window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
+    } catch (e) {
+      setBonusMsg('Error al reclamar el bonus. Intenta nuevamente.');
+    } finally {
+      setBonusLoading(false);
+    }
+  };
 
   // Hook de categorías para obtener datos reales
   const { 
@@ -28,29 +73,35 @@ const HomePage = () => {
   } = useCategories();
 
   // Hook de balance para obtener balance real del usuario
-  const { balance, available, isLoading: balanceLoading, recalculateBalance } = useBalance();
+  const { available, isLoading: balanceLoading, recalculateBalance } = useBalance();
 
-  // Forzar actualización del balance cuando se monta el componente Home
+  // Solo recalcula balance al montar y cuando se detecta una transacción enviada o recibida
   useEffect(() => {
-    console.log('🏠 Home montado, forzando actualización de balance...');
-    if (recalculateBalance) {
-      setTimeout(() => {
+    const handleUpdate = () => {
+      if (recalculateBalance) {
         recalculateBalance();
-      }, 500);
-    }
-  }, [recalculateBalance]);
+      }
+    };
+    // Al montar
+    handleUpdate();
+    // Al recibir eventos relevantes
+    window.addEventListener('transactionAdded', handleUpdate);
+    window.addEventListener('forceBalanceUpdate', handleUpdate);
+    return () => {
+      window.removeEventListener('transactionAdded', handleUpdate);
+      window.removeEventListener('forceBalanceUpdate', handleUpdate);
+    };
+  }, []);
 
   // Datos reales de categorías y transacciones
   const totalExpenses = getTotalExpenses();
   const totalIncome = getTotalIncome();
   const budgetProgress = getGlobalBudgetProgress();
   const categoryStats = getCategoryStats();
-  const realTransactions = getRecentTransactions(4);
+  const realTransactions = getRecentTransactions(10).filter(tx => tx.txHash && tx.txHash.length > 0);
   
   // Calcular progreso del presupuesto mensual global
   const monthlyGoalProgress = Math.round(budgetProgress.progress);
-
-
 
   // Helper para formatear transacciones para la UI
   const formatTransactionForDisplay = (transaction: any) => {
@@ -89,7 +140,6 @@ const HomePage = () => {
   const quickActions = [
     { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600', action: () => navigate('/send') },
     { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600', action: () => navigate('/receive') },
-    { icon: Repeat, label: 'Swap', color: 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600', action: () => navigate('/swap') }
   ];
 
   // Calcular gastos por día de la semana
@@ -138,6 +188,76 @@ const HomePage = () => {
         </Button>
       </div>
 
+      {/* Wallet Info */}
+      <div className="p-4">
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white mb-6">
+          <div className="mb-2">
+            <span className="text-gray-300 text-sm">Dirección de wallet</span>
+            <div className="flex items-center space-x-2 font-mono text-green-400 text-xs break-all mt-1">
+              <span>{user?.address}</span>
+              {user?.address && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(user.address);
+                    alert('¡Dirección copiada!');
+                  }}
+                  title="Copiar dirección"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          {user?.clabe && (
+            <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-lg font-semibold text-green-900">Tu CLABE para depósitos:</div>
+                <div className="font-mono text-2xl text-green-800 select-all tracking-widest" style={{ letterSpacing: '0.1em' }}>{user?.clabe}</div>
+                <div className="text-green-900 text-sm mt-1">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {navigator.clipboard.writeText(user?.clabe || ''); alert('CLABE copiada al portapapeles')}}
+                className="ml-2 text-green-700 hover:text-green-900"
+              >
+                Copiar
+              </Button>
+            </div>
+          )}
+          {user?.clabe && (
+            <div className="mt-4 mb-6">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-2">
+                <div className="font-semibold text-blue-800 mb-1">¿Cómo funciona el fondeo?</div>
+                <div className="text-xs text-blue-700">
+                  1. Deposita MXN a tu CLABE desde cualquier banco vía SPEI.<br />
+                  2. Juno detecta el depósito y automáticamente convierte los MXN en MXNB.<br />
+                  3. Tu balance de MXNB se actualiza en PumaPay y puedes usarlo en el campus.
+                </div>
+              </div>
+              <div className="p-4 bg-green-50 border border-green-200 rounded">
+                <div className="font-semibold text-green-800 mb-1">¿Cómo funciona el retiro?</div>
+                <div className="text-xs text-green-700">
+                  1. Enlaza tu cuenta bancaria personal (CLABE) en tu perfil.<br />
+                  2. Solicita un retiro/redemption desde la app.<br />
+                  3. Juno convierte tus MXNB a MXN y los transfiere a tu cuenta bancaria.
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="mt-4">
+            <span className="text-gray-300 text-sm">Balance MXNB</span>
+            <div className="text-3xl font-bold mt-1">
+              {typeof available === 'number' && !isNaN(available)
+                ? `$${available.toFixed(2)}`
+                : 'Cargando...'}
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* Balance Card */}
       <div className="p-4 overflow-hidden">
         <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden shadow-2xl shadow-black/40">
@@ -167,9 +287,9 @@ const HomePage = () => {
           ) : (
             <div className="text-4xl font-bold mb-6 transform transition-all duration-300 ease-out hover:brightness-110 hover:text-shadow-glow">
               {showBalance ? `$${available.toFixed(2)}` : '••••••'}
-              <span className="text-lg text-gray-400 ml-2">MXNB</span>
+                <span className="text-lg text-gray-400 ml-2">MXNB</span>
             </div>
-          )}
+            )}
           
           {/* Weekly Chart */}
           <div className="mb-6">
@@ -531,32 +651,45 @@ const HomePage = () => {
         
         <div className="space-y-3">
           {realTransactions.length > 0 ? (
-            realTransactions.map((transaction) => {
-              const displayTransaction = formatTransactionForDisplay(transaction);
+            (realTransactions as TransactionWithToken[]).map((tx, idx) => {
+              // Icono según token
+              let icon = '💰';
+              if (!tx.isMXNB) icon = '💱';
+              else if (tx.type === 'expense') icon = '💸';
+              // Monto seguro
+              const amount = (typeof tx.amount === 'number' && !isNaN(tx.amount)) ? tx.amount : 0;
+              // Color
+              const amountColor = !tx.isMXNB ? 'text-blue-400' : (tx.type === 'expense' ? 'text-red-400' : 'text-green-400');
+              // Símbolo
+              const symbol = tx.tokenSymbol || tx.currency || 'MXNB';
+              // Fecha
+              let dateStr = '-';
+              if (tx.date instanceof Date && !isNaN(tx.date.getTime())) {
+                dateStr = tx.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+              }
               return (
-                <Card key={displayTransaction.id} className="bg-gray-800 border-gray-700 p-4">
+                <Card key={idx} className="bg-gray-800 border-gray-700 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-xl">
-                        {displayTransaction.icon}
+                      <div className={`w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center`}>
+                        <span className="text-white text-lg">{icon}</span>
                   </div>
                   <div>
-                        <p className="text-white font-medium">{displayTransaction.merchant}</p>
-                    <div className="flex items-center space-x-2">
-                          <p className="text-gray-400 text-sm">{displayTransaction.time}</p>
-                          <span className="text-xs text-gray-500">
-                            {transaction.currency}
-                        </span>
+                        <p className="text-white font-medium text-sm">{tx.description || 'Transacción'}</p>
+                        <p className="text-gray-400 text-xs">{tx.type === 'expense' ? 'Gasto' : 'Depósito'} • {dateStr}</p>
+                        {/* Mostrar hash real si existe */}
+                        {tx.txHash && (
+                          <div className="text-xs text-gray-400 break-all mt-1">
+                            <span className="font-mono">Hash:</span> {tx.txHash}
+                          </div>
+                        )}
+                        {/* Mostrar símbolo si no es MXNB */}
+                        {!tx.isMXNB && (
+                          <div className="text-xs text-blue-400 mt-1">Token: {symbol}</div>
+                      )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${
-                        displayTransaction.type === 'expense' ? 'text-orange-400' : 'text-green-400'
-                  }`}>
-                        {displayTransaction.amount}
-                  </p>
-                </div>
+                    <div className={`text-lg font-bold ${amountColor}`}>{tx.type === 'expense' ? '-' : '+'}${amount.toFixed(2)} {symbol}</div>
                   </div>
                 </Card>
               );
@@ -565,51 +698,37 @@ const HomePage = () => {
             <Card className="bg-gray-800 border-gray-700 p-6 text-center">
               <div className="text-gray-400 mb-2">
                 <Banknote className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              </div>
-              <p className="text-gray-400 text-sm mb-1">
-                ¡Bienvenido a PumaPay Campus!
-              </p>
-              <p className="text-gray-500 text-xs mb-4">
-                Inicia enviando o recibiendo tu primer pago
-              </p>
+                </div>
+              <p className="text-gray-400 text-sm mb-1">¡Bienvenido a PumaPay Campus!</p>
+              <p className="text-gray-500 text-xs mb-4">Inicia enviando o recibiendo tu primer pago</p>
               <div className="flex space-x-3 justify-center">
-                <Button 
-                  onClick={() => navigate('/send')}
-                  size="sm"
-                  className="bg-orange-500 hover:bg-orange-600"
-                >
-                  Enviar dinero
-                </Button>
-                <Button 
-                  onClick={() => navigate('/receive')}
-                  size="sm"
-                  className="bg-green-500 hover:bg-green-600"
-                >
-                  Recibir dinero
-                </Button>
+                <Button onClick={() => navigate('/send')} size="sm" className="bg-orange-500 hover:bg-orange-600">Enviar dinero</Button>
+                <Button onClick={() => navigate('/receive')} size="sm" className="bg-green-500 hover:bg-green-600">Recibir dinero</Button>
               </div>
             </Card>
           )}
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm">
-            <Home className="h-5 w-5 text-white" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/campus-map')}>
-            <MapPin className="h-5 w-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/statistics')}>
-            <Search className="h-5 w-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
-            <Settings className="h-5 w-5 text-gray-400" />
-          </Button>
-        </div>
+      {/* Mostrar botón de bonus siempre para pruebas */}
+      <div className="my-4 flex flex-col items-center justify-center">
+        <button
+          onClick={handleClaimBonus}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg animate-bounce disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={bonusLoading}
+        >
+          {bonusLoading ? (
+            <span className="flex items-center"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Procesando…</span>
+          ) : (
+            '🎁 Reclamar bonus de bienvenida (+500 MXNB)'
+          )}
+        </button>
+        {bonusMsg && (
+          <div className="mt-3 text-green-200 text-center text-sm animate-pulse">{bonusMsg}</div>
+        )}
       </div>
+
+      <BottomNav />
     </div>
   );
 };

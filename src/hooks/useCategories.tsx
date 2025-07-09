@@ -1,9 +1,111 @@
 import { useState, useEffect } from 'react';
 import { Category, Transaction, GlobalBudget, DEFAULT_CATEGORIES, DEFAULT_GLOBAL_BUDGET } from '@/types/categories';
+import { portalService } from '@/services/portal';
+import { ethers } from 'ethers';
 
 const CATEGORIES_STORAGE_KEY = 'pumapay_categories';
 const TRANSACTIONS_STORAGE_KEY = 'pumapay_transactions';
 const GLOBAL_BUDGET_STORAGE_KEY = 'pumapay_global_budget';
+
+const MXNB_CONTRACT_ADDRESS = import.meta.env.VITE_MXNB_CONTRACT_ADDRESS;
+const ALCHEMY_RPC_URL = import.meta.env.VITE_ALCHEMY_RPC_URL;
+const ERC20_ABI = [
+  "event Transfer(address indexed from, address indexed to, uint256 value)"
+];
+
+// DEBUG: Mostrar configuración
+console.log('[DEBUG] MXNB_CONTRACT_ADDRESS:', MXNB_CONTRACT_ADDRESS);
+console.log('[DEBUG] ALCHEMY_RPC_URL:', ALCHEMY_RPC_URL);
+
+// Extensión temporal del tipo Transaction para props extra
+type TransactionWithToken = Transaction & { isMXNB?: boolean; tokenSymbol?: string; tokenAddress?: string; decimals?: number };
+
+// Función para obtener transacciones MXNB reales de la blockchain
+async function fetchMXNBTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
+  if (!walletAddress || !MXNB_CONTRACT_ADDRESS || !ALCHEMY_RPC_URL) {
+    console.warn('[DEBUG] Faltan datos para consultar MXNB:', { walletAddress, MXNB_CONTRACT_ADDRESS, ALCHEMY_RPC_URL });
+    return [];
+  }
+  console.log('[DEBUG] Consultando transacciones MXNB para:', walletAddress);
+  const provider = new ethers.providers.JsonRpcProvider(ALCHEMY_RPC_URL);
+  const contract = new ethers.Contract(MXNB_CONTRACT_ADDRESS, ERC20_ABI, provider);
+  try {
+    // Buscar eventos donde from o to sea la wallet
+    const filterFrom = contract.filters.Transfer(walletAddress, null);
+    const filterTo = contract.filters.Transfer(null, walletAddress);
+    const [sentEvents, receivedEvents] = await Promise.all([
+      contract.queryFilter(filterFrom, 0), // desde el bloque 0
+      contract.queryFilter(filterTo, 0)
+    ]);
+    console.log('[DEBUG] sentEvents:', sentEvents.length, 'receivedEvents:', receivedEvents.length);
+    // Obtener los timestamps de los bloques para todos los eventos
+    const allEvents = [...sentEvents, ...receivedEvents];
+    const blockNumbers = Array.from(new Set(allEvents.map(ev => ev.blockNumber)));
+    const blockTimestamps: Record<number, number> = {};
+    await Promise.all(blockNumbers.map(async (bn) => {
+      const block = await provider.getBlock(bn);
+      blockTimestamps[bn] = block.timestamp;
+    }));
+    const sentTxs: TransactionWithToken[] = sentEvents.map(ev => ({
+      id: ev.transactionHash,
+      txHash: ev.transactionHash,
+      amount: parseFloat(ethers.utils.formatUnits(ev.args.value, 18)),
+      type: 'expense' as const,
+      description: 'Envío',
+      categoryId: '',
+      currency: 'MXNB',
+      date: new Date(blockTimestamps[ev.blockNumber] * 1000),
+      from: ev.args.from,
+      to: ev.args.to,
+      status: 'confirmed',
+      isMXNB: true,
+      tokenSymbol: 'MXNB',
+      tokenAddress: MXNB_CONTRACT_ADDRESS,
+      decimals: 18
+    }));
+    const receivedTxs: TransactionWithToken[] = receivedEvents.map(ev => ({
+      id: ev.transactionHash,
+      txHash: ev.transactionHash,
+      amount: parseFloat(ethers.utils.formatUnits(ev.args.value, 18)),
+      type: 'income' as const,
+      description: 'Depósito',
+      categoryId: '',
+      currency: 'MXNB',
+      date: new Date(blockTimestamps[ev.blockNumber] * 1000),
+      from: ev.args.from,
+      to: ev.args.to,
+      status: 'confirmed',
+      isMXNB: true,
+      tokenSymbol: 'MXNB',
+      tokenAddress: MXNB_CONTRACT_ADDRESS,
+      decimals: 18
+    }));
+    // Unir, quitar duplicados por hash y ordenar por fecha descendente
+    const allTxs = [...sentTxs, ...receivedTxs];
+    const unique = Object.values(Object.fromEntries(allTxs.map(tx => [tx.txHash, tx])));
+    unique.sort((a, b) => b.date.getTime() - a.date.getTime());
+    console.log('[DEBUG] Transacciones MXNB encontradas:', unique.length);
+    return unique;
+  } catch (error) {
+    console.error('[DEBUG] Error consultando eventos MXNB:', error);
+    return [];
+  }
+}
+
+// Función para obtener transacciones ETH nativas de la wallet
+async function fetchETHTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
+  if (!walletAddress || !ALCHEMY_RPC_URL) return [];
+  const provider = new ethers.providers.JsonRpcProvider(ALCHEMY_RPC_URL);
+  // ethers v5 no tiene getHistory, así que solo devuelvo [] y muestro advertencia
+  console.warn('El historial de ETH solo está disponible con ethers v6 o una API externa.');
+  return [];
+  // Si migras a ethers v6, puedes usar:
+  // const history = await provider.getHistory(walletAddress, -10000);
+  // ...
+  // return history
+  //   .filter(tx => tx.from.toLowerCase() === walletAddress.toLowerCase() || (tx.to && tx.to.toLowerCase() === walletAddress.toLowerCase()))
+  //   .map(...)
+}
 
 export const useCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -11,39 +113,41 @@ export const useCategories = () => {
   const [globalBudget, setGlobalBudget] = useState<GlobalBudget>(DEFAULT_GLOBAL_BUDGET);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar datos del localStorage al inicializar
+  // Cargar categorías y transacciones reales al inicializar
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        // Cargar categorías
+        // Cargar categorías (localStorage)
         const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
         if (storedCategories) {
           setCategories(JSON.parse(storedCategories));
         } else {
-          // Si no hay categorías guardadas, usar las por defecto
           setCategories(DEFAULT_CATEGORIES);
           localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
         }
 
-        // Cargar transacciones
-        const storedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
-        if (storedTransactions) {
-          const parsedTransactions = JSON.parse(storedTransactions);
-          // Convertir las fechas de string a Date
-          const transactionsWithDates = parsedTransactions.map((t: any) => ({
-            ...t,
-            date: new Date(t.date)
-          }));
-          setTransactions(transactionsWithDates);
+        // Obtener dirección de la wallet (puedes ajustar según tu contexto de auth)
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const walletAddress = user?.address;
+        console.log('[DEBUG] Dirección de wallet detectada:', walletAddress);
+        if (walletAddress) {
+          const [mxnbTxs, ethTxs] = await Promise.all([
+            fetchMXNBTransactions(walletAddress),
+            fetchETHTransactions(walletAddress)
+          ]);
+          // Unir y ordenar por fecha descendente
+          const allTxs = [...mxnbTxs, ...ethTxs];
+          allTxs.sort((a, b) => b.date.getTime() - a.date.getTime());
+          setTransactions(allTxs);
+        } else {
+          setTransactions([]);
         }
 
-        // Cargar presupuesto global
+        // Cargar presupuesto global (localStorage)
         const storedBudget = localStorage.getItem(GLOBAL_BUDGET_STORAGE_KEY);
         if (storedBudget) {
           const parsedBudget = JSON.parse(storedBudget);
           const currentMonth = new Date().toISOString().slice(0, 7);
-          
-          // Si es un nuevo mes, resetear el gasto actual
           if (parsedBudget.month !== currentMonth) {
             setGlobalBudget({
               ...parsedBudget,
@@ -54,7 +158,6 @@ export const useCategories = () => {
             setGlobalBudget(parsedBudget);
           }
         } else {
-          // Si no hay presupuesto guardado, usar el por defecto
           setGlobalBudget(DEFAULT_GLOBAL_BUDGET);
           localStorage.setItem(GLOBAL_BUDGET_STORAGE_KEY, JSON.stringify(DEFAULT_GLOBAL_BUDGET));
         }
@@ -65,7 +168,6 @@ export const useCategories = () => {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, []);
 
@@ -121,36 +223,8 @@ export const useCategories = () => {
     }
   };
 
-  // Agregar nueva transacción
+  // Agregar nueva transacción (solo actualiza categorías y dispara evento para refrescar datos reales)
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: `tx_${Date.now()}`,
-      date: new Date()
-    };
-    
-    console.log(`📝 Agregando nueva transacción: ${transaction.type} $${transaction.amount}`);
-    
-    // PRIMERO: Obtener transacciones actuales y agregar la nueva
-    const currentTransactions = JSON.parse(localStorage.getItem(TRANSACTIONS_STORAGE_KEY) || '[]');
-    const newTransactions = [newTransaction, ...currentTransactions];
-    
-    // SEGUNDO: Guardar INMEDIATAMENTE en localStorage
-    try {
-      localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(newTransactions));
-      console.log(`💾 Transacciones guardadas DIRECTAMENTE en localStorage: ${newTransactions.length} total`);
-      console.log(`📊 Nueva transacción guardada:`, newTransaction);
-      
-      // Verificar que se guardó correctamente
-      const verification = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
-      console.log(`🔍 Verificación localStorage después de guardar:`, verification);
-    } catch (error) {
-      console.error('❌ Error guardando en localStorage:', error);
-    }
-    
-    // TERCERO: Actualizar el estado de React
-    setTransactions(newTransactions);
-    
     // Actualizar el gasto de la categoría si es un gasto
     if (transaction.type === 'expense') {
       setCategories(prev => 
@@ -161,13 +235,10 @@ export const useCategories = () => {
         )
       );
     }
-
-    // CUARTO: Disparar evento para que otras partes de la app se actualicen
-    console.log('🚀 Disparando evento transactionAdded...');
+    // Disparar evento para refrescar datos reales
     window.dispatchEvent(new CustomEvent('transactionAdded', { 
-      detail: { transaction: newTransaction } 
+      detail: { transaction } 
     }));
-    console.log('✅ Evento transactionAdded disparado exitosamente');
   };
 
   // Obtener categorías por tipo
@@ -177,7 +248,11 @@ export const useCategories = () => {
   // Obtener transacciones recientes
   const getRecentTransactions = (limit: number = 10) => {
     return transactions
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .sort((a, b) => {
+        const aTime = a.date instanceof Date && !isNaN(a.date.getTime()) ? a.date.getTime() : 0;
+        const bTime = b.date instanceof Date && !isNaN(b.date.getTime()) ? b.date.getTime() : 0;
+        return bTime - aTime;
+      })
       .slice(0, limit);
   };
 

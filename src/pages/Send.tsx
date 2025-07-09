@@ -7,12 +7,16 @@ import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
+import { useWallet } from '@/hooks/useWallet';
+import portal from '@/services/portalSingleton';
 import { Category } from '@/types/categories';
+import { junoService } from '@/services/junoService';
 
 const SendPage = () => {
   const navigate = useNavigate();
   const { getExpenseCategories, addTransaction, addCategory } = useCategories();
   const { available, hasInsufficientFunds } = useBalance();
+  const { chainId } = useWallet();
   const [formData, setFormData] = useState({
     recipient: '',
     walletOrClabe: '',
@@ -28,6 +32,10 @@ const SendPage = () => {
     icon: '📝',
     color: 'bg-blue-500'
   });
+  const [showSummary, setShowSummary] = useState(false);
+  const [sendType, setSendType] = useState<'wallet' | 'clabe' | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
 
   const expenseCategories = getExpenseCategories();
   const availableIcons = ['📝', '🛍️', '🎯', '⚡', '🔧', '🎨', '🏃‍♂️', '🎪', '🔥', '💻'];
@@ -56,54 +64,64 @@ const SendPage = () => {
     }, 2000);
   };
 
-  const handleSend = async () => {
-    const amount = parseFloat(formData.amount);
-    
-    // Validar fondos suficientes
-    if (hasInsufficientFunds(amount)) {
-      alert(`Fondos insuficientes. Tu balance disponible es $${available.toFixed(2)} MXNB`);
+  const handleShowSummary = () => {
+    setSummaryError('');
+    const { walletOrClabe, amount } = formData;
+    if (!walletOrClabe || !amount) {
+      setSummaryError('Completa todos los campos.');
       return;
     }
-    
+    if (/^0x[a-fA-F0-9]{40}$/.test(walletOrClabe)) {
+      setSendType('wallet');
+      setShowSummary(true);
+    } else if (/^\d{18}$/.test(walletOrClabe)) {
+      setSendType('clabe');
+      setShowSummary(true);
+    } else {
+      setSummaryError('El destinatario debe ser una wallet válida (0x...) o una CLABE de 18 dígitos.');
+    }
+  };
+
+  const handleSend = async () => {
     setIsLoading(true);
     try {
-      console.log(`💸 Procesando envío: $${amount} MXNB a ${formData.recipient}`);
-      
-      // Simular envío de pago
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Registrar la transacción
-      addTransaction({
-        amount: amount,
-        type: 'expense',
-        categoryId: formData.categoryId,
-        description: formData.concept,
-        recipient: formData.recipient,
-        currency: 'MXNB'
-      });
-      
-      // Forzar actualización del balance
-      setTimeout(() => {
-        console.log(`🚀 Forzando eventos después de envío...`);
-        window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
-        const timestamp = Date.now();
-        localStorage.setItem('pumapay_last_update', timestamp.toString());
-        console.log(`⏰ Eventos de envío disparados después de delay`);
-      }, 500); // Incrementar delay a 500ms
-      
-      alert(`✅ ¡Pago enviado exitosamente!
-      
-💸 Monto: $${amount.toFixed(2)} MXNB
-👤 Destinatario: ${formData.recipient}
-📝 Concepto: ${formData.concept}
-📊 Balance actualizado automáticamente`);
-      
+      if (sendType === 'wallet') {
+        // Enviar MXNB a wallet usando API de Juno
+        await junoService.sendOnchainWithdrawal({
+          address: formData.walletOrClabe,
+          amount: formData.amount,
+          asset: 'MXNB',
+          blockchain: 'ARBITRUM',
+          compliance: {}
+        });
+        alert('¡Transferencia on-chain enviada exitosamente!');
+      } else if (sendType === 'clabe') {
+        // Redemption a CLABE
+        // Primero registrar la cuenta bancaria si no existe
+        const bankAccounts = await junoService.getBankAccounts();
+        let bank = bankAccounts.find(acc => acc.clabe === formData.walletOrClabe);
+        if (!bank) {
+          bank = await junoService.registerBankAccount({
+            tag: 'Redemption',
+            recipient_legal_name: 'Redención', // O puedes pedir el nombre al usuario
+            clabe: formData.walletOrClabe,
+            ownership: 'THIRD_PARTY'
+          });
+        }
+        await junoService.redeemMXNB({
+          amount: parseFloat(formData.amount),
+          destination_bank_account_id: bank.id,
+        });
+        alert('¡Redención enviada exitosamente!');
+      }
       navigate('/home');
     } catch (error) {
-      console.error('Error al enviar pago:', error);
-      alert('Error al enviar el pago. Intenta nuevamente.');
+      console.error('Error al enviar:', error);
+      alert('Error al enviar. Intenta nuevamente.');
     } finally {
       setIsLoading(false);
+      setShowSummary(false);
+      setIsConfirming(false);
     }
   };
 
@@ -120,7 +138,7 @@ const SendPage = () => {
     }
   };
 
-  const isFormValid = formData.recipient && formData.walletOrClabe && formData.amount && formData.concept && formData.categoryId;
+  const isFormValid = formData.walletOrClabe && formData.amount && formData.concept && formData.categoryId;
 
   if (showScanner) {
     return (
@@ -157,23 +175,6 @@ const SendPage = () => {
       </div>
 
       <div className="p-4 space-y-6">
-        {/* Destinatario */}
-        <Card className="bg-gray-800 border-gray-700 p-6">
-          <Label className="text-white text-sm font-medium mb-2 block">
-            Número de cuenta del estudiante
-          </Label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Ej: 420123456, juan.perez@alumno.unam.mx"
-              value={formData.recipient}
-              onChange={(e) => handleInputChange('recipient', e.target.value)}
-              className="pl-10 rounded-xl bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-            />
-          </div>
-        </Card>
-
         {/* Wallet/CLABE */}
         <Card className="bg-gray-800 border-gray-700 p-6">
           <Label className="text-white text-sm font-medium mb-2 block">
@@ -322,40 +323,43 @@ const SendPage = () => {
 
         {/* Resumen */}
         {formData.amount && (
-          <Card className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-orange-500/30 p-6">
-            <h3 className="text-white font-semibold mb-2">Resumen del envío</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-300">Para:</span>
-                <span className="text-white">{formData.recipient || 'Sin especificar'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Monto:</span>
-                <span className="text-white font-semibold">${formData.amount} MXNB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Comisión:</span>
-                <span className="text-green-400">$0.00</span>
-              </div>
+          <Card className="bg-gray-800 rounded-xl p-6 mb-6 border border-orange-400">
+            <h3 className="text-white font-bold text-lg mb-4">Resumen del envío</h3>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-200 text-lg">Monto:</span>
+              <span className="text-orange-300 font-bold text-xl">${formData.amount} MXNB</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-200 text-lg">Comisión:</span>
+              <span className="text-green-400 font-bold text-xl">$0.00</span>
             </div>
           </Card>
         )}
 
         {/* Botón de envío */}
-        <Button
-          onClick={handleSend}
-          disabled={!isFormValid || isLoading}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl text-lg font-semibold"
-        >
-          {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Enviando...</span>
+        {showSummary ? (
+          <Card className="bg-gray-800 border-gray-700 p-6 text-white">
+            <h3 className="text-lg font-bold mb-4">Resumen de envío</h3>
+            <div className="mb-2">Destino: <span className="font-mono">{formData.walletOrClabe}</span></div>
+            <div className="mb-2">Monto: <span className="font-semibold">{formData.amount} {sendType === 'wallet' ? 'MXNB' : 'MXN'}</span></div>
+            <div className="mb-2">Tipo: <span className="font-semibold">{sendType === 'wallet' ? 'Transferencia on-chain (Juno)' : 'Redención a CLABE'}</span></div>
+            <div className="flex space-x-4 mt-4">
+              <Button onClick={() => setShowSummary(false)} variant="outline" className="flex-1">Cancelar</Button>
+              <Button onClick={() => { setIsConfirming(true); handleSend(); }} className="flex-1 bg-purple-600 hover:bg-purple-700" disabled={isLoading || isConfirming}>
+                {isLoading ? 'Enviando...' : 'Confirmar y Enviar'}
+              </Button>
             </div>
-          ) : (
-            `Enviar $${formData.amount || '0.00'} MXNB`
-          )}
-        </Button>
+          </Card>
+        ) : (
+          <Button
+            onClick={handleShowSummary}
+            disabled={!isFormValid || isLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl text-lg font-semibold"
+          >
+            Enviar
+          </Button>
+        )}
+        {summaryError && <div className="text-red-500 text-center mt-2">{summaryError}</div>}
       </div>
 
       {/* Modal para agregar nueva categoría */}

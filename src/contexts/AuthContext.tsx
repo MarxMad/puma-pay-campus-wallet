@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { portalService } from '@/services/portal';
+import { junoService } from '@/services/junoService';
 
 interface User {
   address: string;
   email?: string;
   name?: string;
   authMethod: 'portal' | 'traditional';
+  clabe?: string;
 }
 
 interface AuthContextType {
@@ -15,7 +17,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithPortal: (method: 'google' | 'apple') => Promise<void>;
   logout: () => void;
-  createAccount: (email: string, password: string, name: string, studentId: string) => Promise<void>;
+  createAccount: (email: string, password: string, name: string, studentId: string) => Promise<{ address: string }>;
+  updateUser: (userData: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Guardar usuario en localStorage
-  const saveAuth = (userData: User) => {
+  const updateUser = (userData: User) => {
     console.log('💾 Guardando datos de autenticación:', userData);
     setUser(userData);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
@@ -68,23 +71,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Simular validación (aquí irían las validaciones reales)
       const storedAccounts = JSON.parse(localStorage.getItem('pumapay_accounts') || '[]');
-      const account = storedAccounts.find((acc: any) => acc.email === email && acc.password === password);
+      const account = storedAccounts.find((acc: any) => acc.email === email);
       
       if (!account) {
-        throw new Error('Credenciales incorrectas');
+        throw new Error('Usuario no registrado');
+      }
+      if (account.password !== password) {
+        throw new Error('Contraseña incorrecta');
       }
 
-      // Crear wallet MPC si no existe
-      const { address } = await portalService.createWallet();
+      // En login, solo obtener la dirección de la wallet existente
+      await portalService.onReady();
+      const address = await portalService.getWalletAddress();
 
       const userData: User = {
         address,
         email: account.email,
         name: account.name,
-        authMethod: 'traditional'
+        authMethod: 'traditional',
+        clabe: account.clabe // <-- Recuperar la CLABE si existe
       };
 
-      saveAuth(userData);
+      updateUser(userData);
     } catch (error) {
       console.error('Error en login:', error);
       throw error;
@@ -110,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authMethod: 'portal'
       };
 
-      saveAuth(userData);
+      updateUser(userData);
     } catch (error) {
       console.error('Error en login Portal:', error);
       throw error;
@@ -123,14 +131,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createAccount = async (email: string, password: string, name: string, studentId: string) => {
     setIsLoading(true);
     try {
-      // Guardar cuenta en localStorage (en producción sería una API)
+      await portalService.logout();
       const storedAccounts = JSON.parse(localStorage.getItem('pumapay_accounts') || '[]');
-      
-      // Verificar si ya existe la cuenta
       if (storedAccounts.some((acc: any) => acc.email === email)) {
         throw new Error('Ya existe una cuenta con este email');
       }
-
       const newAccount = {
         email,
         password,
@@ -138,26 +143,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         studentId,
         createdAt: new Date().toISOString()
       };
-
       storedAccounts.push(newAccount);
       localStorage.setItem('pumapay_accounts', JSON.stringify(storedAccounts));
-
-      // Crear wallet MPC automáticamente
-      const { address } = await portalService.createWallet();
-
-      const userData: User = {
-        address,
+      await portalService.onReady();
+      const wallet = await portalService.createWallet();
+      const address = wallet.address || (await portalService.getWalletAddress());
+      // --- Crear la CLABE única para el usuario ---
+      let clabe: string | undefined = undefined;
+      try {
+        const clabeResult = await junoService.createUserClabe();
+        clabe = clabeResult.clabe;
+      } catch (e) {
+        console.error('No se pudo crear la CLABE:', e);
+      }
+      setUser({
         email,
         name,
-        authMethod: 'traditional'
-      };
-
-      saveAuth(userData);
-    } catch (error) {
-      console.error('Error creando cuenta:', error);
-      throw error;
-    } finally {
+        address,
+        authMethod: 'traditional',
+        clabe,
+      });
       setIsLoading(false);
+      return { address, clabe };
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
     }
   };
 
@@ -176,7 +186,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       loginWithPortal,
       logout,
-      createAccount
+      createAccount,
+      updateUser
     }}>
       {children}
     </AuthContext.Provider>

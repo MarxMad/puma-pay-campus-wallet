@@ -23,6 +23,7 @@ export interface Transaction {
   recipient?: string;
   date: Date;
   currency: 'MXNB' | 'MXN' | 'ARBITRUM';
+  txHash?: string; // Hash de la transacción en blockchain
 }
 
 export const DEFAULT_CATEGORIES: Category[] = [

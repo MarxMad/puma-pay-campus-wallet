@@ -1,6 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { WalletBalance, Transaction, User } from '@/types/wallet';
+import Portal from '@portal-hq/web';
+
+const portal = new Portal({
+  apiKey: import.meta.env.VITE_PORTAL_API_KEY!,
+  autoApprove: true,
+  rpcConfig: {
+    'eip155:421614': import.meta.env.VITE_ALCHEMY_RPC_URL!,
+  },
+});
 
 export const useWallet = () => {
   const [balance, setBalance] = useState<WalletBalance>({
@@ -50,6 +58,8 @@ export const useWallet = () => {
 
   const [isConnected, setIsConnected] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [chainId] = useState<string>('eip155:421614'); // Arbitrum Sepolia
 
   const connectWallet = async () => {
     setIsLoading(true);
@@ -111,6 +121,20 @@ export const useWallet = () => {
     }, 2000);
   };
 
+  const createWallet = async () => {
+    setIsLoading(true);
+    try {
+      const address = await portal.createWallet();
+      setWalletAddress(address);
+      setIsConnected(true);
+      setIsLoading(false);
+      return address;
+    } catch (err) {
+      setIsLoading(false);
+      throw err;
+    }
+  };
+
   return {
     balance,
     transactions,
@@ -119,6 +143,9 @@ export const useWallet = () => {
     isLoading,
     connectWallet,
     sendPayment,
-    depositFiat
+    depositFiat,
+    createWallet,
+    walletAddress,
+    chainId,
   };
 };

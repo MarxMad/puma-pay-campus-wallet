@@ -98,53 +98,6 @@ export const useBalance = () => {
     return correctBalance;
   };
 
-  // Cargar balance inicial
-  useEffect(() => {
-    const loadBalance = async () => {
-      try {
-        setBalanceState(prev => ({ ...prev, isLoading: true }));
-        
-        if (!isAuthenticated || !user) {
-          return;
-        }
-
-        // SOLO al inicio, verificar si es la primera vez
-        const isFirstTime = !localStorage.getItem('pumapay_initialized');
-        
-        if (isFirstTime) {
-          console.log('🆕 Primera vez - Inicializando app con balance $0.00');
-          const zeroState = {
-            balance: 0,
-            available: 0,
-            isLoading: false,
-            lastUpdated: new Date()
-          };
-          
-          localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(zeroState));
-          localStorage.setItem('pumapay_transactions', JSON.stringify([]));
-          localStorage.setItem('pumapay_initialized', 'true');
-          setBalanceState(zeroState);
-        } else {
-          // App ya inicializada - cargar balance basado en transacciones
-          recalculateBalance();
-        }
-
-        // Portal MPC es opcional
-        try {
-          await portalService.getMXNBBalance();
-          console.log('✅ Portal MPC conectado');
-        } catch (portalError) {
-          console.log('ℹ️ Portal MPC no disponible - usando datos locales');
-        }
-      } catch (error) {
-        console.error('Error loading balance:', error);
-        setBalanceState(prev => ({ ...prev, isLoading: false }));
-      }
-    };
-
-    loadBalance();
-  }, [isAuthenticated, user]);
-
   // Escuchar cuando se agreguen nuevas transacciones para recalcular balance
   useEffect(() => {
     const handleTransactionAdded = (event: CustomEvent) => {
@@ -170,24 +123,6 @@ export const useBalance = () => {
       window.removeEventListener('transactionAdded', handleTransactionAdded as EventListener);
       window.removeEventListener('forceBalanceUpdate', handleForceUpdate);
     };
-  }, []);
-
-  // Monitorear cambios en las transacciones cada segundo como backup
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentTransactions = localStorage.getItem('pumapay_transactions') || '[]';
-      const transactionCount = JSON.parse(currentTransactions).length;
-      
-      // Solo recalcular si hay cambios en el número de transacciones
-      const lastCount = parseInt(localStorage.getItem('pumapay_last_transaction_count') || '0');
-      if (transactionCount !== lastCount) {
-        console.log(`🔄 Cambio en transacciones detectado: ${lastCount} → ${transactionCount}`);
-        localStorage.setItem('pumapay_last_transaction_count', transactionCount.toString());
-        recalculateBalance();
-      }
-         }, 3000); // Revisar cada 3 segundos como backup
-
-    return () => clearInterval(interval);
   }, []);
 
   // Función para agregar fondos (depósito) - NO USAR, solo para emergencias
@@ -234,6 +169,31 @@ export const useBalance = () => {
       setBalanceState(prev => ({ ...prev, isLoading: false }));
     }
   };
+
+  // Al montar, obtener balance real de Portal SDK (esperando onReady)
+  useEffect(() => {
+    const fetchBalance = async () => {
+      setBalanceState(prev => ({ ...prev, isLoading: true }));
+      try {
+        await portalService.onReady();
+        const portalBalance = await portalService.getMXNBBalance();
+        const balance = typeof portalBalance === 'number' ? portalBalance : 0;
+        const newState = {
+          balance,
+          available: balance,
+          isLoading: false,
+          lastUpdated: new Date()
+        };
+        setBalanceState(newState);
+        localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
+        console.log('[useBalance] Balance inicializado tras refresh:', balance);
+      } catch (error) {
+        console.error('[useBalance] Error inicializando balance:', error);
+        setBalanceState(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+    fetchBalance();
+  }, []);
 
   return {
     ...balanceState,

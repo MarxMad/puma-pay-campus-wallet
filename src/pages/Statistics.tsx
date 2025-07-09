@@ -6,6 +6,10 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
+import { BottomNav } from '@/components/BottomNav';
+
+// Extensión temporal del tipo Transaction para props extra de portalService
+type TransactionWithToken = import('@/types/categories').Transaction & { isMXNB?: boolean; tokenSymbol?: string };
 
 const Statistics = () => {
   const navigate = useNavigate();
@@ -31,10 +35,10 @@ const Statistics = () => {
   const totalExpenses = getTotalExpenses();
   const totalIncome = getTotalIncome();
   const budgetProgress = getGlobalBudgetProgress();
-  const allTransactions = getRecentTransactions(50); // Obtener más transacciones para statistics
+  const allTransactions = getRecentTransactions(50);
+  // Solo transacciones reales (con hash)
+  const realTransactions = allTransactions.filter(tx => tx.txHash && tx.txHash.length > 0);
 
-
-  
   // Calcular gastos por categoría con datos reales
   const expenseCategories = getExpenseCategories().map(category => {
     const categoryExpenses = allTransactions
@@ -81,8 +85,8 @@ const Statistics = () => {
 
   const monthlyData = getMonthlyData();
 
-  // Filtrar transacciones por búsqueda
-  const filteredTransactions = allTransactions.filter(transaction => {
+  // Filtrar transacciones por búsqueda SOLO en reales
+  const filteredTransactions = realTransactions.filter(transaction => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -104,7 +108,7 @@ const Statistics = () => {
           <Filter className="h-5 w-5" />
         </Button>
       </div>
-
+          
       <div className="p-4 space-y-6">
         {/* Balance Overview */}
         <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white shadow-2xl shadow-black/40">
@@ -114,8 +118,8 @@ const Statistics = () => {
               <Calendar className="h-4 w-4" />
               <span>{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
             </div>
-          </div>
-
+            </div>
+            
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Ingresos Card */}
             <div className="bg-gradient-to-br from-green-600/20 to-green-500/10 border border-green-500/20 p-5 rounded-xl relative overflow-hidden group hover:from-green-600/30 hover:to-green-500/20 transition-all duration-300">
@@ -453,7 +457,7 @@ const Statistics = () => {
                       <div className="text-center">
                         <div className="text-2xl font-bold">${totalExpenses.toFixed(0)}</div>
                         <div className="text-xs text-gray-400">Total gastado</div>
-                      </div>
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -472,21 +476,21 @@ const Statistics = () => {
                     onMouseEnter={() => setHoveredCategory(category.name)}
                     onMouseLeave={() => setHoveredCategory(null)}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
                         <div className={`w-12 h-12 ${category.color} rounded-full flex items-center justify-center transform transition-transform duration-200 ${
                           hoveredCategory === category.name ? 'scale-110' : 'scale-100'
                         }`}>
                           <span className="text-lg">{category.icon}</span>
-                        </div>
-                        <div>
+                    </div>
+                    <div>
                           <span className="text-white font-medium">{category.name}</span>
                           <div className="text-xs text-gray-400">
                             {allTransactions.filter(t => t.categoryId === expenseCategories.find(c => c.name === category.name)?.name).length} transacciones
                           </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
+                    </div>
+                  </div>
+                  <div className="text-right">
                         <p className="text-white font-bold text-lg">${category.amount.toFixed(2)}</p>
                         <p className={`text-sm font-medium ${
                           hoveredCategory === category.name ? 'text-purple-400' : 'text-gray-400'
@@ -564,53 +568,53 @@ const Statistics = () => {
 
           <div className="space-y-3">
             {filteredTransactions.length > 0 ? (
-              filteredTransactions.slice(0, 10).map((transaction, index) => {
+              (filteredTransactions.slice(0, 10) as TransactionWithToken[]).map((transaction, index) => {
                 const category = [...getExpenseCategories(), ...getIncomeCategories()]
                   .find(c => c.id === transaction.categoryId);
-                
-                const formatTime = (date: Date) => {
-                  const now = new Date();
-                  const diffMs = now.getTime() - date.getTime();
-                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                  
-                  if (diffDays === 0) {
-                    return date.toLocaleTimeString('es-ES', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    });
-                  } else if (diffDays === 1) {
-                    return 'Ayer';
-                  } else if (diffDays < 7) {
-                    return `Hace ${diffDays} días`;
-                  } else {
-                    return date.toLocaleDateString('es-ES', { 
-                      day: '2-digit', 
-                      month: 'short' 
-                    });
-                  }
-                };
-
+                // Icono según token
+                let icon = category?.icon || '💰';
+                if (!transaction.isMXNB) icon = '💱';
+                else if (transaction.type === 'expense') icon = '💸';
+                // Monto seguro
+                const amount = (typeof transaction.amount === 'number' && !isNaN(transaction.amount)) ? transaction.amount : 0;
+                // Color
+                const amountColor = !transaction.isMXNB ? 'text-blue-400' : (transaction.type === 'expense' ? 'text-red-400' : 'text-green-400');
+                // Símbolo
+                const symbol = transaction.tokenSymbol || transaction.currency || 'MXNB';
+                // Fecha
+                let dateStr = '-';
+                if (transaction.date instanceof Date && !isNaN(transaction.date.getTime())) {
+                  dateStr = transaction.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                }
                 return (
                   <div key={index} className="bg-gray-700 p-4 rounded-xl">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className={`w-10 h-10 ${category?.color || 'bg-gray-500'} rounded-full flex items-center justify-center`}>
-                          <span className="text-white text-sm">{category?.icon || '💼'}</span>
+                          <span className="text-white text-sm">{icon}</span>
                         </div>
                         <div>
                           <p className="font-medium">{transaction.description || transaction.recipient || 'Transacción'}</p>
                           <p className="text-sm text-gray-400">
-                            {category?.name || 'Sin categoría'} • {formatTime(transaction.date)}
+                            {category?.name || 'Sin categoría'} • {dateStr}
                           </p>
+                          {/* Mostrar hash real si existe */}
+                          {transaction.txHash && (
+                            <div className="text-xs text-gray-400 break-all mt-1">
+                              <span className="font-mono">Hash:</span> {transaction.txHash}
+                            </div>
+                          )}
+                          {/* Mostrar símbolo si no es MXNB */}
+                          {!transaction.isMXNB && (
+                            <div className="text-xs text-blue-400 mt-1">Token: {symbol}</div>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${
-                          transaction.type === 'expense' ? 'text-red-400' : 'text-green-400'
-                        }`}>
-                          {transaction.type === 'expense' ? '-' : '+'}${transaction.amount.toFixed(2)}
+                      <div className={`text-right`}>
+                        <p className={`font-semibold ${amountColor}`}>
+                          {transaction.type === 'expense' ? '-' : '+'}${amount.toFixed(2)} {symbol}
                         </p>
-                        <p className="text-xs text-gray-400">{transaction.currency}</p>
+                        <p className="text-xs text-gray-400">{symbol}</p>
                       </div>
                     </div>
                   </div>
@@ -631,20 +635,7 @@ const Statistics = () => {
         </Card>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-            <Home className="h-5 w-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Search className="h-5 w-5 text-white" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
-            <Settings className="h-5 w-5 text-gray-400" />
-          </Button>
-        </div>
-      </div>
+      <BottomNav />
     </div>
   );
 };

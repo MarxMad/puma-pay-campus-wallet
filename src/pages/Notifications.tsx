@@ -106,8 +106,8 @@ const Notifications = () => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 text-white">
         <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
         <div className="flex items-center space-x-2">
           <Bell className="h-5 w-5" />
           <h1 className="text-lg font-semibold">Notificaciones</h1>
@@ -120,8 +120,8 @@ const Notifications = () => {
         <Button variant="ghost" size="sm">
           <MoreVertical className="h-5 w-5" />
         </Button>
-      </div>
-
+          </div>
+          
       <div className="p-4 space-y-4">
         {/* Mark all as read button */}
         {unreadCount > 0 && (
@@ -130,13 +130,13 @@ const Notifications = () => {
               <span className="text-white text-sm">
                 {unreadCount} notificación{unreadCount > 1 ? 'es' : ''} sin leer
               </span>
-              <Button 
+                <Button 
                 variant="ghost" 
-                size="sm" 
+                  size="sm"
                 className="text-red-400 hover:text-red-300"
-              >
+                >
                 Marcar todas como leídas
-              </Button>
+                </Button>
             </div>
           </Card>
         )}
@@ -156,8 +156,8 @@ const Notifications = () => {
               <div className="flex items-start space-x-3">
                 <div className={`w-10 h-10 ${notification.color} rounded-full flex items-center justify-center flex-shrink-0`}>
                   <span className="text-white text-sm">{notification.icon}</span>
-                </div>
-                
+            </div>
+            
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -170,8 +170,8 @@ const Notifications = () => {
                       <p className="text-xs text-gray-500 mt-2">
                         Hace {notification.time}
                       </p>
-                    </div>
-                    
+            </div>
+            
                     <div className="flex items-center space-x-2 ml-2">
                       {!notification.isRead && (
                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -187,14 +187,14 @@ const Notifications = () => {
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
-                    </div>
-                  </div>
+              </div>
+            </div>
                 </div>
               </div>
             </Card>
           ))}
-        </div>
-
+            </div>
+            
         {/* Empty state if no notifications */}
         {notifications.length === 0 && (
           <Card className="bg-gray-800 border-gray-700 p-8 text-center">
@@ -207,20 +207,20 @@ const Notifications = () => {
             </p>
           </Card>
         )}
-      </div>
+            </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
-        <div className="flex items-center justify-around py-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-            <Home className="h-5 w-5 text-gray-400" />
-          </Button>
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700">
+          <div className="flex items-center justify-around py-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
+              <Home className="h-5 w-5 text-gray-400" />
+            </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate('/statistics')}>
-            <Search className="h-5 w-5 text-gray-400" />
-          </Button>
+              <Search className="h-5 w-5 text-gray-400" />
+            </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
-            <Settings className="h-5 w-5 text-gray-400" />
-          </Button>
+              <Settings className="h-5 w-5 text-gray-400" />
+            </Button>
         </div>
       </div>
     </div>

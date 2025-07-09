@@ -32,23 +32,20 @@ const ReceivePage = () => {
     'bg-pink-500', 'bg-yellow-500', 'bg-teal-500', 'bg-cyan-500'
   ];
 
-  // Datos simulados del usuario (en producción vendrían del contexto/API)
+  // Dirección real de la wallet para MXNB y ARBITRUM
   const walletData = {
-    MXNB: '0x742d35Cc6634C0532925a3b8D6Ac0865d2c57b78',
-    MXN: '032180012345678901', // CLABE simulada
-    ARBITRUM: '0x742d35Cc6634C0532925a3b8D6Ac0865d2c57b78'
+    MXNB: user?.address || '',
+    MXN: '032180012345678901', // CLABE simulada (si algún día conectas con banco real, cámbiala)
+    ARBITRUM: user?.address || ''
   };
 
+  // QR solo con dirección y monto opcional
   const generateQRData = () => {
-    const data = {
+    return JSON.stringify({
       address: walletData[selectedCurrency],
-      amount: amount || '0',
-      concept: concept || '',
-      currency: selectedCurrency,
-      categoryId: categoryId,
-      studentId: user?.address || 'unknown'
-    };
-    return JSON.stringify(data);
+      amount: amount || '',
+      currency: selectedCurrency
+    });
   };
 
   const handleAddCategory = () => {
@@ -62,54 +59,6 @@ const ReceivePage = () => {
       setNewCategory({ name: '', icon: '💰', color: 'bg-green-500' });
       setShowCategoryModal(false);
     }
-  };
-
-  const handlePaymentReceived = () => {
-    if (!amount || !categoryId) {
-      alert('Por favor, ingresa un monto y selecciona una categoría para recibir el pago.');
-      return;
-    }
-
-    const paymentAmount = parseFloat(amount);
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
-      alert('Por favor, ingresa un monto válido mayor a 0.');
-      return;
-    }
-
-    console.log(`💰 Procesando pago recibido: $${paymentAmount} ${selectedCurrency}`);
-    
-    // Registrar la transacción
-    addTransaction({
-      amount: paymentAmount,
-      type: 'income',
-      categoryId: categoryId,
-      description: concept || `Pago recibido ${selectedCurrency}`,
-      currency: selectedCurrency,
-      recipient: 'Pago recibido'
-    });
-    
-    // Forzar actualización del balance con multiple métodos
-    setTimeout(() => {
-      console.log(`🚀 Forzando eventos después de agregar transacción...`);
-      window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
-      // También forzar un cambio en localStorage para triggear cualquier listener
-      const timestamp = Date.now();
-      localStorage.setItem('pumapay_last_update', timestamp.toString());
-      console.log(`⏰ Eventos disparados después de delay`);
-    }, 500); // Incrementar delay a 500ms
-    
-    // Feedback exitoso y redirección
-    alert(`✅ ¡Pago recibido exitosamente!
-    
-💰 Monto: $${paymentAmount.toFixed(2)} ${selectedCurrency}
-📝 Concepto: ${concept || 'Pago recibido'}
-📊 Balance actualizado automáticamente en todas las páginas`);
-    
-    // Limpiar campos y regresar al home
-    setAmount('');
-    setConcept('');
-    setCategoryId('');
-    navigate('/home');
   };
 
   const copyToClipboard = async (text: string) => {
@@ -157,6 +106,19 @@ const ReceivePage = () => {
             <span className="text-white font-semibold text-lg">
               ${available.toFixed(2)} MXNB
             </span>
+          </div>
+        </Card>
+
+        {/* Dirección de la wallet real y botón de copiar */}
+        <Card className="bg-gray-800 border-gray-700 p-6 flex flex-col items-center">
+          <Label className="text-white text-sm font-medium mb-2 block">
+            Dirección de tu wallet
+          </Label>
+          <div className="flex items-center space-x-2 mb-2">
+            <span className="text-gray-200 font-mono text-xs break-all">{walletData[selectedCurrency]}</span>
+            <Button size="icon" variant="ghost" onClick={() => copyToClipboard(walletData[selectedCurrency])}>
+              <Copy className="h-4 w-4 text-gray-400" />
+            </Button>
           </div>
         </Card>
 
@@ -335,7 +297,7 @@ const ReceivePage = () => {
               Cuando recibas el pago de ${amount} {selectedCurrency}, haz clic para registrarlo.
             </p>
             <Button
-              onClick={handlePaymentReceived}
+              onClick={() => {}}
               className="w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3"
             >
               ✅ Confirmar pago recibido de ${amount} {selectedCurrency}

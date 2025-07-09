@@ -79,24 +79,22 @@ const Signup = () => {
       });
       return;
     }
-
+    
     try {
       console.log('🔄 Iniciando creación de cuenta...');
       const fullName = `${formData.name} ${formData.lastName}`.trim();
-      
-      await createAccount(formData.email, formData.password, fullName, formData.studentId);
-      
+      const result = await createAccount(formData.email, formData.password, fullName, formData.studentId);
       console.log('✅ Cuenta creada exitosamente');
       toast({
-        title: "¡Cuenta creada!",
-        description: "Tu wallet PumaPay está lista",
+        title: "¡Cuenta y wallet creadas!",
+        description: result && result.address ? `Tu wallet PumaPay está lista: ${result.address}` : "Tu wallet PumaPay está lista",
       });
-      
+      navigate('/home');
     } catch (error) {
       console.error('❌ Error creando cuenta:', error);
       toast({
         title: "Error al crear cuenta",
-        description: error instanceof Error ? error.message : "No se pudo crear la cuenta",
+        description: error instanceof Error ? error.message : "No se pudo crear la cuenta o la wallet. Intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -115,6 +113,12 @@ const Signup = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-bold text-white ml-2">Crear cuenta</h1>
+        </div>
+
+        {/* Aviso informativo */}
+        <div className="mb-4 p-3 bg-blue-900/40 border border-blue-700 rounded text-blue-200 text-sm text-center">
+          Al crear tu cuenta, también se generará automáticamente tu wallet segura de PumaPay.<br />
+          <span className="block mt-2 text-blue-300 font-semibold">Además, se creará una cuenta CLABE única a tu nombre para que puedas recibir depósitos SPEI y fondear tu wallet PumaPay.</span>
         </div>
 
         <div className="text-center mb-8">
@@ -184,10 +188,10 @@ const Signup = () => {
           <div>
             <Label htmlFor="password" className="text-gray-300 text-sm">Contraseña</Label>
             <div className="relative mt-1">
-              <Input
-                id="password"
+            <Input
+              id="password"
                 type={showPassword ? "text" : "password"}
-                value={formData.password}
+              value={formData.password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 className="bg-gray-700 border-gray-600 text-white pr-10"
                 placeholder="••••••••"
@@ -259,9 +263,9 @@ const Signup = () => {
                   passwordsDontMatch ? 'border-red-500' : 
                   passwordsMatch ? 'border-green-500' : ''
                 }`}
-                placeholder="••••••••"
-                required
-              />
+              placeholder="••••••••"
+              required
+            />
               <Button
                 type="button"
                 variant="ghost"

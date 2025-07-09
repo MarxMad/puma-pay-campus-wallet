@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import { BottomNav } from '@/components/BottomNav';
 
 // Datos actualizados con ubicaciones reales de Ciudad Universitaria UNAM
 const campusPlaces = [
@@ -598,6 +599,7 @@ const CampusMap: React.FC = () => {
           </>
         )}
       </div>
+      <BottomNav />
     </div>
   );
 };
