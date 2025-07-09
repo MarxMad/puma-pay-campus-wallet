@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { buildJunoAuthHeader } from './_utils';
+import { buildJunoAuthHeader } from './_utils.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

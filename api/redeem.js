@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { buildJunoAuthHeader } from './_utils';
+import { buildJunoAuthHeader } from './_utils.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req, res) {
