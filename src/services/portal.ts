@@ -30,28 +30,29 @@ class PortalService {
   private currentUser: any = null;
 
   /**
-   * Inicializa el Portal SDK
+   * Inicializa el Portal SDK con configuración dinámica
    */
-  async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+  async initialize(configOverride?: { apiKey: string, clientId?: string }): Promise<void> {
+    if (this.isInitialized && !configOverride) return;
 
     try {
-      this.portal = new Portal(PORTAL_CONFIG);
+      const config = configOverride
+        ? { ...PORTAL_CONFIG, apiKey: configOverride.apiKey, clientId: configOverride.clientId }
+        : PORTAL_CONFIG;
+      this.portal = new Portal(config);
       this.isInitialized = true;
-      console.log('✅ Portal SDK inicializado correctamente');
+      console.log('✅ Portal SDK inicializado correctamente', configOverride ? '(dinámico)' : '');
     } catch (error) {
       console.error('❌ Error inicializando Portal SDK:', error);
-      // Continuar en modo mock para desarrollo
       this.isInitialized = true;
     }
   }
 
   /**
-   * Crear nueva wallet MPC
-   * NOTA: En modo mock para desarrollo. Portal SDK requiere credenciales reales.
+   * Crear nueva wallet MPC con configuración dinámica
    */
-  async createWallet(): Promise<{ address: string }> {
-    await this.initialize();
+  async createWallet(params?: { apiKey: string, clientId?: string }): Promise<{ address: string }> {
+    await this.initialize(params);
     try {
       console.log('🔄 Creando wallet MPC...');
       if (this.portal) {
