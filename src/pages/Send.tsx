@@ -11,11 +11,12 @@ import { useWallet } from '@/hooks/useWallet';
 import portal from '@/services/portalSingleton';
 import { Category } from '@/types/categories';
 import { junoService } from '@/services/junoService';
+import { portalService } from '@/services/portal';
 
 const SendPage = () => {
   const navigate = useNavigate();
   const { getExpenseCategories, addTransaction, addCategory } = useCategories();
-  const { available, hasInsufficientFunds } = useBalance();
+  const { available, hasInsufficientFunds, refreshBalance, recalculateBalance } = useBalance();
   const { chainId } = useWallet();
   const [formData, setFormData] = useState({
     recipient: '',
@@ -86,24 +87,26 @@ const SendPage = () => {
     setIsLoading(true);
     try {
       if (sendType === 'wallet') {
-        // Enviar MXNB a wallet usando API de Juno
-        await junoService.sendOnchainWithdrawal({
-          address: formData.walletOrClabe,
+        // Enviar MXNB a wallet usando Account Abstraction de Portal
+        await portalService.sendAsset('eip155:421614', {
           amount: formData.amount,
-          asset: 'MXNB',
-          blockchain: 'ARBITRUM',
-          compliance: {}
+          to: formData.walletOrClabe,
+          token: '0x82B9e52b26A2954E113F94Ff26647754d5a4247D' // Dirección del contrato MXNB
         });
-        alert('¡Transferencia on-chain enviada exitosamente!');
+        if (typeof refreshBalance === 'function') {
+          await refreshBalance();
+        } else if (typeof recalculateBalance === 'function') {
+          recalculateBalance();
+        }
+        alert('¡Transferencia enviada exitosamente desde Portal!');
       } else if (sendType === 'clabe') {
-        // Redemption a CLABE
-        // Primero registrar la cuenta bancaria si no existe
+        // Redemption a CLABE (Juno)
         const bankAccounts = await junoService.getBankAccounts();
         let bank = bankAccounts.find(acc => acc.clabe === formData.walletOrClabe);
         if (!bank) {
           bank = await junoService.registerBankAccount({
             tag: 'Redemption',
-            recipient_legal_name: 'Redención', // O puedes pedir el nombre al usuario
+            recipient_legal_name: 'Redención',
             clabe: formData.walletOrClabe,
             ownership: 'THIRD_PARTY'
           });

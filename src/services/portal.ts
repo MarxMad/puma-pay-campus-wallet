@@ -435,6 +435,15 @@ class PortalService {
     }
     return;
   }
+
+  /**
+   * Enviar tokens usando Account Abstraction (sendAsset)
+   */
+  async sendAsset(chainId: string, params: { amount: string, to: string, token: string }) {
+    await this.initialize();
+    if (!this.portal) throw new Error('Portal no inicializado');
+    return this.portal.sendAsset(chainId, params);
+  }
 }
 
 // Singleton instance
