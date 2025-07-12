@@ -143,10 +143,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 4. Usar esa API Key y Client ID para crear la wallet de Portal
       // Siempre pasar los valores obtenidos de Supabase
       await portalService.onReady();
-      const wallet = await portalService.createWallet({
-        apiKey: apiKeyObj.api_key, // de Supabase
-        clientId: apiKeyObj.client_id // de Supabase
-      });
+      console.log('Intentando crear wallet con:', apiKeyObj);
+      let wallet;
+      try {
+        wallet = await portalService.createWallet({
+          apiKey: apiKeyObj.api_key, // de Supabase
+          clientId: apiKeyObj.client_id // de Supabase
+        });
+        console.log('Wallet creada:', wallet);
+      } catch (error) {
+        console.error('Error al crear wallet:', error);
+        setIsLoading(false);
+        throw new Error('No se pudo crear la wallet. Revisa la consola para más detalles.');
+      }
       const address = wallet.address || (await portalService.getWalletAddress());
       // 5. Crear la cuenta CLABE
       let clabe: string | undefined = undefined;
