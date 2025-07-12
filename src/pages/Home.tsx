@@ -33,8 +33,8 @@ const HomePage = () => {
     console.log('user:', user);
     if (!user?.address || !user?.clabe || !user?.name) {
       alert('No se encontró tu dirección de wallet o CLABE.');
-      return;
-    }
+          return;
+        }
     setBonusLoading(true);
     setBonusMsg('Procesando bonus… puede tardar un momento en reflejarse en tu wallet.');
     try {

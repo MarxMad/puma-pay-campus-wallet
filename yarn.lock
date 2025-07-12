@@ -1386,6 +1386,64 @@
     rpc-websockets "^9.0.2"
     superstruct "^2.0.2"
 
+"@supabase/auth-js@2.70.0":
+  version "2.70.0"
+  resolved "https://registry.npmjs.org/@supabase/auth-js/-/auth-js-2.70.0.tgz"
+  integrity sha512-BaAK/tOAZFJtzF1sE3gJ2FwTjLf4ky3PSvcvLGEgEmO4BSBkwWKu8l67rLLIBZPDnCyV7Owk2uPyKHa0kj5QGg==
+  dependencies:
+    "@supabase/node-fetch" "^2.6.14"
+
+"@supabase/functions-js@2.4.5":
+  version "2.4.5"
+  resolved "https://registry.npmjs.org/@supabase/functions-js/-/functions-js-2.4.5.tgz"
+  integrity sha512-v5GSqb9zbosquTo6gBwIiq7W9eQ7rE5QazsK/ezNiQXdCbY+bH8D9qEaBIkhVvX4ZRW5rP03gEfw5yw9tiq4EQ==
+  dependencies:
+    "@supabase/node-fetch" "^2.6.14"
+
+"@supabase/node-fetch@^2.6.13", "@supabase/node-fetch@^2.6.14", "@supabase/node-fetch@2.6.15":
+  version "2.6.15"
+  resolved "https://registry.npmjs.org/@supabase/node-fetch/-/node-fetch-2.6.15.tgz"
+  integrity sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ==
+  dependencies:
+    whatwg-url "^5.0.0"
+
+"@supabase/postgrest-js@1.19.4":
+  version "1.19.4"
+  resolved "https://registry.npmjs.org/@supabase/postgrest-js/-/postgrest-js-1.19.4.tgz"
+  integrity sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==
+  dependencies:
+    "@supabase/node-fetch" "^2.6.14"
+
+"@supabase/realtime-js@2.11.15":
+  version "2.11.15"
+  resolved "https://registry.npmjs.org/@supabase/realtime-js/-/realtime-js-2.11.15.tgz"
+  integrity sha512-HQKRnwAqdVqJW/P9TjKVK+/ETpW4yQ8tyDPPtRMKOH4Uh3vQD74vmj353CYs8+YwVBKubeUOOEpI9CT8mT4obw==
+  dependencies:
+    "@supabase/node-fetch" "^2.6.13"
+    "@types/phoenix" "^1.6.6"
+    "@types/ws" "^8.18.1"
+    isows "^1.0.7"
+    ws "^8.18.2"
+
+"@supabase/storage-js@2.7.1":
+  version "2.7.1"
+  resolved "https://registry.npmjs.org/@supabase/storage-js/-/storage-js-2.7.1.tgz"
+  integrity sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==
+  dependencies:
+    "@supabase/node-fetch" "^2.6.14"
+
+"@supabase/supabase-js@^2.50.5":
+  version "2.50.5"
+  resolved "https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.50.5.tgz"
+  integrity sha512-FgBFYJ/nsBBN1o4qmQpx1ouupht256FCxNM6r5YTgwGbOVopODzP2xhZPu2ecXdmU4CxTS5/KiGf5j2l3ACozQ==
+  dependencies:
+    "@supabase/auth-js" "2.70.0"
+    "@supabase/functions-js" "2.4.5"
+    "@supabase/node-fetch" "2.6.15"
+    "@supabase/postgrest-js" "1.19.4"
+    "@supabase/realtime-js" "2.11.15"
+    "@supabase/storage-js" "2.7.1"
+
 "@swc/core-darwin-arm64@1.7.39":
   version "1.7.39"
   resolved "https://registry.npmjs.org/@swc/core-darwin-arm64/-/core-darwin-arm64-1.7.39.tgz"
@@ -1536,6 +1594,11 @@
   resolved "https://registry.npmjs.org/@types/node/-/node-12.20.55.tgz"
   integrity sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==
 
+"@types/phoenix@^1.6.6":
+  version "1.6.6"
+  resolved "https://registry.npmjs.org/@types/phoenix/-/phoenix-1.6.6.tgz"
+  integrity sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A==
+
 "@types/prop-types@*":
   version "15.7.13"
   resolved "https://registry.npmjs.org/@types/prop-types/-/prop-types-15.7.13.tgz"
@@ -1565,6 +1628,13 @@
   version "7.4.7"
   resolved "https://registry.npmjs.org/@types/ws/-/ws-7.4.7.tgz"
   integrity sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==
+  dependencies:
+    "@types/node" "*"
+
+"@types/ws@^8.18.1":
+  version "8.18.1"
+  resolved "https://registry.npmjs.org/@types/ws/-/ws-8.18.1.tgz"
+  integrity sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==
   dependencies:
     "@types/node" "*"
 
@@ -1789,6 +1859,11 @@ base64-js@^1.3.1:
   version "1.5.1"
   resolved "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz"
   integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
+
+bcryptjs@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.npmjs.org/bcryptjs/-/bcryptjs-3.0.2.tgz"
+  integrity sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==
 
 bech32@1.1.4:
   version "1.1.4"
@@ -2809,6 +2884,11 @@ isomorphic-ws@^4.0.1:
   version "4.0.1"
   resolved "https://registry.npmjs.org/isomorphic-ws/-/isomorphic-ws-4.0.1.tgz"
   integrity sha512-BhBvN2MBpWTaSHdWRb/bwdZJ1WaehQ2L1KngkCkfLUGF0mAWAT1sQUQacEmQ0jXkFw/czDXPNQSL5u2/Krsz1w==
+
+isows@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.npmjs.org/isows/-/isows-1.0.7.tgz"
+  integrity sha512-I1fSfDCZL5P0v33sVqeTDSpcstAg/N+wF5HS033mogOVIp4B+oHC7oOCsA3axAbBSGTJ8QubbNmnIRN/h8U7hg==
 
 jackspeak@^3.1.2:
   version "3.4.3"
@@ -3879,6 +3959,11 @@ ws@*, ws@^7.5.10:
   version "7.5.10"
   resolved "https://registry.npmjs.org/ws/-/ws-7.5.10.tgz"
   integrity sha512-+dbF1tHwZpXcbOJdVOkzLDxZP1ailvSxM6ZweXTegylPny803bFhA+vqBYw4s31NSAk4S2Qz+AKXK9a4wkdjcQ==
+
+ws@^8.18.2:
+  version "8.18.3"
+  resolved "https://registry.npmjs.org/ws/-/ws-8.18.3.tgz"
+  integrity sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==
 
 ws@^8.5.0:
   version "8.18.2"

@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { portalService } from '@/services/portal';
 import { junoService } from '@/services/junoService';
+import { registrarUsuario, loginUsuario } from '@/services/userService';
+import { asignarApiKeyAUsuario } from '@/services/portalApiKeyService';
+import { supabase } from '@/services/supabaseClient';
 
 interface User {
   address: string;
@@ -69,30 +72,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simular validación (aquí irían las validaciones reales)
-      const storedAccounts = JSON.parse(localStorage.getItem('pumapay_accounts') || '[]');
-      const account = storedAccounts.find((acc: any) => acc.email === email);
-      
-      if (!account) {
-        throw new Error('Usuario no registrado');
-      }
-      if (account.password !== password) {
-        throw new Error('Contraseña incorrecta');
-      }
-
-      // En login, solo obtener la dirección de la wallet existente
-      await portalService.onReady();
-      const address = await portalService.getWalletAddress();
-
-      const userData: User = {
-        address,
-        email: account.email,
-        name: account.name,
-        authMethod: 'traditional',
-        clabe: account.clabe // <-- Recuperar la CLABE si existe
-      };
-
-      updateUser(userData);
+      // Autenticar contra Supabase
+      const userData = await loginUsuario(email, password);
+      // Guardar usuario autenticado en localStorage
+      updateUser({
+        address: userData.wallet_address,
+        email: userData.email,
+        name: userData.nombre,
+        authMethod: userData.auth_method as 'portal' | 'traditional',
+        clabe: userData.clabe
+      });
     } catch (error) {
       console.error('Error en login:', error);
       throw error;
@@ -132,23 +121,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await portalService.logout();
-      const storedAccounts = JSON.parse(localStorage.getItem('pumapay_accounts') || '[]');
-      if (storedAccounts.some((acc: any) => acc.email === email)) {
-        throw new Error('Ya existe una cuenta con este email');
-      }
-      const newAccount = {
+      // 1. Registrar usuario en Supabase (sin wallet ni clabe)
+      const nombre = name;
+      const apellido = '';
+      const auth_method = 'traditional';
+      const userInsert = await registrarUsuario({
+        nombre,
+        apellido,
         email,
         password,
-        name,
-        studentId,
-        createdAt: new Date().toISOString()
-      };
-      storedAccounts.push(newAccount);
-      localStorage.setItem('pumapay_accounts', JSON.stringify(storedAccounts));
+        wallet_address: '', // aún no
+        clabe: '', // aún no
+        auth_method
+      });
+      // 2. Obtener el userId del usuario creado
+      // registrarUsuario retorna un array con el usuario insertado
+      const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
+      if (!userId) throw new Error('No se pudo obtener el ID del usuario');
+      // 3. Asignar una API Key de Portal
+      const apiKeyObj = await asignarApiKeyAUsuario(userId);
+      // 4. Usar esa API Key y Client ID para crear la wallet de Portal
+      // Asegúrate de que portalService.createWallet acepte estos parámetros
       await portalService.onReady();
-      const wallet = await portalService.createWallet();
+      const wallet = await portalService.createWallet({
+        apiKey: apiKeyObj.api_key,
+        clientId: apiKeyObj.client_id
+      });
       const address = wallet.address || (await portalService.getWalletAddress());
-      // --- Crear la CLABE única para el usuario ---
+      // 5. Crear la cuenta CLABE
       let clabe: string | undefined = undefined;
       try {
         const clabeResult = await junoService.createUserClabe();
@@ -156,13 +156,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {
         console.error('No se pudo crear la CLABE:', e);
       }
-      setUser({
+      // 6. Actualizar el usuario en Supabase con la wallet y la clabe
+      await supabase
+        .from('usuarios')
+        .update({ wallet_address: address, clabe })
+        .eq('id', userId);
+      // 7. Guardar usuario autenticado en localStorage
+      const userData: User = {
         email,
-        name,
+        name: nombre,
         address,
         authMethod: 'traditional',
         clabe,
-      });
+      };
+      updateUser(userData);
       setIsLoading(false);
       return { address, clabe };
     } catch (error) {
@@ -201,3 +208,5 @@ export const useAuth = () => {
   }
   return context;
 }; 
+
+// NOTA: Durante el signup, el usuario solo verá el spinner. Todo el proceso de registro, asignación de API Key, creación de wallet y CLABE ocurre en background antes de navegar a /home o mostrar el éxito. 
