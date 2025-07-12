@@ -62,7 +62,6 @@ export const useBalance = () => {
 
   // Eliminar recalculateBalance del flujo principal, solo dejarlo para compatibilidad si se usa en otros lados
   const recalculateBalance = async () => {
-    // Ahora solo llama a refreshBalance para forzar la recarga real
     await refreshBalance();
   };
 
@@ -80,7 +79,6 @@ export const useBalance = () => {
         lastUpdated: new Date()
       };
       setBalanceState(newState);
-      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
     } catch (error) {
       console.error('Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
