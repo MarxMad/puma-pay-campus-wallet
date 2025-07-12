@@ -49,24 +49,28 @@ class PortalService {
   }
 
   /**
-   * Crear nueva wallet MPC con configuración dinámica
+   * Crear nueva wallet MPC con configuración dinámica y patrón onReady
    */
   async createWallet(params?: { apiKey: string, clientId?: string }): Promise<{ address: string }> {
     await this.initialize(params);
-    try {
-      console.log('🔄 Creando wallet MPC...');
-      if (this.portal) {
-        await this.portal.createWallet();
-        const ethAddress = await this.portal.getEip155Address();
-        this.currentUser = { address: ethAddress, provider: 'direct' };
-        console.log('✅ Wallet MPC (EVM) creada exitosamente:', ethAddress);
-        return { address: ethAddress };
-      }
-      throw new Error('Portal no inicializado');
-    } catch (error) {
-      console.error('❌ Error creando wallet:', error);
-      throw error;
-    }
+    return new Promise((resolve, reject) => {
+      if (!this.portal) return reject(new Error('Portal no inicializado'));
+      this.portal.onReady(async () => {
+        try {
+          const exists = await this.portal!.doesWalletExist();
+          if (!exists) {
+            await this.portal!.createWallet();
+          }
+          const ethAddress = await this.portal!.getEip155Address();
+          this.currentUser = { address: ethAddress, provider: 'direct' };
+          console.log('✅ Wallet MPC (EVM) creada exitosamente:', ethAddress);
+          resolve({ address: ethAddress });
+        } catch (error) {
+          console.error('❌ Error creando wallet:', error);
+          reject(error);
+        }
+      });
+    });
   }
 
   /**
