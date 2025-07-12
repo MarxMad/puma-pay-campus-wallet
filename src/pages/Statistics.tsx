@@ -29,7 +29,12 @@ const Statistics = () => {
     globalBudget
   } = useCategories();
   
-  const { available } = useBalance();
+  const { available, refreshBalance } = useBalance();
+
+  // Refresca el balance real al montar
+  useEffect(() => {
+    refreshBalance();
+  }, []);
 
   // Calcular datos reales
   const totalExpenses = getTotalExpenses();

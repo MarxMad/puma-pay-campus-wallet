@@ -73,18 +73,14 @@ const HomePage = () => {
   } = useCategories();
 
   // Hook de balance para obtener balance real del usuario
-  const { available, isLoading: balanceLoading, recalculateBalance } = useBalance();
+  const { available, isLoading: balanceLoading, refreshBalance } = useBalance();
 
-  // Solo recalcula balance al montar y cuando se detecta una transacción enviada o recibida
+  // Siempre refresca el balance real al montar y tras eventos
   useEffect(() => {
+    refreshBalance();
     const handleUpdate = () => {
-      if (recalculateBalance) {
-        recalculateBalance();
-      }
+      refreshBalance();
     };
-    // Al montar
-    handleUpdate();
-    // Al recibir eventos relevantes
     window.addEventListener('transactionAdded', handleUpdate);
     window.addEventListener('forceBalanceUpdate', handleUpdate);
     return () => {

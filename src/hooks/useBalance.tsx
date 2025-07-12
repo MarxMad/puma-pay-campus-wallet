@@ -60,108 +60,25 @@ export const useBalance = () => {
   
   const { user, isAuthenticated } = useAuth();
 
-  // Función para recalcular balance basado en transacciones
-  const recalculateBalance = () => {
-    const rawTransactions = localStorage.getItem('pumapay_transactions');
-    console.log(`🔍 Raw localStorage data:`, rawTransactions);
-    
-    const transactions = JSON.parse(rawTransactions || '[]');
-    console.log(`📊 Transacciones parseadas:`, transactions);
-    console.log(`📈 Total transacciones encontradas: ${transactions.length}`);
-    
-    const incomeTransactions = transactions.filter((t: any) => t.type === 'income');
-    const expenseTransactions = transactions.filter((t: any) => t.type === 'expense');
-    
-    console.log(`💚 Ingresos encontrados: ${incomeTransactions.length}`, incomeTransactions);
-    console.log(`💸 Gastos encontrados: ${expenseTransactions.length}`, expenseTransactions);
-    
-    const totalIncome = incomeTransactions.reduce((sum: number, t: any) => sum + t.amount, 0);
-    const totalExpenses = expenseTransactions.reduce((sum: number, t: any) => sum + t.amount, 0);
-    
-    const correctBalance = Math.max(totalIncome - totalExpenses, 0);
-    
-    const newState = {
-      balance: correctBalance,
-      available: correctBalance,
-      isLoading: false,
-      lastUpdated: new Date()
-    };
-    
-    setBalanceState(newState);
-    localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-    
-    console.log(`💰 Balance recalculado: Ingresos $${totalIncome} - Gastos $${totalExpenses} = $${correctBalance}`);
-    
-    // Actualizar el contador de transacciones
-    localStorage.setItem('pumapay_last_transaction_count', transactions.length.toString());
-    
-    return correctBalance;
-  };
-
-  // Escuchar cuando se agreguen nuevas transacciones para recalcular balance
-  useEffect(() => {
-    const handleTransactionAdded = (event: CustomEvent) => {
-      console.log('🔄 Nueva transacción detectada, recalculando balance...');
-      setTimeout(() => {
-        console.log('⏱️ Ejecutando recálculo después de delay por evento transactionAdded');
-        recalculateBalance();
-      }, 300); // Incrementar delay
-    };
-
-    const handleForceUpdate = () => {
-      console.log('🚀 Forzando actualización de balance...');
-      setTimeout(() => {
-        console.log('⏱️ Ejecutando recálculo después de delay por forceUpdate');
-        recalculateBalance();
-      }, 100); // Pequeño delay también aquí
-    };
-
-    window.addEventListener('transactionAdded', handleTransactionAdded as EventListener);
-    window.addEventListener('forceBalanceUpdate', handleForceUpdate);
-    
-    return () => {
-      window.removeEventListener('transactionAdded', handleTransactionAdded as EventListener);
-      window.removeEventListener('forceBalanceUpdate', handleForceUpdate);
-    };
-  }, []);
-
-  // Función para agregar fondos (depósito) - NO USAR, solo para emergencias
-  const addFunds = (amount: number) => {
-    console.log(`💸 AddFunds llamado con $${amount} - Recomendamos usar addTransaction en su lugar`);
-    
-    // Como medida de emergencia, forzar recálculo después de un pequeño delay
-    setTimeout(() => {
-      recalculateBalance();
-    }, 100);
-  };
-
-  // Función para enviar dinero (débito)
-  const sendMoney = (amount: number) => {
-    if (balanceState.available >= amount) {
-      // El balance se actualizará automáticamente cuando se agregue la transacción de gasto
-      setTimeout(() => {
-        recalculateBalance();
-      }, 100);
-      return true; // Transacción exitosa
-    }
-    return false; // Fondos insuficientes
+  // Eliminar recalculateBalance del flujo principal, solo dejarlo para compatibilidad si se usa en otros lados
+  const recalculateBalance = async () => {
+    // Ahora solo llama a refreshBalance para forzar la recarga real
+    await refreshBalance();
   };
 
   // Función para recargar balance manualmente
   const refreshBalance = async () => {
     setBalanceState(prev => ({ ...prev, isLoading: true }));
-    
     try {
+      await portalService.onReady();
       const portalBalance = await portalService.getMXNBBalance();
-      const balance = typeof portalBalance === 'number' ? portalBalance : balanceState.balance;
-      
+      const balance = typeof portalBalance === 'number' ? portalBalance : 0;
       const newState = {
         balance,
         available: balance,
         isLoading: false,
         lastUpdated: new Date()
       };
-      
       setBalanceState(newState);
       localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
     } catch (error) {
@@ -172,28 +89,32 @@ export const useBalance = () => {
 
   // Al montar, obtener balance real de Portal SDK (esperando onReady)
   useEffect(() => {
-    const fetchBalance = async () => {
-      setBalanceState(prev => ({ ...prev, isLoading: true }));
-      try {
-        await portalService.onReady();
-        const portalBalance = await portalService.getMXNBBalance();
-        const balance = typeof portalBalance === 'number' ? portalBalance : 0;
-        const newState = {
-          balance,
-          available: balance,
-          isLoading: false,
-          lastUpdated: new Date()
-        };
-        setBalanceState(newState);
-        localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-        console.log('[useBalance] Balance inicializado tras refresh:', balance);
-      } catch (error) {
-        console.error('[useBalance] Error inicializando balance:', error);
-        setBalanceState(prev => ({ ...prev, isLoading: false }));
-      }
-    };
-    fetchBalance();
+    refreshBalance();
   }, []);
+
+  // Escuchar cuando se agreguen nuevas transacciones para refrescar balance real
+  useEffect(() => {
+    const handleUpdate = () => {
+      refreshBalance();
+    };
+    window.addEventListener('transactionAdded', handleUpdate);
+    window.addEventListener('forceBalanceUpdate', handleUpdate);
+    return () => {
+      window.removeEventListener('transactionAdded', handleUpdate);
+      window.removeEventListener('forceBalanceUpdate', handleUpdate);
+    };
+  }, []);
+
+  // Función para agregar fondos (depósito) - NO USAR, solo para compatibilidad
+  const addFunds = async (amount: number) => {
+    await refreshBalance();
+  };
+
+  // Función para enviar dinero (débito) - solo refresca balance
+  const sendMoney = async (amount: number) => {
+    await refreshBalance();
+    return true;
+  };
 
   return {
     ...balanceState,

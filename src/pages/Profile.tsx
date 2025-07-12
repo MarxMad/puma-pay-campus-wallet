@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Bell, User, Settings as SettingsIcon, Shield, Home, Search, Settings, CreditCard, History, LogOut, Edit, Phone, Mail, Calendar, ChevronRight, Download, Copy, Tag } from 'lucide-react';
@@ -18,7 +18,12 @@ const Profile = () => {
 
   // Hooks para datos reales
   const { getRecentTransactions, getTotalIncome } = useCategories();
-  const { available } = useBalance();
+  const { available, refreshBalance } = useBalance();
+
+  // Refresca el balance real al montar
+  useEffect(() => {
+    refreshBalance();
+  }, []);
 
   // Calcular estadísticas reales del usuario
   const allTransactions = getRecentTransactions(1000); // Todas las transacciones
