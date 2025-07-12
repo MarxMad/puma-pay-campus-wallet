@@ -234,23 +234,18 @@ class PortalService {
   }
 
   /**
-   * Backup de wallet (modo mock por ahora)
+   * Backup de wallet usando método password
    */
-  async backupWallet(method: 'password', options?: { password?: string }): Promise<string> {
+  async backupWallet(password: string) {
     await this.initialize();
-    
+    if (!this.portal) throw new Error('Portal no inicializado');
     try {
-      if (this.portal && method === 'password' && options?.password) {
-        // TODO: Implementar backup real cuando los tipos estén disponibles
-        // const result = await this.portal.backupWallet('password', options.password);
-        // return typeof result === 'string' ? result : JSON.stringify(result);
-      }
-      
-      // Modo mock para desarrollo
-      return 'mock_backup_cipher_text';
+      const result = await this.portal.backupWallet('password', { password });
+      console.log('✅ Backup de wallet realizado:', result);
+      return result;
     } catch (error) {
-      console.error('❌ Error haciendo backup:', error);
-      throw new Error('No se pudo hacer backup de la wallet');
+      console.error('❌ Error haciendo backup de wallet:', error);
+      throw error;
     }
   }
 

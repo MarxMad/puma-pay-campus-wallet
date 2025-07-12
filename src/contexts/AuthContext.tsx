@@ -162,6 +162,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No se pudo crear la wallet. Revisa la consola para más detalles.');
       }
       const address = wallet.address || (await portalService.getWalletAddress());
+      // Backup automático de la wallet usando la contraseña del registro
+      if (onStepChange) onStepChange('Respaldando tu wallet...');
+      try {
+        await portalService.backupWallet(password);
+        console.log('✅ Backup de wallet realizado correctamente');
+      } catch (error) {
+        console.error('❌ Error haciendo backup de wallet:', error);
+        setIsLoading(false);
+        throw new Error('No se pudo respaldar la wallet. Intenta de nuevo o contacta soporte.');
+      }
       if (onStepChange) onStepChange('Creando cuenta CLABE...');
       // 4. Crear la cuenta CLABE
       let clabe: string | undefined = undefined;
