@@ -32,7 +32,8 @@ export async function registrarUsuario({
       clabe,
       api_key,
       auth_method
-    }]);
+    }])
+    .select(); // <-- Esto asegura que se retorne el usuario insertado con su ID
   if (error) throw error;
   return data;
 }
