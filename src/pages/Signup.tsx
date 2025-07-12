@@ -21,6 +21,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [signupStep, setSignupStep] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,18 +80,26 @@ const Signup = () => {
       });
       return;
     }
-    
     try {
+      setSignupStep('Guardando usuario...');
       console.log('🔄 Iniciando creación de cuenta...');
       const fullName = `${formData.name} ${formData.lastName}`.trim();
-      const result = await createAccount(formData.email, formData.password, fullName, formData.studentId);
+      const result = await createAccount(
+        formData.email,
+        formData.password,
+        fullName,
+        formData.studentId,
+        (step) => setSignupStep(step)
+      );
       console.log('✅ Cuenta creada exitosamente');
       toast({
         title: "¡Cuenta y wallet creadas!",
         description: result && result.address ? `Tu wallet PumaPay está lista: ${result.address}` : "Tu wallet PumaPay está lista",
       });
+      setSignupStep(null);
       navigate('/home');
     } catch (error) {
+      setSignupStep(null);
       console.error('❌ Error creando cuenta:', error);
       toast({
         title: "Error al crear cuenta",
@@ -305,9 +314,12 @@ const Signup = () => {
             }`}
           >
             {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Creando cuenta...</span>
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                {signupStep && (
+                  <span className="text-xs text-orange-200 mt-2 animate-pulse">{signupStep}</span>
+                )}
+                {!signupStep && <span>Creando cuenta...</span>}
               </div>
             ) : (
               <div className="flex items-center justify-center space-x-2">

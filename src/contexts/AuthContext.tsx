@@ -117,38 +117,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Crear cuenta nueva
-  const createAccount = async (email: string, password: string, name: string, studentId: string) => {
+  // onStepChange permite mostrar el progreso en el frontend
+  const createAccount = async (
+    email: string,
+    password: string,
+    name: string,
+    studentId: string,
+    onStepChange?: (step: string) => void
+  ) => {
     setIsLoading(true);
     try {
       await portalService.logout();
-      // 1. Registrar usuario en Supabase (sin wallet ni clabe)
       const nombre = name;
       const apellido = '';
       const auth_method = 'traditional';
+      if (onStepChange) onStepChange('Guardando usuario...');
+      // 1. Guardar usuario en Supabase (sin wallet ni clabe)
       const userInsert = await registrarUsuario({
         nombre,
         apellido,
         email,
         password,
-        wallet_address: '', // aún no
-        clabe: '', // aún no
+        wallet_address: '',
+        clabe: '',
         auth_method
       });
-      // 2. Obtener el userId del usuario creado
-      // registrarUsuario retorna un array con el usuario insertado
       const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
       if (!userId) throw new Error('No se pudo obtener el ID del usuario');
-      // 3. Asignar una API Key de Portal
+      if (onStepChange) onStepChange('Asignando credenciales seguras...');
+      // 2. Asignar API Key y Client ID
       const apiKeyObj = await asignarApiKeyAUsuario(userId);
-      // 4. Usar esa API Key y Client ID para crear la wallet de Portal
-      // Siempre pasar los valores obtenidos de Supabase
-      await portalService.onReady();
-      console.log('Intentando crear wallet con:', apiKeyObj);
+      if (onStepChange) onStepChange('Creando wallet segura...');
+      // 3. Crear wallet de Portal
       let wallet;
       try {
         wallet = await portalService.createWallet({
-          apiKey: apiKeyObj.api_key, // de Supabase
-          clientId: apiKeyObj.client_id // de Supabase
+          apiKey: apiKeyObj.api_key,
+          clientId: apiKeyObj.client_id
         });
         console.log('Wallet creada:', wallet);
       } catch (error) {
@@ -157,20 +162,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No se pudo crear la wallet. Revisa la consola para más detalles.');
       }
       const address = wallet.address || (await portalService.getWalletAddress());
-      // 5. Crear la cuenta CLABE
+      if (onStepChange) onStepChange('Creando cuenta CLABE...');
+      // 4. Crear la cuenta CLABE
       let clabe: string | undefined = undefined;
       try {
         const clabeResult = await junoService.createUserClabe();
         clabe = clabeResult.clabe;
       } catch (e) {
         console.error('No se pudo crear la CLABE:', e);
+        setIsLoading(false);
+        throw new Error('No se pudo crear la cuenta CLABE. Revisa la consola para más detalles.');
       }
-      // 6. Actualizar el usuario en Supabase con la wallet y la clabe
+      if (onStepChange) onStepChange('Finalizando registro...');
+      // 5. Actualizar el usuario en Supabase con wallet y clabe
       await supabase
         .from('usuarios')
         .update({ wallet_address: address, clabe })
         .eq('id', userId);
-      // 7. Guardar usuario autenticado en localStorage
+      // 6. Guardar usuario autenticado en localStorage
       const userData: User = {
         email,
         name: nombre,
