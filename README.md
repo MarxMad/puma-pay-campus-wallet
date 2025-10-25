@@ -1,267 +1,271 @@
+# PumaPay Campus Wallet 🏛️
 
-# PumaPay - Wallet Universitaria
+Una wallet digital universitaria moderna que permite a los estudiantes de la UNAM realizar pagos con tokens MXNB (Mexican Peso Backed) en el campus universitario.
 
-PumaPay es una aplicación wallet diseñada específicamente para pagos universitarios usando la stablecoin MXNB en la red Arbitrum. Permite a estudiantes realizar pagos diarios en cafeterías, papelerías y transporte escolar de manera rápida y segura.
+## 🌟 Características Principales
 
-## 🚀 Características Principales
+### 💰 Gestión de Dinero Digital
+- **Tokens MXNB**: Utiliza tokens respaldados por pesos mexicanos en la blockchain Arbitrum
+- **Depósitos SPEI**: Convierte automáticamente MXN a MXNB mediante depósitos bancarios
+- **Retiros Bancarios**: Convierte MXNB de vuelta a MXN en tu cuenta bancaria
+- **Balance en Tiempo Real**: Visualización instantánea de saldos y transacciones
 
-### Integración Blockchain
-- **Red Arbitrum**: Transacciones rápidas y económicas
-- **Token MXNB**: Stablecoin pareada al peso mexicano
-- **Smart Contracts**: Interacción segura con contratos ERC20
+### 🏫 Ecosistema Universitario
+- **Mapa del Campus**: Descubre lugares que aceptan PumaPay en Ciudad Universitaria
+- **Descuentos Exclusivos**: Hasta 30% de descuento en comercios afiliados
+- **QR Codes**: Pagos rápidos escaneando códigos QR
+- **Categorización**: Organiza gastos por categorías (comida, transporte, libros, etc.)
 
-### Funcionalidades Core
-- 📱 **Pagos Instantáneos**: Transfers P2P y pagos a comercios
-- 💰 **Gestión de Saldo**: Visualización en tiempo real de MXNB y MXN fiat
-- 🏦 **Integración Bitso**: Depósitos y retiros fiat automáticos
-- 📊 **Historial**: Tracking completo de transacciones
-- 🔐 **Seguridad**: Wallet connection y manejo seguro de claves
+### 📊 Análisis Financiero
+- **Presupuesto Mensual**: Control de gastos con límites personalizables
+- **Estadísticas Detalladas**: Gráficos de gastos por categoría y tiempo
+- **Historial Completo**: Seguimiento de todas las transacciones
+- **Progreso Visual**: Barras de progreso y métricas en tiempo real
 
-### Experiencia de Usuario
-- 🎨 **Diseño Moderno**: UI/UX optimizada para estudiantes mexicanos
-- 📱 **Responsive**: Compatible con móviles y desktop
-- ⚡ **Onboarding Simple**: Proceso de registro intuitivo
-- 🔔 **Notificaciones**: Confirmaciones en tiempo real
-
-## 🛠 Stack Tecnológico
+## 🛠️ Tecnologías Utilizadas
 
 ### Frontend
 - **React 18** con TypeScript
+- **Vite** para desarrollo rápido
 - **Tailwind CSS** para estilos
-- **Shadcn/UI** para componentes
-- **Lucide React** para iconografía
+- **Radix UI** para componentes accesibles
+- **React Router** para navegación
+- **TanStack Query** para manejo de estado del servidor
+
+### Backend
+- **Node.js** con Express
+- **Juno APIs** para integración blockchain
+- **Bitso/Juno** para manejo de tokens MXNB
+- **Webhooks** para notificaciones en tiempo real
 
 ### Blockchain
-- **Wagmi** para interacción con Ethereum
-- **Ethers.js** para operaciones blockchain
-- **Arbitrum** como L2 solution
-- **MXNB Token** (ERC20) como stablecoin
+- **Arbitrum Sepolia** (testnet)
+- **Portal SDK** para wallets MPC (Multi-Party Computation)
+- **MXNB Tokens** respaldados por pesos mexicanos
 
-### APIs Externas
-- **Bitso Business API** para fiat gateway
-- **Web3Auth** para autenticación simplificada
-- **Arbitrum RPC** para conectividad blockchain
-
-## 🏗 Arquitectura del Sistema
-
-```
-Frontend (React)
-├── Wallet Management (Wagmi/Ethers)
-├── UI Components (Shadcn)
-└── State Management (React Hooks)
-
-Backend APIs
-├── Bitso Integration
-├── User Management
-└── Transaction Processing
-
-Blockchain Layer
-├── Arbitrum Network
-├── MXNB Smart Contract
-└── Payment Processing
-```
-
-## 📦 Instalación y Desarrollo
+## 🚀 Instalación y Configuración
 
 ### Prerrequisitos
-- Node.js 18+
-- npm/yarn
-- Wallet compatible (MetaMask, etc.)
+- Node.js 16+ 
+- npm o yarn
+- Cuenta de Bitso/Juno para APIs
+- Wallet de Ethereum (MetaMask recomendado)
 
-### Setup Local
+### 1. Clonar el Repositorio
 ```bash
-# Clonar repositorio
-git clone <your-repo-url>
-cd pumapay
+git clone https://github.com/tu-usuario/puma-pay-campus-wallet.git
+cd puma-pay-campus-wallet
+```
 
-# Instalar dependencias
+### 2. Instalar Dependencias
+```bash
+# Frontend
 npm install
 
-# Configurar variables de entorno
-cp .env.example .env.local
+# Backend
+cd backend
+npm install
+```
 
-# Iniciar desarrollo
+### 3. Configurar Variables de Entorno
+
+#### Frontend (.env)
+```env
+VITE_PORTAL_API_KEY=tu_portal_api_key
+VITE_ALCHEMY_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+VITE_MXNB_CONTRACT_ADDRESS=0x...
+VITE_BACKEND_URL=http://localhost:4000
+```
+
+#### Backend (.env)
+```env
+BITSO_APIKEY=tu_bitso_api_key
+BITSO_SECRET_APIKEY=tu_bitso_secret
+NODE_ENV=development
+PORT=4000
+```
+
+### 4. Ejecutar en Desarrollo
+
+#### Terminal 1 - Backend
+```bash
+cd backend
 npm run dev
 ```
 
-### Variables de Entorno Requeridas
+#### Terminal 2 - Frontend
+```bash
+npm run dev
+```
+
+La aplicación estará disponible en:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:4000
+
+## 📱 Funcionalidades Detalladas
+
+### 🏠 Dashboard Principal
+- **Balance MXNB**: Saldo actual en tiempo real
+- **CLABE Personal**: Para recibir depósitos SPEI
+- **Gráfico Semanal**: Visualización de gastos por día
+- **Acciones Rápidas**: Enviar y recibir dinero
+- **Transacciones Recientes**: Historial de movimientos
+
+### 💸 Gestión de Pagos
+- **Enviar Dinero**: Transferencias a otros estudiantes
+- **Recibir Dinero**: Generar códigos QR para cobros
+- **Pagos en Campus**: Escanear QR en comercios afiliados
+- **Historial Completo**: Todas las transacciones con detalles
+
+### 🗺️ Mapa del Campus
+- **Lugares Afiliados**: Comercios que aceptan PumaPay
+- **Descuentos Activos**: Ofertas especiales por ubicación
+- **Navegación**: Integración con Google Maps
+- **Filtros**: Por tipo de comercio (comida, libros, deportes, etc.)
+
+### 📊 Categorías y Presupuesto
+- **Categorías Personalizables**: Crear y editar categorías de gastos
+- **Presupuesto Global**: Límite mensual configurable
+- **Progreso Visual**: Barras de progreso por categoría
+- **Alertas**: Notificaciones cuando se excede el presupuesto
+
+### 📈 Estadísticas
+- **Gastos por Categoría**: Distribución de gastos
+- **Tendencias Temporales**: Evolución de gastos en el tiempo
+- **Comparativas**: Mes actual vs meses anteriores
+- **Exportar Datos**: Descargar reportes en PDF
+
+## 🔧 APIs y Servicios
+
+### Juno APIs (Bitso)
+- **Issuance**: Creación de tokens MXNB desde depósitos SPEI
+- **Redemption**: Conversión de MXNB a MXN
+- **Balance**: Consulta de saldos en tiempo real
+- **Transacciones**: Historial completo de movimientos
+
+### Portal SDK
+- **Wallet MPC**: Creación automática de wallets
+- **Transacciones On-chain**: Envío de tokens MXNB
+- **Balance Real**: Consulta de balances desde blockchain
+- **Recovery**: Recuperación de wallets con contraseña
+
+## 🏗️ Arquitectura del Proyecto
+
+```
+puma-pay-campus-wallet/
+├── src/
+│   ├── components/          # Componentes reutilizables
+│   ├── pages/              # Páginas principales
+│   ├── services/           # Servicios de API
+│   ├── hooks/              # Custom hooks
+│   ├── contexts/           # Context providers
+│   ├── types/              # Definiciones TypeScript
+│   └── lib/                # Utilidades
+├── backend/
+│   ├── index.js           # Servidor Express
+│   ├── bitso-webhook.js   # Webhooks de Bitso
+│   └── package.json
+├── public/                   # Assets estáticos
+└── api/                    # Endpoints de Vercel
+```
+
+## 🔐 Seguridad
+
+- **Wallets MPC**: Sin necesidad de manejar claves privadas
+- **Autenticación OAuth**: Login con Google/Apple
+- **Validación CLABE**: Verificación de cuentas bancarias mexicanas
+- **Webhooks Seguros**: Notificaciones encriptadas
+- **Rate Limiting**: Protección contra ataques
+
+## 🚀 Deployment
+
+### Vercel (Recomendado)
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Deploy frontend
+vercel
+
+# Deploy backend
+cd backend
+vercel
+```
+
+### Variables de Entorno en Producción
 ```env
-VITE_ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
-VITE_MXNB_CONTRACT_ADDRESS=0x...
-VITE_BITSO_API_KEY=your_bitso_key
-VITE_WEB3AUTH_CLIENT_ID=your_web3auth_client_id
+# Frontend
+VITE_PORTAL_API_KEY=prod_portal_key
+VITE_BACKEND_URL=https://tu-backend.vercel.app
+
+# Backend
+BITSO_APIKEY=prod_bitso_key
+BITSO_SECRET_APIKEY=prod_bitso_secret
+NODE_ENV=production
 ```
 
-## 🔧 Configuración Blockchain
+## 📚 Documentación de APIs
 
-### Red Arbitrum
-- **Chain ID**: 42161
-- **RPC URL**: https://arb1.arbitrum.io/rpc
-- **Block Explorer**: https://arbiscan.io
+### Endpoints Principales
 
-### Contrato MXNB
-```solidity
-// Dirección del contrato MXNB en Arbitrum
-address constant MXNB_TOKEN = 0x...;
+#### Issuance (Minteo)
+- `GET /api/account-details` - Obtener CLABEs para depósitos
+- `POST /api/mock-deposit` - Crear depósito mock (testing)
 
-// ABI principales
-function balanceOf(address owner) view returns (uint256)
-function transfer(address to, uint256 amount) returns (bool)
-function approve(address spender, uint256 amount) returns (bool)
-```
+#### Balance y Transacciones
+- `GET /api/balance` - Obtener balance MXNB
+- `GET /api/transactions` - Historial de transacciones
 
-## 💼 Integración Bitso Business
+#### Redemption (Canje)
+- `GET /api/bank-accounts` - Cuentas bancarias registradas
+- `POST /api/register-bank` - Registrar cuenta bancaria
+- `POST /api/redeem` - Redimir tokens MXNB
 
-### Funcionalidades
-- **Depósitos**: Conversión MXN → MXNB
-- **Retiros**: Conversión MXNB → MXN
-- **Cuentas**: Gestión de cuentas fiat por usuario
-- **Compliance**: KYC/AML automático
+#### Utilidades
+- `GET /api/health` - Health check
+- `GET /api/info` - Información de endpoints
 
-### API Endpoints
-```javascript
-// Depósito fiat
-POST /api/deposits
-{
-  "user_id": "string",
-  "amount": "number",
-  "currency": "MXN"
-}
+## 🤝 Contribuir
 
-// Retiro a banco
-POST /api/withdrawals
-{
-  "user_id": "string", 
-  "amount": "number",
-  "account_id": "string"
-}
-```
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-## 🎯 Roadmap de Desarrollo
+## 📝 Licencia
 
-### Fase 1 - MVP (Hackathon)
-- [x] UI/UX básica
-- [x] Conexión wallet
-- [x] Pagos MXNB simulados
-- [x] Historial de transacciones
-- [ ] Integración Arbitrum real
-- [ ] Conexión Bitso API
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-### Fase 2 - Beta
-- [ ] QR code payments
-- [ ] Multi-merchant integration
-- [ ] Push notifications
-- [ ] Enhanced security features
+## 🆘 Soporte
 
-### Fase 3 - Producción
-- [ ] Campus partnerships
-- [ ] Advanced analytics
-- [ ] Loyalty programs
-- [ ] Cross-chain bridging
+- **Issues**: [GitHub Issues](https://github.com/tu-usuario/puma-pay-campus-wallet/issues)
+- **Documentación**: [Wiki del Proyecto](https://github.com/tu-usuario/puma-pay-campus-wallet/wiki)
+- **Email**: soporte@pumapay.mx
 
-## 🏛 Casos de Uso Universitarios
+## 🎯 Roadmap
 
-### Para Estudiantes
-- 🍕 **Cafeterías**: Pagos rápidos sin efectivo
-- 📚 **Papelerías**: Compra de materiales académicos  
-- 🚌 **Transporte**: Pago de rutas universitarias
-- 👥 **P2P**: Transferencias entre compañeros
+### Versión 1.1
+- [ ] Integración con más universidades
+- [ ] Pagos con tarjeta de crédito
+- [ ] Notificaciones push
+- [ ] Modo offline
 
-### Para Padres
-- 💸 **Envío de Fondos**: Depósitos seguros a sus hijos
-- 📊 **Monitoreo**: Visibilidad de gastos estudiantiles
-- 🔒 **Control**: Límites y restricciones configurables
+### Versión 1.2
+- [ ] Marketplace universitario
+- [ ] Sistema de recompensas
+- [ ] Integración con transporte público
+- [ ] API pública para desarrolladores
 
-### Para Comercios
-- ⚡ **Pagos Instantáneos**: Settlements en segundos
-- 💰 **Menores Comisiones**: Costos reducidos vs. tarjetas
-- 📱 **Integración Simple**: API fácil de implementar
+## 🙏 Agradecimientos
 
-## 🛡 Seguridad y Compliance
-
-### Medidas de Seguridad
-- 🔐 **Wallet Security**: Claves privadas nunca en servidor
-- 🔒 **Transport Layer**: HTTPS y WSS encryption
-- 🛡 **Smart Contracts**: Auditorías de seguridad
-- 👤 **User Authentication**: Multi-factor authentication
-
-### Compliance
-- 📋 **KYC/AML**: Integración con Bitso compliance
-- 🏛 **Regulatorio**: Cumplimiento CNBV México
-- 📊 **Reporting**: Logs y auditoría completos
-- 🔍 **Monitoring**: Detección de actividades sospechosas
-
-## 📈 Métricas y Analytics
-
-### KPIs Principales
-- 👥 **Usuarios Activos**: DAU/MAU
-- 💰 **Volumen Transaccional**: MXNB procesados
-- ⚡ **Velocidad**: Tiempo promedio de transacción
-- 🎯 **Adopción**: % penetración por campus
-
-### Dashboard Analytics
-- 📊 **Transaction Volume**: Gráficos en tiempo real
-- 🗺 **Usage Heatmaps**: Patrones por ubicación  
-- 📈 **Growth Metrics**: Tendencias de crecimiento
-- 🔄 **Retention**: Análisis de retención usuarios
-
-## 🤝 Partnerships Estratégicos
-
-### Universidades Target
-- 🏛 **UNAM**: Campus Ciudad Universitaria
-- 🎓 **IPN**: Unidades Zacatenco y Santo Tomás
-- 🏫 **UAM**: Campus Xochimilco e Iztapalapa
-- 🎨 **La Salle**: Campus Benjamín Franklin
-
-### Comercios Campus
-- ☕ **Cafeterías**: Starbucks, cafés locales
-- 📚 **Librerías**: Gandhi, Porrúa, locales
-- 🚌 **Transporte**: Rutas y sistemas públicos
-- 🏪 **Tiendas**: OXXO, 7-Eleven, locales
-
-## 🚀 Despliegue y Distribución
-
-### Deployment Stack
-- **Frontend**: Vercel/Netlify
-- **Backend**: Railway/Render  
-- **Database**: PostgreSQL
-- **Cache**: Redis
-- **CDN**: Cloudflare
-
-### Distribución
-- 📱 **PWA**: Progressive Web App
-- 🌐 **Web Access**: Campus portals
-- 📲 **QR Codes**: Onboarding físico
-- 📧 **Email**: Campañas dirigidas
-
-## 📞 Soporte y Documentación
-
-### Para Desarrolladores
-- 📖 **API Docs**: Documentación completa
-- 🔧 **SDKs**: JavaScript/React SDK
-- 💻 **Sandbox**: Ambiente de pruebas
-- 🐛 **Issue Tracking**: GitHub Issues
-
-### Para Usuarios
-- ❓ **FAQ**: Preguntas frecuentes
-- 📞 **Support**: Chat en vivo
-- 🎥 **Tutorials**: Videos explicativos
-- 📱 **In-App Help**: Guías contextuales
+- **UNAM** por el apoyo institucional
+- **Bitso/Juno** por las APIs de blockchain
+- **Portal** por el SDK de wallets MPC
+- **Comunidad** de desarrolladores blockchain
 
 ---
 
-## 🏆 Equipo y Contacto
+**PumaPay Campus Wallet** - Revolucionando los pagos universitarios con tecnología blockchain 🚀
 
-**PumaPay Team**
-- 💼 **Business**: [team@pumapay.mx](mailto:team@pumapay.mx)
-- 🛠 **Technical**: [dev@pumapay.mx](mailto:dev@pumapay.mx)
-- 🤝 **Partnerships**: [partners@pumapay.mx](mailto:partners@pumapay.mx)
-
-**Social Media**
-- 🐦 Twitter: [@PumaPayMX](https://twitter.com/PumaPayMX)
-- 📘 LinkedIn: [PumaPay](https://linkedin.com/company/pumapay)
-- 📱 Discord: [PumaPay Community](https://discord.gg/pumapay)
-
----
-
-*PumaPay - Revolucionando los pagos universitarios en México 🇲🇽*
+*Desarrollado con ❤️ para la comunidad universitaria mexicana*
