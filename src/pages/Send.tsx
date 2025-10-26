@@ -85,25 +85,58 @@ const SendPage = () => {
 
   const handleSend = async () => {
     setIsLoading(true);
+    setSummaryError('');
+    
     try {
+      const amount = parseFloat(formData.amount);
+      
+      // Validar saldo disponible
+      if (hasInsufficientFunds(amount)) {
+        setSummaryError('Fondos insuficientes. Verifica tu saldo disponible.');
+        setIsLoading(false);
+        return;
+      }
+
       if (sendType === 'wallet') {
-        // Enviar MXNB a wallet usando Account Abstraction de Portal
-        await portalService.sendAsset('eip155:421614', {
-          amount: formData.amount,
-          to: formData.walletOrClabe,
-          token: '0x82B9e52b26A2954E113F94Ff26647754d5a4247D' // Dirección del contrato MXNB
+        console.log('🚀 Enviando MXNB a wallet:', { to: formData.walletOrClabe, amount });
+        
+        // Enviar MXNB a wallet usando Portal SDK (TRANSACCIÓN REAL)
+        const txHash = await portalService.sendMXNB(formData.walletOrClabe, amount);
+        
+        console.log('✅ Transacción enviada:', txHash);
+        
+        // Agregar transacción al historial
+        addTransaction({
+          id: txHash,
+          amount: amount,
+          type: 'expense',
+          description: formData.concept || 'Transferencia',
+          categoryId: formData.categoryId || '',
+          date: new Date(),
+          txHash: txHash,
+          recipient: formData.walletOrClabe,
+          isMXNB: true,
+          tokenSymbol: 'MXNB'
         });
+        
+        // Actualizar balance
         if (typeof refreshBalance === 'function') {
           await refreshBalance();
         } else if (typeof recalculateBalance === 'function') {
           recalculateBalance();
         }
-        alert('¡Transferencia enviada exitosamente desde Portal!');
+        
+        alert(`¡Transferencia enviada exitosamente!\nHash: ${txHash}`);
+        
       } else if (sendType === 'clabe') {
+        console.log('🏦 Redimiendo MXNB a CLABE:', { clabe: formData.walletOrClabe, amount });
+        
         // Redemption a CLABE (Juno)
         const bankAccounts = await junoService.getBankAccounts();
         let bank = bankAccounts.find(acc => acc.clabe === formData.walletOrClabe);
+        
         if (!bank) {
+          console.log('📝 Registrando nueva cuenta bancaria...');
           bank = await junoService.registerBankAccount({
             tag: 'Redemption',
             recipient_legal_name: 'Redención',
@@ -111,16 +144,42 @@ const SendPage = () => {
             ownership: 'THIRD_PARTY'
           });
         }
-        await junoService.redeemMXNB({
-          amount: parseFloat(formData.amount),
+        
+        const redemptionResult = await junoService.redeemMXNB({
+          amount: amount,
           destination_bank_account_id: bank.id,
         });
-        alert('¡Redención enviada exitosamente!');
+        
+        console.log('✅ Redención enviada:', redemptionResult);
+        
+        // Agregar transacción al historial
+        addTransaction({
+          id: redemptionResult.id || Date.now().toString(),
+          amount: amount,
+          type: 'expense',
+          description: formData.concept || 'Redención bancaria',
+          categoryId: formData.categoryId || '',
+          date: new Date(),
+          txHash: redemptionResult.txHash || 'pending',
+          recipient: formData.walletOrClabe,
+          isMXNB: true,
+          tokenSymbol: 'MXNB'
+        });
+        
+        // Actualizar balance
+        if (typeof refreshBalance === 'function') {
+          await refreshBalance();
+        } else if (typeof recalculateBalance === 'function') {
+          recalculateBalance();
+        }
+        
+        alert('¡Redención enviada exitosamente! El dinero llegará a tu cuenta bancaria en 1-2 días hábiles.');
       }
+      
       navigate('/home');
     } catch (error) {
-      console.error('Error al enviar:', error);
-      alert('Error al enviar. Intenta nuevamente.');
+      console.error('❌ Error al enviar:', error);
+      setSummaryError(error.message || 'Error al enviar. Intenta nuevamente.');
     } finally {
       setIsLoading(false);
       setShowSummary(false);

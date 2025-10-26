@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { portalService } from '@/services/portal';
+import { junoService } from '@/services/junoService';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BALANCE_STORAGE_KEY = 'pumapay_mxnb_balance';
@@ -147,13 +148,33 @@ export const useBalance = () => {
     return false; // Fondos insuficientes
   };
 
+  // Función para obtener balance real desde Juno
+  const getRealBalanceFromJuno = async (): Promise<number> => {
+    try {
+      console.log('🔄 Obteniendo balance real desde Juno...');
+      const balance = await junoService.getMXNBBalance();
+      console.log('💰 Balance real desde Juno:', balance);
+      return balance;
+    } catch (error) {
+      console.error('❌ Error obteniendo balance desde Juno:', error);
+      return 0;
+    }
+  };
+
   // Función para recargar balance manualmente
   const refreshBalance = async () => {
     setBalanceState(prev => ({ ...prev, isLoading: true }));
     
     try {
+      // Priorizar balance real de Juno sobre Portal
+      const junoBalance = await getRealBalanceFromJuno();
       const portalBalance = await portalService.getMXNBBalance();
-      const balance = typeof portalBalance === 'number' ? portalBalance : balanceState.balance;
+      
+      // Usar el balance más alto entre Juno y Portal
+      const balance = Math.max(
+        typeof junoBalance === 'number' ? junoBalance : 0,
+        typeof portalBalance === 'number' ? portalBalance : 0
+      );
       
       const newState = {
         balance,
@@ -164,36 +185,53 @@ export const useBalance = () => {
       
       setBalanceState(newState);
       localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
+      console.log('✅ Balance actualizado:', balance);
     } catch (error) {
       console.error('Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  // Al montar, obtener balance real de Portal SDK (esperando onReady)
+  // Al montar, obtener balance real desde Juno y Portal
   useEffect(() => {
     const fetchBalance = async () => {
+      if (!isAuthenticated || !user) return;
+      
       setBalanceState(prev => ({ ...prev, isLoading: true }));
       try {
+        console.log('🔄 Inicializando balance real...');
+        
+        // Obtener balance desde Juno (fuente de verdad)
+        const junoBalance = await getRealBalanceFromJuno();
+        
+        // Obtener balance desde Portal como backup
         await portalService.onReady();
         const portalBalance = await portalService.getMXNBBalance();
-        const balance = typeof portalBalance === 'number' ? portalBalance : 0;
+        
+        // Usar el balance más alto entre Juno y Portal
+        const balance = Math.max(
+          typeof junoBalance === 'number' ? junoBalance : 0,
+          typeof portalBalance === 'number' ? portalBalance : 0
+        );
+        
         const newState = {
           balance,
           available: balance,
           isLoading: false,
           lastUpdated: new Date()
         };
+        
         setBalanceState(newState);
         localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-        console.log('[useBalance] Balance inicializado tras refresh:', balance);
+        console.log('✅ Balance inicializado:', { junoBalance, portalBalance, finalBalance: balance });
       } catch (error) {
-        console.error('[useBalance] Error inicializando balance:', error);
+        console.error('❌ Error inicializando balance:', error);
         setBalanceState(prev => ({ ...prev, isLoading: false }));
       }
     };
+    
     fetchBalance();
-  }, []);
+  }, [isAuthenticated, user]);
 
   return {
     ...balanceState,
@@ -201,6 +239,7 @@ export const useBalance = () => {
     addFunds,
     sendMoney,
     refreshBalance,
+    getRealBalanceFromJuno,
     hasInsufficientFunds: (amount: number) => balanceState.available < amount
   };
 }; 

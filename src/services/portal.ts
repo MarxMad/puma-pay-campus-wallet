@@ -108,30 +108,57 @@ class PortalService {
   }
 
   /**
-   * Obtener balance de MXNB (real usando Portal SDK)
+   * Obtener balance de MXNB (REAL usando Portal SDK)
    */
   async getMXNBBalance(): Promise<number> {
     await this.initialize();
     try {
-      if (this.portal) {
-        const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as { rawBalance: string, decimals: number, contractAddress?: string }[];
-        console.log('[DEBUG] Balances recibidos:', balances);
-        const mxnb = balances.find((b) => b.contractAddress?.toLowerCase() === MXNB_CONTRACT_ADDRESS.toLowerCase());
-        console.log('[DEBUG] MXNB encontrado:', mxnb);
-        if (mxnb) {
-          // Usar rawBalance si existe, si no usar balance
-          const rawStr = mxnb.rawBalance !== undefined ? mxnb.rawBalance : mxnb['balance'];
-          const raw = parseFloat(rawStr);
-          // El balance ya viene en formato decimal, no dividir por 10^18
-          if (!isNaN(raw)) {
-            return raw;
-          } else {
-            console.warn('[DEBUG] rawBalance/balance no es un número válido:', rawStr);
-            return 0;
-          }
-        }
+      if (!this.portal) {
+        console.warn('⚠️ Portal no inicializado, retornando balance 0');
         return 0;
       }
+
+      console.log('🔄 Obteniendo balance MXNB real desde Portal...');
+      
+      // Verificar que tenemos la dirección del contrato MXNB
+      if (!MXNB_CONTRACT_ADDRESS || MXNB_CONTRACT_ADDRESS === '0x...') {
+        console.warn('⚠️ Dirección del contrato MXNB no configurada');
+        return 0;
+      }
+
+      const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as { 
+        rawBalance: string, 
+        decimals: number, 
+        contractAddress?: string,
+        balance?: string,
+        symbol?: string
+      }[];
+      
+      console.log('📊 Balances recibidos desde Portal:', balances);
+      
+      const mxnb = balances.find((b) => 
+        b.contractAddress?.toLowerCase() === MXNB_CONTRACT_ADDRESS.toLowerCase() ||
+        b.symbol?.toLowerCase() === 'mxnb'
+      );
+      
+      console.log('💰 MXNB encontrado:', mxnb);
+      
+      if (mxnb) {
+        // Usar rawBalance si existe, si no usar balance
+        const rawStr = mxnb.rawBalance !== undefined ? mxnb.rawBalance : mxnb['balance'];
+        const raw = parseFloat(rawStr);
+        
+        // El balance ya viene en formato decimal, no dividir por 10^18
+        if (!isNaN(raw)) {
+          console.log('✅ Balance MXNB obtenido:', raw);
+          return raw;
+        } else {
+          console.warn('⚠️ rawBalance/balance no es un número válido:', rawStr);
+          return 0;
+        }
+      }
+      
+      console.log('ℹ️ No se encontró balance MXNB, retornando 0');
       return 0;
     } catch (error) {
       console.error('❌ Error obteniendo balance MXNB:', error);
@@ -158,29 +185,37 @@ class PortalService {
   }
 
   /**
-   * Enviar MXNB usando sendAsset (modo mock por ahora)
+   * Enviar MXNB usando sendAsset (TRANSACCIONES REALES)
    */
   async sendMXNB(to: string, amount: number): Promise<string> {
     await this.initialize();
     
     try {
-      if (this.portal) {
-        // Usar sendAsset del Portal SDK
-        const result = await this.portal.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
-          amount: amount.toString(),
-          to: to,
-          token: MXNB_CONTRACT_ADDRESS
-        });
-        
-        // Manejo simple de la respuesta
-        return typeof result === 'string' ? result : `0x${Math.random().toString(16).substr(2, 64)}`;
+      if (!this.portal) {
+        throw new Error('Portal no inicializado');
       }
+
+      console.log('🚀 Enviando MXNB real:', { to, amount, contract: MXNB_CONTRACT_ADDRESS });
       
-      // Modo mock
-      return `0x${Math.random().toString(16).substr(2, 64)}`;
+      // Verificar que tenemos la dirección del contrato MXNB
+      if (!MXNB_CONTRACT_ADDRESS || MXNB_CONTRACT_ADDRESS === '0x...') {
+        throw new Error('Dirección del contrato MXNB no configurada');
+      }
+
+      // Usar sendAsset del Portal SDK para transacción real
+      const result = await this.portal.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+        amount: amount.toString(),
+        to: to,
+        token: MXNB_CONTRACT_ADDRESS
+      });
+      
+      console.log('✅ Transacción MXNB enviada:', result);
+      
+      // Retornar hash de transacción real
+      return typeof result === 'string' ? result : result?.txHash || result?.hash || 'unknown';
     } catch (error) {
       console.error('❌ Error enviando MXNB:', error);
-      throw new Error('No se pudo enviar MXNB');
+      throw new Error(`No se pudo enviar MXNB: ${error.message}`);
     }
   }
 

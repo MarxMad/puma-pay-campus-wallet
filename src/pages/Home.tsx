@@ -30,33 +30,80 @@ const HomePage = () => {
   }, []);
 
   const handleClaimBonus = async () => {
-    console.log('user:', user);
+    console.log('🎁 Iniciando proceso de bonus para usuario:', user);
+    
     if (!user?.address || !user?.clabe || !user?.name) {
-      alert('No se encontró tu dirección de wallet o CLABE.');
-          return;
-        }
+      alert('No se encontró tu dirección de wallet o CLABE. Completa tu registro primero.');
+      return;
+    }
+    
     setBonusLoading(true);
-    setBonusMsg('Procesando bonus… puede tardar un momento en reflejarse en tu wallet.');
+    setBonusMsg('Procesando bonus de bienvenida...');
+    
     try {
-      // 1. Mock deposit a la CLABE del usuario
-      await junoService.createMockDeposit({
+      console.log('🔄 Paso 1: Creando mock deposit de 500 MXN...');
+      setBonusMsg('Creando depósito de 500 MXN...');
+      
+      // 1. Mock deposit a la CLABE del usuario (Issuance)
+      const depositResult = await junoService.createMockDeposit({
         amount: 500,
         receiver_clabe: user.clabe,
         receiver_name: user.name,
-        sender_name: user.name
+        sender_name: 'PumaPay Campus'
       });
-      // 2. Withdrawal a la wallet del usuario
-      await junoService.sendOnchainWithdrawal({
+      
+      console.log('✅ Mock deposit creado:', depositResult);
+      setBonusMsg('Depósito creado. Convirtiendo a MXNB...');
+      
+      // Pequeña pausa para que el sistema procese
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('🔄 Paso 2: Enviando 500 MXNB a wallet...');
+      setBonusMsg('Enviando MXNB a tu wallet...');
+      
+      // 2. Withdrawal a la wallet del usuario (On-chain)
+      const withdrawalResult = await junoService.sendOnchainWithdrawal({
         address: user.address,
         amount: 500,
         asset: 'MXNB',
         blockchain: 'ARBITRUM',
         compliance: {}
       });
-      setBonusMsg('¡Bonus de bienvenida enviado a tu wallet! Puede tardar unos segundos en reflejarse.');
+      
+      console.log('✅ Withdrawal enviado:', withdrawalResult);
+      setBonusMsg('¡Bonus de bienvenida enviado! Actualizando balance...');
+      
+      // 3. Agregar transacción al historial local
+      const bonusTransaction = {
+        id: `bonus_${Date.now()}`,
+        amount: 500,
+        type: 'income',
+        description: 'Bonus de bienvenida PumaPay',
+        categoryId: '',
+        date: new Date(),
+        txHash: withdrawalResult.txHash || 'bonus',
+        recipient: user.address,
+        isMXNB: true,
+        tokenSymbol: 'MXNB'
+      };
+      
+      // Disparar evento para actualizar balance
+      window.dispatchEvent(new CustomEvent('transactionAdded', { 
+        detail: bonusTransaction 
+      }));
       window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
-    } catch (e) {
-      setBonusMsg('Error al reclamar el bonus. Intenta nuevamente.');
+      
+      // Marcar bonus como reclamado
+      localStorage.setItem('pumapay_bonus_claimed', 'true');
+      setBonusClaimed(true);
+      
+      setBonusMsg('¡Bonus de bienvenida de 500 MXNB enviado exitosamente!');
+      
+      console.log('🎉 Proceso de bonus completado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error en proceso de bonus:', error);
+      setBonusMsg(`Error al reclamar el bonus: ${error.message || 'Intenta nuevamente.'}`);
     } finally {
       setBonusLoading(false);
     }
