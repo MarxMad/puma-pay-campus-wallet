@@ -601,61 +601,69 @@ const CampusMapPage = () => {
             className="bg-gray-800/50 backdrop-blur-xl border-white/20 overflow-hidden cursor-pointer hover:bg-gray-800/70 transition-all duration-300"
             onClick={() => handlePlaceClick(place)}
           >
-            {/* Image */}
-            <div className="relative h-48 w-full">
-              <img
-                src={place.image}
-                alt={place.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src = `https://via.placeholder.com/400x300/374151/ffffff?text=${place.name}`;
-                }}
-              />
-              {/* Overlay with discount */}
-              <div className="absolute top-3 right-3">
-                <div className="bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
-                  -{place.discount}%
-                </div>
-              </div>
-              {/* Popular badge */}
-              {place.popular && (
-                <div className="absolute top-3 left-3">
-                  <div className="bg-orange-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
-                    Popular
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">{place.icon}</span>
-                  <h3 className="font-semibold text-sm text-white">{place.name}</h3>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-3 w-3 text-yellow-400" />
-                  <span className="text-xs text-gray-400">{place.rating}</span>
-                </div>
-              </div>
-
-              <p className="text-gray-300 text-xs mb-3">{place.description}</p>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-400">{place.distance}</span>
+            <div className="flex">
+              {/* Left Side - Content */}
+              <div className="flex-1 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">{place.icon}</span>
+                    <h3 className="font-semibold text-sm text-white">{place.name}</h3>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Clock className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-400">{place.hours}</span>
+                    <Star className="h-3 w-3 text-yellow-400" />
+                    <span className="text-xs text-gray-400">{place.rating}</span>
                   </div>
                 </div>
-                <div className="text-right">
+
+                <p className="text-gray-300 text-xs mb-3">{place.description}</p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-400">{place.distance}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Clock className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-400">{place.hours}</span>
+                    </div>
+                  </div>
                   <div className="text-xs text-gray-400">{place.realLocation}</div>
                 </div>
+
+                {/* Special offers preview */}
+                <div className="mt-3">
+                  <div className="text-xs text-orange-400 font-medium mb-1">Ofertas:</div>
+                  <div className="text-xs text-gray-300">
+                    {place.specialOffers[0]}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Image */}
+              <div className="relative w-32 h-32 flex-shrink-0">
+                <img
+                  src={place.image}
+                  alt={place.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = `https://via.placeholder.com/400x300/374151/ffffff?text=${place.name}`;
+                  }}
+                />
+                {/* Overlay with discount */}
+                <div className="absolute top-2 right-2">
+                  <div className="bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
+                    -{place.discount}%
+                  </div>
+                </div>
+                {/* Popular badge */}
+                {place.popular && (
+                  <div className="absolute top-2 left-2">
+                    <div className="bg-orange-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      Popular
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
