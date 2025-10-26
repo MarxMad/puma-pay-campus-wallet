@@ -5,7 +5,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const navItems = [
   { path: '/home', icon: Home, label: 'Home' },
   { path: '/campus-map', icon: MapPin, label: 'Mapa' },
-  { path: '/statistics', icon: Search, label: 'Estadísticas' },
+  // TEMPORALMENTE COMENTADO - Estadísticas
+  // { path: '/statistics', icon: Search, label: 'Estadísticas' },
   { path: '/profile', icon: Settings, label: 'Perfil' },
 ];
 

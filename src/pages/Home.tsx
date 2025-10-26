@@ -311,6 +311,8 @@ const HomePage = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <span className="text-gray-300 text-sm">Saldo disponible</span>
+              {/* TEMPORALMENTE COMENTADO - Gastos del mes */}
+              {/* 
               {totalExpenses > 0 && (
               <div className="flex items-center space-x-2 mt-1">
                   <span className="text-gray-400 text-xs">
@@ -318,6 +320,7 @@ const HomePage = () => {
                 </span>
               </div>
               )}
+              */}
             </div>
             <Button 
               variant="ghost" 
@@ -338,7 +341,8 @@ const HomePage = () => {
             </div>
             )}
           
-          {/* Weekly Chart */}
+          {/* Weekly Chart - TEMPORALMENTE COMENTADO */}
+          {/* 
           <div className="mb-6">
             <div className="flex items-center space-x-2 mb-4">
               <BarChart3 className="h-4 w-4 text-blue-400" />
@@ -365,16 +369,6 @@ const HomePage = () => {
                     onMouseEnter={() => setHoveredDay(i)}
                     onMouseLeave={() => setHoveredDay(null)}
                   >
-                    {/* Tooltip */}
-                    {isHovered && day.amount > 0 && (
-                      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-xs whitespace-nowrap z-10 shadow-lg">
-                        <div className="text-white font-semibold">${day.amount.toFixed(2)}</div>
-                        <div className="text-gray-400">{isToday ? 'Hoy' : day.day}</div>
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                      </div>
-                    )}
-                    
-                    {/* Bar */}
                     <div className="w-full bg-gray-700/30 rounded-lg relative overflow-hidden" style={{ height: '70px' }}>
                       {day.amount > 0 ? (
                         <div 
@@ -391,10 +385,7 @@ const HomePage = () => {
                             boxShadow: isHovered ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none'
                           }}
                         >
-                          {/* Animated shine effect */}
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          
-                          {/* Glow effect for today */}
                           {isToday && (
                             <div className="absolute inset-0 bg-blue-400/20 rounded-lg animate-pulse"></div>
                           )}
@@ -402,14 +393,10 @@ const HomePage = () => {
                       ) : (
                         <div className="w-full h-2 bg-gray-600/50 rounded-lg absolute bottom-0 opacity-50"></div>
                       )}
-                      
-                      {/* Today indicator */}
                       {isToday && (
                         <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                       )}
                     </div>
-                    
-                    {/* Day Label */}
                     <span className={`text-xs transition-all duration-200 ${
                       isToday 
                         ? 'text-blue-400 font-bold' 
@@ -424,7 +411,6 @@ const HomePage = () => {
               })}
             </div>
             
-            {/* Week summary */}
             {weeklySpending.some(d => d.amount > 0) ? (
               <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
                 <div className="flex items-center space-x-2">
@@ -445,6 +431,7 @@ const HomePage = () => {
               </div>
             )}
           </div>
+          */}
           
           {/* Acciones rápidas: Enviar y Recibir */}
           <div className="flex justify-center items-center gap-6 my-8">
@@ -534,22 +521,21 @@ const HomePage = () => {
         </Card>
       </div>
 
-      {/* Spending Overview */}
+      {/* Spending Overview - TEMPORALMENTE COMENTADO */}
+      {/* 
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
-          {/* Gastos del mes */}
-                      <Card className="bg-orange-500/20 backdrop-blur-lg border border-orange-500/30 p-5 relative overflow-hidden group hover:bg-orange-500/30 transition-all duration-300 shadow-lg shadow-orange-500/10">
+          <Card className="bg-orange-500/20 backdrop-blur-lg border border-orange-500/30 p-5 relative overflow-hidden group hover:bg-orange-500/30 transition-all duration-300 shadow-lg shadow-orange-500/10">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1">
                 <p className="text-white text-sm font-medium">Gastos del mes</p>
-                                  <p className="text-white font-bold text-xl">${totalExpenses.toFixed(2)}</p>
+                <p className="text-white font-bold text-xl">${totalExpenses.toFixed(2)}</p>
               </div>
             </div>
             
-            {/* Progress indicator */}
             {monthlyGoalProgress > 0 && (
               <div className="mt-2 w-full bg-orange-200 rounded-full h-1.5 overflow-hidden">
                 <div 
@@ -559,11 +545,9 @@ const HomePage = () => {
               </div>
             )}
             
-            {/* Background decoration */}
-                          <div className="absolute -top-3 -right-3 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+            <div className="absolute -top-3 -right-3 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           </Card>
           
-          {/* Meta mensual */}
           <Card className="bg-blue-500/20 backdrop-blur-lg border border-blue-500/30 p-5 relative overflow-hidden group hover:bg-blue-500/30 transition-all duration-300 shadow-lg shadow-blue-500/10">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
@@ -571,11 +555,10 @@ const HomePage = () => {
               </div>
               <div className="flex-1">
                 <p className="text-white text-sm font-medium">Meta mensual</p>
-                                  <p className="text-white font-bold text-xl">{monthlyGoalProgress.toFixed(0)}%</p>
+                <p className="text-white font-bold text-xl">{monthlyGoalProgress.toFixed(0)}%</p>
               </div>
             </div>
             
-            {/* Progress circle */}
             <div className="mt-2 flex items-center justify-between">
               <div className="relative w-8 h-8">
                 <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
@@ -606,13 +589,14 @@ const HomePage = () => {
               </div>
             </div>
             
-            {/* Background decoration */}
             <div className="absolute -top-3 -right-3 w-12 h-12 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           </Card>
         </div>
       </div>
+      */}
 
-      {/* Category Stats - Solo mostrar si hay gastos */}
+      {/* Category Stats - TEMPORALMENTE COMENTADO */}
+      {/* 
       {categoryStats.some(cat => cat.spent > 0) && (
         <div className="px-4 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -645,7 +629,6 @@ const HomePage = () => {
                   </div>
                 </div>
                 
-                {/* Progress bar */}
                 <div className="w-full bg-gray-600/30 rounded-full h-2 mb-3 overflow-hidden">
                   <div 
                     className={`h-2 ${category.color} rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
@@ -667,18 +650,20 @@ const HomePage = () => {
                   </span>
                 </div>
                 
-                {/* Background decoration */}
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
               </Card>
             ))}
           </div>
         </div>
       )}
+      */}
 
       {/* Recent Transactions */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white text-lg font-semibold">Transacciones recientes</h3>
+          {/* TEMPORALMENTE COMENTADO - Botón de estadísticas */}
+          {/* 
           <Button 
             variant="ghost" 
             size="sm" 
@@ -687,6 +672,7 @@ const HomePage = () => {
           >
             Ver todas
           </Button>
+          */}
         </div>
         
         <div className="space-y-3">
