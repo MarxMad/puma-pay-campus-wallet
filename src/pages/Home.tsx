@@ -458,6 +458,143 @@ const HomePage = () => {
         </Card>
       </div>
 
+      {/* Promociones del Campus */}
+      <div className="px-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white text-lg font-semibold">🔥 Promociones del Campus</h3>
+          <div className="flex items-center space-x-1 text-orange-400">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-sm font-medium">Descuentos exclusivos</span>
+          </div>
+        </div>
+        
+        <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Cafetería Las Islas */}
+          <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-xl border-orange-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm">🍽️</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">Cafetería Las Islas</h4>
+                  <p className="text-xs text-orange-200">Comida</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="bg-orange-500/30 rounded-full px-2 py-1">
+                  <span className="text-xs font-bold">-20%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Chilaquiles con pollo</span>
+                <span className="font-bold text-orange-300">75 MXNB</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Café americano</span>
+                <span className="font-bold text-orange-300">25 MXNB</span>
+              </div>
+            </div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+          </Card>
+
+          {/* Café y Cuernito */}
+          <Card className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-xl border-yellow-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm">☕</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">Café y Cuernito</h4>
+                  <p className="text-xs text-yellow-200">Café</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="bg-yellow-500/30 rounded-full px-2 py-1">
+                  <span className="text-xs font-bold">-15%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Café especial</span>
+                <span className="font-bold text-yellow-300">80 MXNB</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Jugo de naranja</span>
+                <span className="font-bold text-yellow-300">25 MXNB</span>
+              </div>
+            </div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+          </Card>
+
+          {/* Librería Central */}
+          <Card className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-xl border-blue-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm">📚</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">Librería Central</h4>
+                  <p className="text-xs text-blue-200">Libros</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="bg-blue-500/30 rounded-full px-2 py-1">
+                  <span className="text-xs font-bold">-10%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Álgebra Lineal</span>
+                <span className="font-bold text-blue-300">120 MXNB</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Cálculo Diferencial</span>
+                <span className="font-bold text-blue-300">95 MXNB</span>
+              </div>
+            </div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+          </Card>
+
+          {/* Gimnasio */}
+          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl border-green-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm">🏃‍♂️</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">Gimnasio Central</h4>
+                  <p className="text-xs text-green-200">Deportes</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="bg-green-500/30 rounded-full px-2 py-1">
+                  <span className="text-xs font-bold">-25%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Membresía mensual</span>
+                <span className="font-bold text-green-300">200 MXNB</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Clase de natación</span>
+                <span className="font-bold text-green-300">50 MXNB</span>
+              </div>
+            </div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-green-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+          </Card>
+        </div>
+      </div>
+
       {/* Campus Map Feature */}
       <div className="px-4 mb-6">
         <Card 
@@ -480,7 +617,7 @@ const HomePage = () => {
                     <span className="text-yellow-400 font-semibold">Descuentos exclusivos</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <span className="text-blue-400">6 lugares disponibles</span>
+                    <span className="text-blue-400">20+ lugares disponibles</span>
                   </div>
                 </div>
               </div>

@@ -6,602 +6,730 @@ import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '@/components/BottomNav';
 
-// Datos actualizados con ubicaciones reales de Ciudad Universitaria UNAM
+// Datos actualizados con ubicaciones reales del campus
 const campusPlaces = [
+  // COMIDA - Cafeterías
   {
     id: 1,
-    name: "Cafetería Central UNAM",
+    name: "Cafetería Las Islas",
     type: "food",
-    icon: "🍕",
+    icon: "🍽️",
     distance: "50m",
-    discount: 15,
+    discount: 20,
     rating: 4.5,
     hours: "7:00 - 20:00",
     phone: "55-1234-5678",
-    description: "Desayunos, comidas y antojitos universitarios",
-    location: { lat: 19.3320, lng: -99.1860 }, // Torre de Rectoría área
-    qrCode: "CAFE-CENTRAL-001",
+    description: "Chilaquiles con pollo, café americano y más",
+    location: { lat: 19.3320, lng: -99.1860 },
+    qrCode: "CAFE-ISLAS-001",
     specialOffers: [
-      "15% descuento en comidas completas",
-      "2x1 en café con credencial estudiantil",
-      "Menú del día $45 pesos"
+      "Chilaquiles con pollo - 75 MXNB",
+      "Café americano - 25 MXNB",
+      "20% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
     popular: true,
-    realLocation: "Cerca de Torre de Rectoría"
+    realLocation: "Edificio de Ciencias"
   },
   {
     id: 2,
-    name: "Librería Universitaria", 
-    type: "books",
-    icon: "📚",
-    distance: "120m",
-    discount: 10,
+    name: "Cafetería Arquitectura",
+    type: "food",
+    icon: "🏗️",
+    distance: "80m",
+    discount: 15,
     rating: 4.3,
-    hours: "8:00 - 18:00",
-    phone: "55-9876-5432",
-    description: "Libros académicos y materiales de estudio",
-    location: { lat: 19.3315, lng: -99.1840 }, // Centro Cultural Universitario
-    qrCode: "LIBRERIA-UNI-002",
+    hours: "7:30 - 19:30",
+    phone: "55-2345-6789",
+    description: "Comida rápida y bebidas",
+    location: { lat: 19.3315, lng: -99.1840 },
+    qrCode: "CAFE-ARQ-002",
     specialOffers: [
-      "10% descuento en libros de texto",
-      "5% adicional por pago con PumaPay",
-      "Envío gratis en compras +$500"
+      "Torta especial - 60 MXNB",
+      "Agua fresca - 15 MXNB",
+      "15% descuento con PumaPay"
     ],
-    paymentMethods: ["PumaPay", "Tarjeta"],
-    popular: false,
-    realLocation: "Centro Cultural Universitario"
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: true,
+    realLocation: "Facultad de Arquitectura"
   },
   {
     id: 3,
-    name: "Gimnasio Pumas",
-    type: "sports", 
-    icon: "🏃‍♂️",
-    distance: "200m",
-    discount: 20,
-    rating: 4.7,
-    hours: "6:00 - 22:00",
-    phone: "55-5555-1234",
-    description: "Instalaciones deportivas completas CU",
-    location: { lat: 19.3280, lng: -99.1920 }, // Zona deportiva
-    qrCode: "GYM-PUMAS-003",
+    name: "Cafetería Ingeniería",
+    type: "food",
+    icon: "⚙️",
+    distance: "120m",
+    discount: 18,
+    rating: 4.4,
+    hours: "7:00 - 21:00",
+    phone: "55-3456-7890",
+    description: "Comida corrida y snacks",
+    location: { lat: 19.3300, lng: -99.1820 },
+    qrCode: "CAFE-ING-003",
     specialOffers: [
-      "20% descuento en mensualidades",
-      "Registro gratuito con PumaPay",
-      "Clases grupales incluidas"
+      "Comida corrida - 85 MXNB",
+      "Refresco - 20 MXNB",
+      "18% descuento con PumaPay"
     ],
-    paymentMethods: ["PumaPay", "Efectivo", "Transferencia"],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
     popular: true,
-    realLocation: "Ciudad Deportiva CU"
+    realLocation: "Facultad de Ingeniería"
   },
   {
     id: 4,
-    name: "Copy Center FES",
-    type: "services",
-    icon: "🖨️", 
-    distance: "80m",
-    discount: 5,
-    rating: 4.1,
-    hours: "7:30 - 19:00",
-    phone: "55-2468-1357",
-    description: "Impresiones, copias y encuadernado",
-    location: { lat: 19.3340, lng: -99.1880 }, // Zona de Facultades
-    qrCode: "COPY-FES-004",
-    specialOffers: [
-      "5% descuento en impresiones",
-      "Encuadernado gratuito +100 hojas",
-      "Impresión a color -10%"
-    ],
-    paymentMethods: ["PumaPay", "Efectivo"],
-    popular: false,
-    realLocation: "Conjunto de Facultades"
-  },
-  {
-    id: 5,
-    name: "Tienda Universitaria",
-    type: "shopping",
-    icon: "🛍️",
-    distance: "150m", 
-    discount: 12,
-    rating: 4.4,
-    hours: "9:00 - 19:00",
-    phone: "55-1357-2468",
-    description: "Artículos UNAM y souvenirs oficiales",
-    location: { lat: 19.3310, lng: -99.1850 }, // Centro de CU
-    qrCode: "TIENDA-UNI-005",
-    specialOffers: [
-      "12% descuento en merchandising",
-      "Playeras UNAM 2x1",
-      "Accesorios universitarios -15%"
-    ],
-    paymentMethods: ["PumaPay", "Tarjeta", "Efectivo"],
-    popular: true,
-    realLocation: "Plaza Central CU"
-  },
-  {
-    id: 6,
-    name: "Farmacia Campus",
-    type: "health",
-    icon: "💊",
-    distance: "90m",
-    discount: 8,
-    rating: 4.2,
-    hours: "8:00 - 20:00", 
-    phone: "55-9999-8888",
-    description: "Medicamentos y productos de salud",
-    location: { lat: 19.3300, lng: -99.1870 }, // Zona médica CU
-    qrCode: "FARMACIA-CAM-006",
-    specialOffers: [
-      "8% descuento en medicamentos",
-      "Consulta médica gratuita",
-      "Productos de higiene -5%"
-    ],
-    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
-    popular: false,
-    realLocation: "Zona Médica CU"
-  },
-  // Nuevos lugares reales de CU
-  {
-    id: 7,
-    name: "Biblioteca Central",
-    type: "books",
-    icon: "📖",
-    distance: "180m",
-    discount: 0,
-    rating: 4.8,
-    hours: "7:00 - 22:00",
-    phone: "55-5622-1616",
-    description: "Biblioteca Central Juan José Arreola",
-    location: { lat: 19.3316, lng: -99.1850 },
-    qrCode: "BIBLIO-CENTRAL-007",
-    specialOffers: [
-      "Acceso 24/7 con credencial",
-      "Reserva de cubículos gratuita",
-      "Servicio de impresión económico"
-    ],
-    paymentMethods: ["PumaPay", "Efectivo"],
-    popular: true,
-    realLocation: "Biblioteca Central CU"
-  },
-  {
-    id: 8,
-    name: "Museo Universitario",
-    type: "culture",
-    icon: "🏛️",
-    distance: "300m",
+    name: "Jugos Copilco",
+    type: "food",
+    icon: "🥤",
+    distance: "200m",
     discount: 25,
     rating: 4.6,
-    hours: "10:00 - 18:00",
-    phone: "55-5622-6972",
-    description: "MUAC - Arte contemporáneo",
-    location: { lat: 19.3290, lng: -99.1820 },
-    qrCode: "MUAC-008",
+    hours: "8:00 - 18:00",
+    phone: "55-4567-8901",
+    description: "Jugos naturales y smoothies",
+    location: { lat: 19.3280, lng: -99.1800 },
+    qrCode: "JUGOS-COPILCO-004",
     specialOffers: [
-      "25% descuento estudiantes UNAM",
-      "Entrada gratuita los domingos",
-      "Talleres incluidos con entrada"
+      "Jugo de naranja - 25 MXNB",
+      "Smoothie de fresa - 35 MXNB",
+      "25% descuento con PumaPay"
     ],
-    paymentMethods: ["PumaPay", "Tarjeta", "Efectivo"],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: true,
+    realLocation: "Zona Copilco"
+  },
+
+  // LIBROS - Librerías
+  {
+    id: 5,
+    name: "Librería Central",
+    type: "books",
+    icon: "📚",
+    distance: "100m",
+    discount: 10,
+    rating: 4.3,
+    hours: "8:00 - 18:00",
+    phone: "55-5678-9012",
+    description: "Libros académicos y materiales",
+    location: { lat: 19.3310, lng: -99.1850 },
+    qrCode: "LIBRERIA-CENTRAL-005",
+    specialOffers: [
+      "Álgebra Lineal - 120 MXNB",
+      "Cálculo Diferencial - 95 MXNB",
+      "10% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
     popular: true,
     realLocation: "Centro Cultural Universitario"
   },
   {
-    id: 9,
-    name: "Comedor Estudiantil",
-    type: "food",
-    icon: "🍽️",
-    distance: "100m",
-    discount: 30,
-    rating: 4.0,
-    hours: "8:00 - 16:00",
-    phone: "55-5622-2500",
-    description: "Comida económica para estudiantes",
-    location: { lat: 19.3330, lng: -99.1890 },
-    qrCode: "COMEDOR-EST-009",
+    id: 6,
+    name: "Librería Ciencias",
+    type: "books",
+    icon: "🔬",
+    distance: "150m",
+    discount: 12,
+    rating: 4.2,
+    hours: "8:30 - 17:30",
+    phone: "55-6789-0123",
+    description: "Libros especializados en ciencias",
+    location: { lat: 19.3305, lng: -99.1830 },
+    qrCode: "LIBRERIA-CIENCIAS-006",
     specialOffers: [
-      "30% descuento con credencial vigente",
-      "Desayunos desde $15 pesos",
-      "Comida corrida $25 pesos"
+      "Física General - 110 MXNB",
+      "Química Orgánica - 130 MXNB",
+      "12% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: false,
+    realLocation: "Facultad de Ciencias"
+  },
+
+  // DEPORTES - Gimnasios
+  {
+    id: 7,
+    name: "Gimnasio Central",
+    type: "sports", 
+    icon: "🏃‍♂️",
+    distance: "300m",
+    discount: 25,
+    rating: 4.7,
+    hours: "6:00 - 22:00",
+    phone: "55-7890-1234",
+    description: "Gimnasio completo con alberca",
+    location: { lat: 19.3270, lng: -99.1780 },
+    qrCode: "GYM-CENTRAL-007",
+    specialOffers: [
+      "Membresía mensual - 200 MXNB",
+      "Clase de natación - 50 MXNB",
+      "25% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Deportivo Universitario"
+  },
+  {
+    id: 8,
+    name: "Gimnasio Frontones",
+    type: "sports",
+    icon: "🏓",
+    distance: "250m",
+    discount: 20,
+    rating: 4.4,
+    hours: "7:00 - 21:00",
+    phone: "55-8901-2345",
+    description: "Frontones y canchas deportivas",
+    location: { lat: 19.3285, lng: -99.1790 },
+    qrCode: "GYM-FRONTONES-008",
+    specialOffers: [
+      "Renta de cancha - 80 MXNB/hora",
+      "Clase de frontón - 40 MXNB",
+      "20% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: false,
+    realLocation: "Zona Deportiva"
+  },
+
+  // SERVICIOS
+  {
+    id: 9,
+    name: "Centro de Copias",
+    type: "services",
+    icon: "📄",
+    distance: "60m",
+    discount: 15,
+    rating: 4.1,
+    hours: "8:00 - 19:00",
+    phone: "55-9012-3456",
+    description: "Copias, impresiones y encuadernado",
+    location: { lat: 19.3318, lng: -99.1855 },
+    qrCode: "COPIAS-CENTRAL-009",
+    specialOffers: [
+      "Copia blanco y negro - 1 MXNB",
+      "Impresión color - 5 MXNB",
+      "15% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
     popular: true,
-    realLocation: "Zona Residencial Estudiantil"
+    realLocation: "Biblioteca Central"
   },
   {
     id: 10,
-    name: "Centro Médico CU",
+    name: "Internet Café",
+    type: "services",
+    icon: "💻",
+    distance: "90m",
+    discount: 20,
+    rating: 4.0,
+    hours: "24/7",
+    phone: "55-0123-4567",
+    description: "Acceso a internet y computadoras",
+    location: { lat: 19.3312, lng: -99.1845 },
+    qrCode: "INTERNET-CAFE-010",
+    specialOffers: [
+      "1 hora de internet - 20 MXNB",
+      "Impresión - 3 MXNB",
+      "20% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: false,
+    realLocation: "Centro de Estudiantes"
+  },
+  {
+    id: 11,
+    name: "Papelería Universitaria",
+    type: "services",
+    icon: "✏️",
+    distance: "70m",
+    discount: 10,
+    rating: 4.2,
+    hours: "8:30 - 18:30",
+    phone: "55-1234-5678",
+    description: "Material escolar y oficina",
+    location: { lat: 19.3315, lng: -99.1852 },
+    qrCode: "PAPELERIA-UNI-011",
+    specialOffers: [
+      "Cuaderno universitario - 25 MXNB",
+      "Plumas y lápices - 15 MXNB",
+      "10% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Edificio Administrativo"
+  },
+
+  // TIENDAS
+  {
+    id: 12,
+    name: "Tienda Universitaria",
+    type: "shop",
+    icon: "🛍️",
+    distance: "110m",
+    discount: 12,
+    rating: 4.3,
+    hours: "9:00 - 19:00",
+    phone: "55-2345-6789",
+    description: "Productos universitarios y souvenirs",
+    location: { lat: 19.3308, lng: -99.1848 },
+    qrCode: "TIENDA-UNI-012",
+    specialOffers: [
+      "Playera universitaria - 150 MXNB",
+      "Taza conmemorativa - 80 MXNB",
+      "12% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Comercial"
+  },
+  {
+    id: 13,
+    name: "Puesto de Revistas",
+    type: "shop",
+    icon: "📰",
+    distance: "140m",
+    discount: 8,
+    rating: 3.9,
+    hours: "8:00 - 17:00",
+    phone: "55-3456-7890",
+    description: "Revistas, periódicos y snacks",
+    location: { lat: 19.3302, lng: -99.1840 },
+    qrCode: "PUESTO-REVISTAS-013",
+    specialOffers: [
+      "Revista científica - 45 MXNB",
+      "Periódico - 15 MXNB",
+      "8% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: false,
+    realLocation: "Plaza Central"
+  },
+
+  // SALUD
+  {
+    id: 14,
+    name: "Clínica Universitaria",
     type: "health",
     icon: "🏥",
-    distance: "250m",
-    discount: 0,
-    rating: 4.3,
-    hours: "24 horas",
-    phone: "55-5622-2222",
-    description: "Servicios médicos de emergencia",
-    location: { lat: 19.3295, lng: -99.1875 },
-    qrCode: "MEDICO-CU-010",
+    distance: "400m",
+    discount: 30,
+    rating: 4.8,
+    hours: "7:00 - 20:00",
+    phone: "55-4567-8901",
+    description: "Servicios médicos para estudiantes",
+    location: { lat: 19.3250, lng: -99.1750 },
+    qrCode: "CLINICA-UNI-014",
     specialOffers: [
-      "Consultas gratuitas estudiantes",
-      "Medicamentos a precio preferencial",
-      "Servicio 24/7 disponible"
+      "Consulta general - 50 MXNB",
+      "Medicamentos básicos - 30 MXNB",
+      "30% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Médico Universitario"
+  },
+  {
+    id: 15,
+    name: "Veterinaria Campus",
+    type: "health",
+    icon: "🐕",
+    distance: "350m",
+    discount: 20,
+    rating: 4.5,
+    hours: "9:00 - 18:00",
+    phone: "55-5678-9012",
+    description: "Cuidado veterinario para mascotas",
+    location: { lat: 19.3260, lng: -99.1760 },
+    qrCode: "VETERINARIA-CAMPUS-015",
+    specialOffers: [
+      "Consulta veterinaria - 100 MXNB",
+      "Vacunas - 80 MXNB",
+      "20% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: false,
+    realLocation: "Zona Veterinaria"
+  },
+  {
+    id: 16,
+    name: "Odontología Estudiantil",
+    type: "health",
+    icon: "🦷",
+    distance: "380m",
+    discount: 25,
+    rating: 4.6,
+    hours: "8:00 - 17:00",
+    phone: "55-6789-0123",
+    description: "Servicios dentales para estudiantes",
+    location: { lat: 19.3255, lng: -99.1755 },
+    qrCode: "ODONTOLOGIA-UNI-016",
+    specialOffers: [
+      "Limpieza dental - 120 MXNB",
+      "Consulta dental - 60 MXNB",
+      "25% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Dental"
+  },
+  {
+    id: 17,
+    name: "Enfermería Central",
+    type: "health",
+    icon: "🏥",
+    distance: "320m",
+    discount: 15,
+    rating: 4.4,
+    hours: "24/7",
+    phone: "55-7890-1234",
+    description: "Primeros auxilios y atención básica",
+    location: { lat: 19.3265, lng: -99.1765 },
+    qrCode: "ENFERMERIA-CENTRAL-017",
+    specialOffers: [
+      "Primeros auxilios - Gratis",
+      "Medicamentos básicos - 25 MXNB",
+      "15% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo"],
+    popular: true,
+    realLocation: "Centro de Salud"
+  },
+
+  // CULTURA
+  {
+    id: 18,
+    name: "Museo Universitario",
+    type: "culture",
+    icon: "🏛️",
+    distance: "500m",
+    discount: 40,
+    rating: 4.9,
+    hours: "10:00 - 18:00",
+    phone: "55-8901-2345",
+    description: "Exposiciones y eventos culturales",
+    location: { lat: 19.3200, lng: -99.1700 },
+    qrCode: "MUSEO-UNI-018",
+    specialOffers: [
+      "Entrada general - 30 MXNB",
+      "Visita guiada - 50 MXNB",
+      "40% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Cultural Universitario"
+  },
+  {
+    id: 19,
+    name: "Cine Universitario",
+    type: "culture",
+    icon: "🎬",
+    distance: "450m",
+    discount: 35,
+    rating: 4.7,
+    hours: "12:00 - 22:00",
+    phone: "55-9012-3456",
+    description: "Películas y eventos cinematográficos",
+    location: { lat: 19.3210, lng: -99.1710 },
+    qrCode: "CINE-UNI-019",
+    specialOffers: [
+      "Boleto de película - 40 MXNB",
+      "Palomitas - 25 MXNB",
+      "35% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Cultural"
+  },
+  {
+    id: 20,
+    name: "Teatro Universitario",
+    type: "culture",
+    icon: "🎭",
+    distance: "480m",
+    discount: 30,
+    rating: 4.8,
+    hours: "19:00 - 22:00",
+    phone: "55-0123-4567",
+    description: "Obras de teatro y eventos artísticos",
+    location: { lat: 19.3205, lng: -99.1705 },
+    qrCode: "TEATRO-UNI-020",
+    specialOffers: [
+      "Boleto de teatro - 60 MXNB",
+      "Programa de mano - 10 MXNB",
+      "30% descuento con PumaPay"
+    ],
+    paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
+    popular: true,
+    realLocation: "Centro Cultural"
+  },
+  {
+    id: 21,
+    name: "Auditorio Principal",
+    type: "culture",
+    icon: "🎤",
+    distance: "520m",
+    discount: 25,
+    rating: 4.6,
+    hours: "Eventos especiales",
+    phone: "55-1234-5678",
+    description: "Conferencias y eventos especiales",
+    location: { lat: 19.3195, lng: -99.1695 },
+    qrCode: "AUDITORIO-PRINCIPAL-021",
+    specialOffers: [
+      "Entrada a conferencia - 80 MXNB",
+      "Material de apoyo - 20 MXNB",
+      "25% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
     popular: false,
-    realLocation: "Centro Médico CU"
+    realLocation: "Centro de Convenciones"
   }
 ];
 
-const typeFilters = [
-  { id: 'all', name: 'Todos', icon: '🏢', color: 'bg-gray-500' },
-  { id: 'food', name: 'Comida', icon: '🍕', color: 'bg-orange-500' },
-  { id: 'books', name: 'Libros', icon: '📚', color: 'bg-blue-500' },
-  { id: 'sports', name: 'Deportes', icon: '🏃‍♂️', color: 'bg-green-500' },
-  { id: 'services', name: 'Servicios', icon: '🖨️', color: 'bg-purple-500' },
-  { id: 'shopping', name: 'Tienda', icon: '🛍️', color: 'bg-pink-500' },
-  { id: 'health', name: 'Salud', icon: '💊', color: 'bg-red-500' },
-  { id: 'culture', name: 'Cultura', icon: '🏛️', color: 'bg-indigo-500' }
-];
-
-const CampusMap: React.FC = () => {
+const CampusMapPage = () => {
   const navigate = useNavigate();
-  const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPlace, setSelectedPlace] = useState<number | null>(null);
-  const [showQR, setShowQR] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  
-  // Coordenadas reales de Ciudad Universitaria UNAM
-  const [mapCenter] = useState({ lat: 19.321643312240475, lng: -99.22412730124401 });
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [selectedPlace, setSelectedPlace] = useState(null);
 
-  // Filtrar lugares según el filtro y búsqueda
+  const categories = [
+    { id: 'all', name: 'Todos', icon: '🏢' },
+    { id: 'food', name: 'Comida', icon: '🍕' },
+    { id: 'books', name: 'Libros', icon: '📚' },
+    { id: 'sports', name: 'Deportes', icon: '🏃‍♂️' },
+    { id: 'services', name: 'Servicios', icon: '🖨️' },
+    { id: 'shop', name: 'Tienda', icon: '🛍️' },
+    { id: 'health', name: 'Salud', icon: '💊' },
+    { id: 'culture', name: 'Cultura', icon: '🏛️' }
+  ];
+
   const filteredPlaces = campusPlaces.filter(place => {
-    const matchesFilter = selectedFilter === 'all' || place.type === selectedFilter;
     const matchesSearch = place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          place.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    const matchesCategory = selectedCategory === 'all' || place.type === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
-  const popularPlaces = campusPlaces.filter(place => place.popular);
+  const handlePlaceClick = useCallback((place) => {
+    setSelectedPlace(place);
+  }, []);
 
-  const generateQRCode = (qrCode: string) => {
-    // Simulación de QR code con patrón visual
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PUMAPAY-${qrCode}`;
-  };
-
-  // Componente del Mapa Real de Google Maps (Solo el mapa, sin marcadores)
-  const RealMapView = () => {
-    return (
-      <div className="relative w-full h-96 rounded-xl overflow-hidden shadow-2xl">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d30120.76741252353!2d-99.22412730124401!3d19.321643312240475!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce000920979a1b%3A0x7c9f3c0207ba804d!2zQy5VLiwgQ2l1ZGFkIGRlIE3DqXhpY28sIENETVgsIE3DqXhpY28!5e0!3m2!1ses!2sus!4v1751158527138!5m2!1ses!2sus"
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title="Mapa de Ciudad Universitaria UNAM"
-        />
-        
-        {/* Botón para abrir en Google Maps */}
-        <div className="absolute top-4 right-4">
-          <Button
-            size="sm"
-            onClick={() => window.open('https://maps.google.com/?q=Ciudad+Universitaria+UNAM+Mexico', '_blank')}
-            className="bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-white shadow-lg"
-          >
-            <ExternalLink className="h-3 w-3 mr-1" />
-            Google Maps
-          </Button>
-        </div>
-        
-        {/* Leyenda del mapa */}
-        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-700 shadow-lg">
-          🏛️ Ciudad Universitaria UNAM
-        </div>
-      </div>
-    );
-  };
+  const closePlaceDetails = useCallback(() => {
+    setSelectedPlace(null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10 shadow-xl shadow-black/30">
+      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold">Mapa del Campus</h1>
         <div className="flex items-center space-x-2">
-          <div className="flex bg-gray-700 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('map')}
-              className={`px-3 py-1 rounded-md text-xs transition-all duration-200 ${
-                viewMode === 'map' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Map className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded-md text-xs transition-all duration-200 ${
-                viewMode === 'list' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <List className="h-3 w-3" />
-            </button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+            className="text-gray-300 hover:text-white"
+          >
+            {viewMode === 'list' ? <Map className="h-5 w-5" /> : <List className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
         {/* Search Bar */}
+      <div className="p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
+            type="text"
             placeholder="Buscar lugares en el campus..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800/50 backdrop-blur-xl border-white/20 text-white pl-10 rounded-xl shadow-lg"
+            className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
           />
         </div>
+        </div>
 
-        {/* Filter Buttons */}
-        <div className="flex overflow-x-auto space-x-3 pb-2">
-          {typeFilters.map(filter => (
+      {/* Category Filters */}
+      <div className="px-4 mb-4">
+        <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
+          {categories.map((category) => (
             <Button
-              key={filter.id}
-              onClick={() => setSelectedFilter(filter.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all duration-300 ${
-                selectedFilter === filter.id
-                  ? `${filter.color} text-white shadow-lg scale-105`
-                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                selectedCategory === category.id
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
-              <span>{filter.icon}</span>
-              <span className="text-sm font-medium">{filter.name}</span>
+              <span className="mr-2">{category.icon}</span>
+              {category.name}
             </Button>
           ))}
         </div>
+      </div>
 
-        {/* Vista del Mapa */}
-        {viewMode === 'map' && (
-          <div className="space-y-4">
-            <RealMapView />
-            
-            {/* Información del mapa */}
-            <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-4 text-white">
+      {/* Places List */}
+      <div className="px-4 space-y-3">
+        {filteredPlaces.map((place) => (
+          <Card
+            key={place.id}
+            className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-4 text-white cursor-pointer hover:bg-gray-800/70 transition-all duration-300"
+            onClick={() => handlePlaceClick(place)}
+          >
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">🗺️ Mapa de Ciudad Universitaria</h3>
-                  <p className="text-sm text-gray-400">Vista real de Google Maps - Los lugares se mostrarán pronto</p>
-                  <p className="text-xs text-blue-400 mt-1">📍 Coordenadas: 19.3216, -99.2241</p>
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-lg">{place.icon}</span>
                 </div>
-                <div className="text-right text-sm text-gray-400">
-                  <div className="text-green-400 font-bold text-lg">🏛️</div>
-                  <div className="text-xs">UNAM</div>
-                  <div className="text-xs">Ciudad Universitaria</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm">{place.name}</h3>
+                  <p className="text-gray-300 text-xs">{place.description}</p>
+                  <div className="flex items-center space-x-3 mt-1">
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-400">{place.distance}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      <span className="text-xs text-gray-400">{place.rating}</span>
+                    </div>
+                    {place.popular && (
+                      <div className="bg-orange-500/20 border border-orange-500/40 rounded-full px-2 py-1">
+                        <span className="text-xs text-orange-400 font-bold">Popular</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </Card>
-            
-            {/* QR Code Modal para vista de mapa */}
-            {showQR && (
-              <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white text-center">
-                <h4 className="font-semibold text-blue-400 mb-3">📱 Código QR para Pagar</h4>
-                <div className="bg-white p-4 rounded-xl inline-block mb-3">
-                  <img 
-                    src={generateQRCode(campusPlaces.find(p => p.id === showQR)?.qrCode || '')}
-                    alt="QR Code"
-                    className="w-32 h-32"
-                  />
+              <div className="text-right">
+                <div className="bg-green-500/20 border border-green-500/40 rounded-full px-2 py-1 mb-1">
+                  <span className="text-xs text-green-400 font-bold">-{place.discount}%</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-2">
-                  Escanea este código para pagar en {campusPlaces.find(p => p.id === showQR)?.name}
-                </p>
-                <p className="text-xs text-green-400 font-semibold mb-4">
-                  ¡Obtén {campusPlaces.find(p => p.id === showQR)?.discount}% de descuento automáticamente!
-                </p>
-                <Button
-                  onClick={() => setShowQR(null)}
-                  variant="outline"
-                  size="sm"
-                  className="text-gray-300 border-gray-600 hover:bg-gray-700"
-                >
-                  Cerrar
-                </Button>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Vista de Lista */}
-        {viewMode === 'list' && (
-          <>
-            {/* Popular Places */}
-            {selectedFilter === 'all' && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Star className="h-5 w-5 text-yellow-400" />
-                  <h2 className="text-white text-lg font-semibold">Lugares Populares</h2>
+                <div className="flex items-center space-x-1 text-gray-400">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs">{place.hours}</span>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {popularPlaces.map(place => (
-                    <Card 
-                      key={place.id}
-                      className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-4 text-white hover:scale-105 transition-all duration-300 shadow-lg cursor-pointer"
-                      onClick={() => setSelectedPlace(selectedPlace === place.id ? null : place.id)}
-                    >
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="text-2xl">{place.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm truncate">{place.name}</h3>
-                          <div className="flex items-center space-x-2 text-xs text-gray-400">
-                            <MapPin className="h-3 w-3" />
-                            <span>{place.distance}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1">
-                          <Percent className="h-3 w-3 text-green-400" />
-                          <span className="text-green-400 text-xs font-bold">{place.discount}% OFF</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <span className="text-xs">{place.rating}</span>
                         </div>
                       </div>
                     </Card>
                   ))}
+      </div>
+
+      {/* Place Details Modal */}
+      {selectedPlace && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <Card className="bg-gray-800 border-white/20 p-6 text-white w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-lg">{selectedPlace.icon}</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedPlace.name}</h3>
+                  <p className="text-gray-300 text-sm">{selectedPlace.description}</p>
                 </div>
               </div>
-            )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closePlaceDetails}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
 
-            {/* All Places List */}
             <div className="space-y-4">
-              <h2 className="text-white text-lg font-semibold">
-                {selectedFilter === 'all' ? 'Todos los Lugares' : `${typeFilters.find(f => f.id === selectedFilter)?.name}`}
-              </h2>
-              
-              <div className="space-y-3">
-                {filteredPlaces.map(place => (
-                  <Card 
-                    key={place.id}
-                    className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-5 text-white transition-all duration-300 hover:shadow-xl shadow-lg"
-                  >
-                    <div 
-                      className="cursor-pointer"
-                      onClick={() => setSelectedPlace(selectedPlace === place.id ? null : place.id)}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-3xl">{place.icon}</div>
-                          <div>
-                            <h3 className="font-bold text-lg">{place.name}</h3>
-                            <p className="text-gray-300 text-sm">{place.description}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className="flex items-center space-x-1 mb-1">
-                            <Percent className="h-4 w-4 text-green-400" />
-                            <span className="text-green-400 font-bold">{place.discount}% OFF</span>
+              {/* Rating and Distance */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 text-yellow-400" />
+                    <span className="text-sm">{selectedPlace.rating}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <MapPin className="h-3 w-3 text-gray-400" />
-                            <span className="text-gray-400 text-xs">{place.distance}</span>
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-400">{selectedPlace.distance}</span>
                           </div>
                         </div>
+                <div className="bg-green-500/20 border border-green-500/40 rounded-full px-3 py-1">
+                  <span className="text-sm text-green-400 font-bold">-{selectedPlace.discount}% descuento</span>
+                </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-sm text-gray-400">
-                        <div className="flex items-center space-x-4">
+              {/* Hours and Phone */}
+              <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>{place.rating}</span>
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-300">{selectedPlace.hours}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{place.hours}</span>
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-300">{selectedPlace.phone}</span>
                           </div>
                         </div>
                         
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowQR(showQR === place.id ? null : place.id);
-                          }}
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-400 hover:text-blue-300 p-2"
-                        >
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                      </div>
+              {/* Location */}
+              <div className="flex items-center space-x-1 text-sm">
+                <Navigation className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-300">{selectedPlace.realLocation}</span>
                     </div>
 
-                    {/* Detailed View */}
-                    {selectedPlace === place.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-600 space-y-4 animate-in slide-in-from-top-2 duration-300">
                         {/* Special Offers */}
                         <div>
-                          <h4 className="font-semibold text-orange-400 mb-2">🎁 Ofertas Especiales</h4>
-                          <div className="space-y-1">
-                            {place.specialOffers.map((offer, index) => (
-                              <div key={index} className="flex items-start space-x-2">
-                                <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="text-sm text-gray-300">{offer}</span>
+                <h4 className="font-semibold text-sm mb-2 text-orange-400">Ofertas especiales:</h4>
+                <div className="space-y-2">
+                  {selectedPlace.specialOffers.map((offer, index) => (
+                    <div key={index} className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                      <p className="text-sm text-orange-300">{offer}</p>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Contact Info */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4 text-blue-400" />
-                            <span className="text-sm">{place.phone}</span>
+              {/* Payment Methods */}
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Métodos de pago:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPlace.paymentMethods.map((method, index) => (
+                    <div key={index} className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1">
+                      <span className="text-xs text-blue-400">{method}</span>
                           </div>
-                          
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm"
-                              className="bg-blue-500 hover:bg-blue-600"
-                              onClick={() => navigate('/send')}
-                            >
-                              Pagar Ahora
-                            </Button>
-                          </div>
+                  ))}
                         </div>
                       </div>
-                    )}
 
-                    {/* QR Code Modal */}
-                    {showQR === place.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-600 text-center animate-in zoom-in-95 duration-300">
-                        <h4 className="font-semibold text-blue-400 mb-3">📱 Código QR para Pagar</h4>
-                        <div className="bg-white p-4 rounded-xl inline-block mb-3">
-                          <img 
-                            src={generateQRCode(place.qrCode)}
-                            alt={`QR Code for ${place.name}`}
-                            className="w-32 h-32"
-                          />
+              {/* QR Code */}
+              <div className="text-center">
+                <div className="bg-white rounded-lg p-4 inline-block">
+                  <QrCode className="h-16 w-16 text-gray-900 mx-auto" />
                         </div>
-                        <p className="text-xs text-gray-400 mb-2">
-                          Escanea este código para pagar en {place.name}
-                        </p>
-                        <p className="text-xs text-green-400 font-semibold">
-                          ¡Obtén {place.discount}% de descuento automáticamente!
-                        </p>
+                <p className="text-xs text-gray-400 mt-2">Código: {selectedPlace.qrCode}</p>
                       </div>
-                    )}
-                  </Card>
-                ))}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3">
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                  <Navigation className="h-4 w-4 mr-2" />
+                  Direcciones
+                </Button>
+                <Button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white">
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Pagar con PumaPay
+                </Button>
               </div>
             </div>
-
-            {/* No Results */}
-            {filteredPlaces.length === 0 && (
-              <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 text-center text-white">
-                <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay lugares disponibles</h3>
-                <p className="text-gray-400 text-sm">
-                  Intenta con otros filtros o términos de búsqueda
-                </p>
               </Card>
+        </div>
             )}
-          </>
-        )}
-      </div>
+
       <BottomNav />
     </div>
   );
 };
 
-export default CampusMap; 
+export default CampusMapPage;
