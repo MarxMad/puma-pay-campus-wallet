@@ -41,12 +41,12 @@ const HomePage = () => {
     setBonusMsg('Procesando bonus de bienvenida...');
     
     try {
-      console.log('🔄 Paso 1: Creando mock deposit de 500 MXN...');
-      setBonusMsg('Creando depósito de 500 MXN...');
+      console.log('🔄 Paso 1: Creando mock deposit de 100 MXN...');
+      setBonusMsg('Creando depósito de 100 MXN...');
       
       // 1. Mock deposit a la CLABE del usuario (Issuance)
       const depositResult = await junoService.createMockDeposit({
-        amount: 500,
+        amount: 100,
         receiver_clabe: user.clabe,
         receiver_name: user.name,
         sender_name: 'PumaPay Campus'
@@ -58,13 +58,13 @@ const HomePage = () => {
       // Pequeña pausa para que el sistema procese
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('🔄 Paso 2: Enviando 500 MXNB a wallet...');
+      console.log('🔄 Paso 2: Enviando 100 MXNB a wallet...');
       setBonusMsg('Enviando MXNB a tu wallet...');
       
       // 2. Withdrawal a la wallet del usuario (On-chain)
       const withdrawalResult = await junoService.sendOnchainWithdrawal({
         address: user.address,
-        amount: 500,
+        amount: 100,
         asset: 'MXNB',
         blockchain: 'ARBITRUM',
         compliance: {}
@@ -76,7 +76,7 @@ const HomePage = () => {
       // 3. Agregar transacción al historial local
       const bonusTransaction = {
         id: `bonus_${Date.now()}`,
-        amount: 500,
+        amount: 100,
         type: 'income',
         description: 'Bonus de bienvenida PumaPay',
         categoryId: '',
@@ -97,7 +97,7 @@ const HomePage = () => {
       localStorage.setItem('pumapay_bonus_claimed', 'true');
       setBonusClaimed(true);
       
-      setBonusMsg('¡Bonus de bienvenida de 500 MXNB enviado exitosamente!');
+      setBonusMsg('¡Bonus de bienvenida de 100 MXNB enviado exitosamente!');
       
       console.log('🎉 Proceso de bonus completado exitosamente');
       
@@ -760,7 +760,7 @@ const HomePage = () => {
           {bonusLoading ? (
             <span className="flex items-center"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Procesando…</span>
           ) : (
-            '🎁 Reclamar bonus de bienvenida (+500 MXNB)'
+            '🎁 Reclamar bonus de bienvenida (+100 MXNB)'
           )}
         </button>
         {bonusMsg && (
