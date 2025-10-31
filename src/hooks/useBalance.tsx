@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { portalService } from '@/services/portal';
 import { junoService } from '@/services/junoService';
 import { ethersBalanceService } from '@/services/ethersBalance';
@@ -61,6 +61,11 @@ export const useBalance = () => {
   });
   
   const { user, isAuthenticated } = useAuth();
+  
+  // Flag para prevenir múltiples consultas simultáneas
+  const isRefreshingRef = useRef(false);
+  const lastRefreshTimeRef = useRef<number>(0);
+  const REFRESH_COOLDOWN = 5000; // 5 segundos mínimo entre refreshes
 
   // Función para recalcular balance basado en transacciones
   const recalculateBalance = () => {
@@ -150,7 +155,8 @@ export const useBalance = () => {
   };
 
   // Función para obtener balance real desde blockchain usando ethers.js (FUENTE PRINCIPAL)
-  const getRealBalanceFromBlockchain = async (walletAddress: string): Promise<number> => {
+  // Memoizada para evitar recreaciones
+  const getRealBalanceFromBlockchain = useCallback(async (walletAddress: string): Promise<number> => {
     try {
       if (!walletAddress) {
         console.warn('⚠️ Dirección de wallet no proporcionada');
@@ -175,10 +181,11 @@ export const useBalance = () => {
       }
       return 0;
     }
-  };
+  }, []);
 
   // Función para obtener balance real desde Juno (BACKUP)
-  const getRealBalanceFromJuno = async (): Promise<number> => {
+  // Memoizada para evitar recreaciones
+  const getRealBalanceFromJuno = useCallback(async (): Promise<number> => {
     try {
       console.log('🔄 Obteniendo balance desde Juno API...');
       const balance = await junoService.getMXNBBalance();
@@ -188,11 +195,28 @@ export const useBalance = () => {
       console.error('❌ Error obteniendo balance desde Juno:', error);
       return 0;
     }
-  };
+  }, []);
 
   // Función para recargar balance manualmente
   // Prioridad: 1) ethers.js (blockchain), 2) Juno API, 3) Portal SDK
-  const refreshBalance = async () => {
+  // Memoizada con useCallback para evitar recreaciones innecesarias
+  const refreshBalance = useCallback(async () => {
+    // Prevenir múltiples llamadas simultáneas
+    if (isRefreshingRef.current) {
+      console.log('⚠️ Refresh ya en curso, ignorando llamada duplicada');
+      return;
+    }
+
+    // Cooldown: No refrescar si pasaron menos de 5 segundos desde la última vez
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
+    if (timeSinceLastRefresh < REFRESH_COOLDOWN) {
+      console.log(`⚠️ Cooldown activo. Esperando ${Math.ceil((REFRESH_COOLDOWN - timeSinceLastRefresh) / 1000)}s...`);
+      return;
+    }
+
+    isRefreshingRef.current = true;
+    lastRefreshTimeRef.current = now;
     setBalanceState(prev => ({ ...prev, isLoading: true }));
     
     try {
@@ -205,7 +229,12 @@ export const useBalance = () => {
       }
 
       // 2. Obtener balance desde Juno API (BACKUP 1)
-      const junoBalance = await getRealBalanceFromJuno();
+      let junoBalance = 0;
+      try {
+        junoBalance = await getRealBalanceFromJuno();
+      } catch (error) {
+        console.warn('⚠️ Error en Juno, continuando con otras fuentes:', error);
+      }
       
       // 3. Obtener balance desde Portal SDK (BACKUP 2)
       let portalBalance = 0;
@@ -242,68 +271,46 @@ export const useBalance = () => {
     } catch (error) {
       console.error('❌ Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
+    } finally {
+      isRefreshingRef.current = false;
     }
-  };
+  }, [user?.address, getRealBalanceFromBlockchain, getRealBalanceFromJuno]);
 
   // Al montar, obtener balance real desde blockchain (ethers.js), Juno y Portal
+  // Solo se ejecuta una vez cuando el usuario se autentica
   useEffect(() => {
-    const fetchBalance = async () => {
-      if (!isAuthenticated || !user) return;
-      
-      setBalanceState(prev => ({ ...prev, isLoading: true }));
+    if (!isAuthenticated || !user) {
+      // Si no hay usuario, resetear balance
+      setBalanceState({
+        balance: 0,
+        available: 0,
+        isLoading: false,
+        lastUpdated: new Date()
+      });
+      return;
+    }
+
+    // Cargar balance inicial desde cache si existe
+    const cached = localStorage.getItem(BALANCE_STORAGE_KEY);
+    if (cached) {
       try {
-        console.log('🔄 Inicializando balance real...');
-        const walletAddress = user?.address;
-        
-        // 1. Obtener balance desde blockchain usando ethers.js (FUENTE PRINCIPAL)
-        let blockchainBalance = 0;
-        if (walletAddress) {
-          blockchainBalance = await getRealBalanceFromBlockchain(walletAddress);
+        const cachedState = JSON.parse(cached);
+        if (cachedState.balance !== undefined) {
+          setBalanceState({
+            ...cachedState,
+            lastUpdated: new Date(cachedState.lastUpdated || Date.now()),
+            isLoading: false
+          });
+          console.log('📦 Balance cargado desde cache:', cachedState.balance);
         }
-        
-        // 2. Obtener balance desde Juno API (BACKUP 1)
-        const junoBalance = await getRealBalanceFromJuno();
-        
-        // 3. Obtener balance desde Portal SDK (BACKUP 2)
-        let portalBalance = 0;
-        try {
-          await portalService.onReady();
-          portalBalance = await portalService.getMXNBBalance();
-        } catch (error) {
-          console.warn('⚠️ Error obteniendo balance desde Portal:', error);
-        }
-        
-        // Usar el balance más alto entre todas las fuentes
-        // Prioridad: blockchain > juno > portal
-        const balance = Math.max(
-          blockchainBalance || 0,
-          typeof junoBalance === 'number' ? junoBalance : 0,
-          typeof portalBalance === 'number' ? portalBalance : 0
-        );
-        
-        const newState = {
-          balance,
-          available: balance,
-          isLoading: false,
-          lastUpdated: new Date()
-        };
-        
-        setBalanceState(newState);
-        localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-        console.log('✅ Balance inicializado:', {
-          blockchain: blockchainBalance,
-          juno: junoBalance,
-          portal: portalBalance,
-          final: balance
-        });
-      } catch (error) {
-        console.error('❌ Error inicializando balance:', error);
-        setBalanceState(prev => ({ ...prev, isLoading: false }));
+      } catch (e) {
+        console.warn('⚠️ Error cargando balance desde cache:', e);
       }
-    };
-    
-    fetchBalance();
-  }, [isAuthenticated, user]);
+    }
+
+    // Llamar refreshBalance solo una vez al inicio
+    refreshBalance();
+  }, [isAuthenticated, user?.address, refreshBalance]);
 
   return {
     ...balanceState,

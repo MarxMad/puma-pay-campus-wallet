@@ -130,43 +130,57 @@ const HomePage = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastBalanceUpdate, setLastBalanceUpdate] = useState<Date | null>(null);
 
-  // Actualizar balance desde blockchain cuando se monta o cuando hay eventos
+  // Actualizar balance cuando hay eventos (transacciones nuevas)
+  // NO llamar al montar porque useBalance ya lo hace
   useEffect(() => {
+    let updateTimeout: NodeJS.Timeout;
+    
     const handleUpdate = async () => {
-      console.log('🔄 Actualizando balance desde blockchain...');
-      setIsRefreshing(true);
-      try {
-        await refreshBalance();
-        setLastBalanceUpdate(new Date());
-      } catch (error) {
-        console.error('❌ Error actualizando balance:', error);
-      } finally {
-        setIsRefreshing(false);
-      }
+      // Debounce: Esperar 1 segundo antes de actualizar para evitar múltiples llamadas
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(async () => {
+        if (!isRefreshing && !balanceLoading) {
+          console.log('🔄 Actualizando balance desde blockchain por evento...');
+          setIsRefreshing(true);
+          try {
+            await refreshBalance();
+            setLastBalanceUpdate(new Date());
+          } catch (error) {
+            console.error('❌ Error actualizando balance:', error);
+          } finally {
+            setIsRefreshing(false);
+          }
+        }
+      }, 1000); // Debounce de 1 segundo
     };
 
-    // Al montar, obtener balance real desde blockchain
-    handleUpdate();
-
-    // Al recibir eventos relevantes, actualizar balance
+    // Escuchar eventos de transacciones
     window.addEventListener('transactionAdded', handleUpdate);
     window.addEventListener('forceBalanceUpdate', handleUpdate);
     
     return () => {
+      clearTimeout(updateTimeout);
       window.removeEventListener('transactionAdded', handleUpdate);
       window.removeEventListener('forceBalanceUpdate', handleUpdate);
     };
-  }, [refreshBalance]);
+  }, [refreshBalance, isRefreshing, balanceLoading]);
 
-  // Actualización periódica del balance (cada 30 segundos)
+  // Actualización periódica del balance (cada 60 segundos, menos agresivo)
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!balanceLoading && !isRefreshing) {
         console.log('🔄 Actualización periódica del balance...');
-        await refreshBalance();
-        setLastBalanceUpdate(new Date());
+        setIsRefreshing(true);
+        try {
+          await refreshBalance();
+          setLastBalanceUpdate(new Date());
+        } catch (error) {
+          console.error('❌ Error en actualización periódica:', error);
+        } finally {
+          setIsRefreshing(false);
+        }
       }
-    }, 30000); // 30 segundos
+    }, 60000); // 60 segundos (más razonable)
 
     return () => clearInterval(interval);
   }, [balanceLoading, isRefreshing, refreshBalance]);
