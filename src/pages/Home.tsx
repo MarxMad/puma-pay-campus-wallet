@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -119,26 +119,57 @@ const HomePage = () => {
     isLoading: categoriesLoading 
   } = useCategories();
 
-  // Hook de balance para obtener balance real del usuario
-  const { available, isLoading: balanceLoading, recalculateBalance } = useBalance();
+  // Hook de balance para obtener balance real del usuario desde blockchain
+  const { 
+    available, 
+    isLoading: balanceLoading, 
+    refreshBalance,
+    getRealBalanceFromBlockchain
+  } = useBalance();
 
-  // Solo recalcula balance al montar y cuando se detecta una transacción enviada o recibida
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastBalanceUpdate, setLastBalanceUpdate] = useState<Date | null>(null);
+
+  // Actualizar balance desde blockchain cuando se monta o cuando hay eventos
   useEffect(() => {
-    const handleUpdate = () => {
-      if (recalculateBalance) {
-        recalculateBalance();
+    const handleUpdate = async () => {
+      console.log('🔄 Actualizando balance desde blockchain...');
+      setIsRefreshing(true);
+      try {
+        await refreshBalance();
+        setLastBalanceUpdate(new Date());
+      } catch (error) {
+        console.error('❌ Error actualizando balance:', error);
+      } finally {
+        setIsRefreshing(false);
       }
     };
-    // Al montar
+
+    // Al montar, obtener balance real desde blockchain
     handleUpdate();
-    // Al recibir eventos relevantes
+
+    // Al recibir eventos relevantes, actualizar balance
     window.addEventListener('transactionAdded', handleUpdate);
     window.addEventListener('forceBalanceUpdate', handleUpdate);
+    
     return () => {
       window.removeEventListener('transactionAdded', handleUpdate);
       window.removeEventListener('forceBalanceUpdate', handleUpdate);
     };
-  }, []);
+  }, [refreshBalance]);
+
+  // Actualización periódica del balance (cada 30 segundos)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!balanceLoading && !isRefreshing) {
+        console.log('🔄 Actualización periódica del balance...');
+        await refreshBalance();
+        setLastBalanceUpdate(new Date());
+      }
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(interval);
+  }, [balanceLoading, isRefreshing, refreshBalance]);
 
   // Datos reales de categorías y transacciones
   const totalExpenses = getTotalExpenses();
@@ -310,36 +341,71 @@ const HomePage = () => {
         <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <span className="text-gray-300 text-sm">Saldo disponible</span>
-              {/* TEMPORALMENTE COMENTADO - Gastos del mes */}
-              {/* 
-              {totalExpenses > 0 && (
-              <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-gray-400 text-xs">
-                    Gastado este mes: ${totalExpenses.toFixed(2)}
-                </span>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300 text-sm">Saldo disponible</span>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Balance actualizado desde blockchain"></div>
+                  <span className="text-xs text-green-400 font-medium">Blockchain</span>
+                </div>
               </div>
+              {lastBalanceUpdate && (
+                <span className="text-xs text-gray-500 mt-1 block">
+                  Actualizado: {lastBalanceUpdate.toLocaleTimeString('es-MX')}
+                </span>
               )}
-              */}
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowBalance(!showBalance)}
-              className="text-gray-300 hover:text-white"
-            >
-              {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  await refreshBalance();
+                  setLastBalanceUpdate(new Date());
+                  setIsRefreshing(false);
+                }}
+                disabled={isRefreshing || balanceLoading}
+                className="text-gray-300 hover:text-white"
+                title="Actualizar balance desde blockchain"
+              >
+                {isRefreshing || balanceLoading ? (
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowBalance(!showBalance)}
+                className="text-gray-300 hover:text-white"
+              >
+                {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           
-          {balanceLoading ? (
+          {balanceLoading || isRefreshing ? (
             <SkeletonBalance />
           ) : (
-            <div className="text-4xl font-bold mb-6 transform transition-all duration-300 ease-out hover:brightness-110 hover:text-shadow-glow">
-              {showBalance ? `$${available.toFixed(2)}` : '••••••'}
-                <span className="text-lg text-gray-400 ml-2">MXNB</span>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold transform transition-all duration-300 ease-out hover:brightness-110 hover:text-shadow-glow">
+                {showBalance ? (
+                  <>
+                    ${available.toFixed(2)}
+                    <span className="text-lg text-gray-400 ml-2">MXNB</span>
+                  </>
+                ) : (
+                  '••••••'
+                )}
+              </div>
+              {showBalance && available === 0 && (
+                <p className="text-sm text-gray-400">
+                  Tu wallet está lista. Recibe MXNB para empezar a usar PumaPay.
+                </p>
+              )}
             </div>
-            )}
+          )}
           
           {/* Weekly Chart - TEMPORALMENTE COMENTADO */}
           {/* 
