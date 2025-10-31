@@ -1,0 +1,48 @@
+# GitAttributes para configurar detección de lenguaje en GitHub
+
+# Excluir archivos que no deberían contar para el porcentaje de lenguaje
+# (node_modules y dependencias ya están en .gitignore, pero esto es adicional)
+*.lock linguist-vendored
+package-lock.json linguist-vendored
+yarn.lock linguist-vendored
+bun.lockb linguist-vendored
+
+# Excluir archivos de documentación del conteo
+*.md linguist-documentation
+*.MD linguist-documentation
+docs/** linguist-documentation
+
+# Excluir archivos de configuración
+*.config.js linguist-generated=false
+*.config.ts linguist-generated=false
+tailwind.config.ts linguist-generated=false
+postcss.config.js linguist-generated=false
+vite.config.ts linguist-generated=false
+tsconfig*.json linguist-generated=false
+components.json linguist-generated=false
+eslint.config.js linguist-generated=false
+vercel.json linguist-generated=false
+
+# Excluir archivos de build y assets
+*.min.js linguist-generated
+*.min.css linguist-generated
+dist/** linguist-generated
+build/** linguist-generated
+
+# Contar archivos TypeScript de componentes UI como TypeScript (mantener balance)
+src/components/ui/*.tsx linguist-language=TypeScript
+src/components/ui/*.ts linguist-language=TypeScript
+
+# Contar archivos JavaScript del backend como JavaScript
+backend/**/*.js linguist-language=JavaScript
+api/**/*.js linguist-language=JavaScript
+
+# Archivos de configuración no cuentan como código
+*.json linguist-generated=false
+package.json linguist-generated=false
+
+# Si quieres que aparezca principalmente como JavaScript:
+# Descomenta estas líneas para excluir más archivos TypeScript del conteo:
+# src/**/*.tsx linguist-vendored
+# src/**/*.ts linguist-vendored
+
