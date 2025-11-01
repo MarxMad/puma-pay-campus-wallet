@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { bitsoService } from '@/services/bitso';
 import { portalService } from '@/services/portal';
@@ -24,6 +25,8 @@ const HomePage = () => {
   const [bonusClaimed, setBonusClaimed] = useState(false);
   const [bonusLoading, setBonusLoading] = useState(false);
   const [bonusMsg, setBonusMsg] = useState('');
+  const [showBonusSuccess, setShowBonusSuccess] = useState(false);
+  const [showBonusAnimation, setShowBonusAnimation] = useState(false);
 
   useEffect(() => {
     setBonusClaimed(localStorage.getItem('pumapay_bonus_claimed') === 'true');
@@ -98,6 +101,20 @@ const HomePage = () => {
       setBonusClaimed(true);
       
       setBonusMsg('¡Bonus de bienvenida de 100 MXNB enviado exitosamente!');
+      
+      // Mostrar animación de éxito
+      setShowBonusAnimation(true);
+      setShowBonusSuccess(true);
+      
+      // Ocultar animación después de 3 segundos
+      setTimeout(() => {
+        setShowBonusAnimation(false);
+      }, 3000);
+      
+      // Ocultar mensaje de éxito después de 5 segundos
+      setTimeout(() => {
+        setShowBonusSuccess(false);
+      }, 5000);
       
       console.log('🎉 Proceso de bonus completado exitosamente');
       
@@ -550,127 +567,139 @@ const HomePage = () => {
         
         <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* Cafetería Las Islas */}
-          <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-xl border-orange-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm">🍽️</span>
+          <Card className="bg-gradient-to-br from-orange-600/40 to-red-600/40 backdrop-blur-xl border-orange-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/30"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-sm">🍽️</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Cafetería Las Islas</h4>
+                    <p className="text-xs text-white/90 font-medium">Comida</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Cafetería Las Islas</h4>
-                  <p className="text-xs text-orange-200">Comida</p>
+                <div className="text-right">
+                  <div className="bg-orange-600 rounded-full px-2 py-1 shadow-md">
+                    <span className="text-xs font-bold text-white">-20%</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-orange-500/30 rounded-full px-2 py-1">
-                  <span className="text-xs font-bold">-20%</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Chilaquiles con pollo</span>
+                  <span className="font-bold text-orange-200 drop-shadow-lg">75 MXNB</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Café americano</span>
+                  <span className="font-bold text-orange-200 drop-shadow-lg">25 MXNB</span>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Chilaquiles con pollo</span>
-                <span className="font-bold text-orange-300">75 MXNB</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Café americano</span>
-                <span className="font-bold text-orange-300">25 MXNB</span>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-orange-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
           {/* Café y Cuernito */}
-          <Card className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-xl border-yellow-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm">☕</span>
+          <Card className="bg-gradient-to-br from-yellow-600/40 to-orange-600/40 backdrop-blur-xl border-yellow-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/30"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-sm">☕</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Café y Cuernito</h4>
+                    <p className="text-xs text-white/90 font-medium">Café</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Café y Cuernito</h4>
-                  <p className="text-xs text-yellow-200">Café</p>
+                <div className="text-right">
+                  <div className="bg-yellow-600 rounded-full px-2 py-1 shadow-md">
+                    <span className="text-xs font-bold text-white">-15%</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-yellow-500/30 rounded-full px-2 py-1">
-                  <span className="text-xs font-bold">-15%</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Café especial</span>
+                  <span className="font-bold text-yellow-200 drop-shadow-lg">80 MXNB</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Jugo de naranja</span>
+                  <span className="font-bold text-yellow-200 drop-shadow-lg">25 MXNB</span>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Café especial</span>
-                <span className="font-bold text-yellow-300">80 MXNB</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Jugo de naranja</span>
-                <span className="font-bold text-yellow-300">25 MXNB</span>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
           {/* Librería Central */}
-          <Card className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-xl border-blue-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm">📚</span>
+          <Card className="bg-gradient-to-br from-blue-600/40 to-indigo-600/40 backdrop-blur-xl border-blue-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/30"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-sm">📚</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Librería Central</h4>
+                    <p className="text-xs text-white/90 font-medium">Libros</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Librería Central</h4>
-                  <p className="text-xs text-blue-200">Libros</p>
+                <div className="text-right">
+                  <div className="bg-blue-600 rounded-full px-2 py-1 shadow-md">
+                    <span className="text-xs font-bold text-white">-10%</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-blue-500/30 rounded-full px-2 py-1">
-                  <span className="text-xs font-bold">-10%</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Álgebra Lineal</span>
+                  <span className="font-bold text-blue-200 drop-shadow-lg">120 MXNB</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Cálculo Diferencial</span>
+                  <span className="font-bold text-blue-200 drop-shadow-lg">95 MXNB</span>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Álgebra Lineal</span>
-                <span className="font-bold text-blue-300">120 MXNB</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Cálculo Diferencial</span>
-                <span className="font-bold text-blue-300">95 MXNB</span>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
           {/* Gimnasio */}
-          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl border-green-500/30 p-4 text-white min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm">🏃‍♂️</span>
+          <Card className="bg-gradient-to-br from-green-600/40 to-emerald-600/40 backdrop-blur-xl border-green-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/30"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-sm">🏃‍♂️</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Gimnasio Central</h4>
+                    <p className="text-xs text-white/90 font-medium">Deportes</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Gimnasio Central</h4>
-                  <p className="text-xs text-green-200">Deportes</p>
+                <div className="text-right">
+                  <div className="bg-green-600 rounded-full px-2 py-1 shadow-md">
+                    <span className="text-xs font-bold text-white">-25%</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-green-500/30 rounded-full px-2 py-1">
-                  <span className="text-xs font-bold">-25%</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Membresía mensual</span>
+                  <span className="font-bold text-green-200 drop-shadow-lg">200 MXNB</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
+                  <span className="text-sm text-white font-medium">Clase de natación</span>
+                  <span className="font-bold text-green-200 drop-shadow-lg">50 MXNB</span>
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Membresía mensual</span>
-                <span className="font-bold text-green-300">200 MXNB</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Clase de natación</span>
-                <span className="font-bold text-green-300">50 MXNB</span>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-green-500/10 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-green-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
         </div>
       </div>
@@ -957,7 +986,7 @@ const HomePage = () => {
       <div className="my-4 flex flex-col items-center justify-center">
         <button
           onClick={handleClaimBonus}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg animate-bounce disabled:opacity-60 disabled:cursor-not-allowed"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg animate-bounce disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-105 active:scale-95"
           disabled={bonusLoading}
         >
           {bonusLoading ? (
@@ -970,6 +999,72 @@ const HomePage = () => {
           <div className="mt-3 text-green-200 text-center text-sm animate-pulse">{bonusMsg}</div>
         )}
       </div>
+
+      {/* Modal de animación de éxito del bonus */}
+      {showBonusSuccess && (
+        <Dialog open={showBonusSuccess} onOpenChange={setShowBonusSuccess}>
+          <DialogContent className="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 border-none text-white p-0 overflow-hidden max-w-md">
+            <div className="relative p-8 text-center">
+              {/* Confetti animation */}
+              {showBonusAnimation && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {[...Array(20)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute animate-bounce"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 0.5}s`,
+                        animationDuration: `${1 + Math.random() * 1}s`,
+                      }}
+                    >
+                      <PartyPopper className="w-4 h-4 text-yellow-300" />
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Contenido principal */}
+              <div className="relative z-10">
+                <div className="mb-4 flex justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                    <div className="relative bg-green-500 rounded-full p-6 animate-pulse">
+                      <Gift className="w-16 h-16 text-white" />
+                    </div>
+                  </div>
+                </div>
+                
+                <h2 className="text-3xl font-bold mb-2 animate-bounce">¡Bonus Reclamado!</h2>
+                <p className="text-lg mb-4 text-green-100">
+                  Has recibido <span className="font-bold text-yellow-300 text-2xl">100 MXNB</span>
+                </p>
+                
+                <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-300" />
+                    <span className="text-sm">Depósito creado exitosamente</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2">
+                    <CheckCircle className="w-5 h-5 text-green-300" />
+                    <span className="text-sm">MXNB enviado a tu wallet</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <Button
+                    onClick={() => setShowBonusSuccess(false)}
+                    className="bg-white text-green-600 hover:bg-gray-100 font-bold py-2 px-6 rounded-full"
+                  >
+                    ¡Genial!
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <BottomNav />
     </div>
