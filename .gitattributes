@@ -30,27 +30,24 @@ dist/** linguist-generated
 build/** linguist-generated
 
 # ==========================================
-# CONFIGURACIÓN: Proyecto aparece como JAVA
+# CONFIGURACIÓN: Proyecto aparece como TYPESCRIPT
 # ==========================================
 
-# Excluir archivos TypeScript del conteo (para dar prioridad a Java)
-src/**/*.tsx linguist-vendored
-src/**/*.ts linguist-vendored
+# Contar archivos TypeScript correctamente
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
 
-# Excluir archivos JavaScript del conteo
-backend/**/*.js linguist-vendored
-api/**/*.js linguist-vendored
-*.js linguist-vendored
+# Contar archivos JavaScript del backend como JavaScript
+backend/**/*.js linguist-language=JavaScript
+api/**/*.js linguist-language=JavaScript
 
-# Forzar que cualquier archivo Java se cuente como Java
-*.java linguist-language=Java
+# Excluir archivos CSS del conteo (para evitar que aparezca como CSS)
+*.css linguist-vendored
+*.scss linguist-vendored
+*.sass linguist-vendored
+*.less linguist-vendored
 
 # Archivos de configuración no cuentan como código
 *.json linguist-generated=false
 package.json linguist-generated=false
-
-# Nota: Para que GitHub muestre Java como lenguaje principal,
-# necesitas agregar archivos .java al proyecto.
-# Si no tienes archivos Java, GitHub podría no mostrar ningún lenguaje
-# o mostrar el siguiente más común (probablemente TypeScript si los excluyes).
 
