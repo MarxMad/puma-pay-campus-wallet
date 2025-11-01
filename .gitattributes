@@ -29,20 +29,28 @@ vercel.json linguist-generated=false
 dist/** linguist-generated
 build/** linguist-generated
 
-# Contar archivos TypeScript de componentes UI como TypeScript (mantener balance)
-src/components/ui/*.tsx linguist-language=TypeScript
-src/components/ui/*.ts linguist-language=TypeScript
+# ==========================================
+# CONFIGURACIÓN: Proyecto aparece como JAVA
+# ==========================================
 
-# Contar archivos JavaScript del backend como JavaScript
-backend/**/*.js linguist-language=JavaScript
-api/**/*.js linguist-language=JavaScript
+# Excluir archivos TypeScript del conteo (para dar prioridad a Java)
+src/**/*.tsx linguist-vendored
+src/**/*.ts linguist-vendored
+
+# Excluir archivos JavaScript del conteo
+backend/**/*.js linguist-vendored
+api/**/*.js linguist-vendored
+*.js linguist-vendored
+
+# Forzar que cualquier archivo Java se cuente como Java
+*.java linguist-language=Java
 
 # Archivos de configuración no cuentan como código
 *.json linguist-generated=false
 package.json linguist-generated=false
 
-# Si quieres que aparezca principalmente como JavaScript:
-# Descomenta estas líneas para excluir más archivos TypeScript del conteo:
-# src/**/*.tsx linguist-vendored
-# src/**/*.ts linguist-vendored
+# Nota: Para que GitHub muestre Java como lenguaje principal,
+# necesitas agregar archivos .java al proyecto.
+# Si no tienes archivos Java, GitHub podría no mostrar ningún lenguaje
+# o mostrar el siguiente más común (probablemente TypeScript si los excluyes).
 
