@@ -275,24 +275,24 @@ const CoursesPage = () => {
               {trendingCourses.map((course) => (
                 <Card
                   key={course.id}
-                  className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 p-4 hover:border-amber-500/60 transition-colors duration-300 text-white"
+                  className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 p-4 hover:border-amber-500/60 transition-colors duration-300 text-white w-full"
                 >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-amber-500/20 border-amber-400 text-amber-100">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="bg-amber-500/20 border-amber-400 text-amber-100 text-xs">
                           Tendencia
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="border-gray-700 text-gray-200"
+                          className="border-gray-700 text-gray-200 text-xs"
                         >
                           {course.category}
                         </Badge>
                       </div>
-                      <h4 className="text-lg font-semibold text-white">{course.title}</h4>
-                      <p className="text-sm text-gray-400">{course.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <h4 className="text-lg font-semibold text-white break-words">{course.title}</h4>
+                      <p className="text-sm text-gray-400 break-words line-clamp-2">{course.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
                           {course.duration}
@@ -306,7 +306,7 @@ const CoursesPage = () => {
                     </div>
                     <Button
                       onClick={() => handlePurchase(course)}
-                      className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
+                      className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold w-full md:w-auto flex-shrink-0 whitespace-nowrap"
                     >
                       Comprar · {course.priceMXNB} MXNB
                     </Button>
