@@ -295,8 +295,11 @@ class PortalService {
 
   /**
    * Enviar MXNB usando sendAsset (TRANSACCIONES REALES)
+   * @param to - Dirección destino
+   * @param amount - Cantidad a enviar
+   * @param fromAddress - Dirección del usuario (opcional, se obtiene automáticamente si no se proporciona)
    */
-  async sendMXNB(to: string, amount: number): Promise<string> {
+  async sendMXNB(to: string, amount: number, fromAddress?: string): Promise<string> {
     await this.initialize();
     
     try {
@@ -328,8 +331,17 @@ class PortalService {
             // hasta entonces. Usamos la dirección guardada como prioridad.
             let address: string | null = null;
             
+            // PRIORIDAD 0: Usar dirección proporcionada como parámetro (más confiable)
+            if (fromAddress) {
+              address = fromAddress;
+              console.log('✅ Usando dirección proporcionada como parámetro:', address);
+              // Sincronizar con currentUser
+              if (!this.currentUser) this.currentUser = {};
+              this.currentUser.address = address;
+            }
+            
             // PRIORIDAD 1: Usar dirección guardada (más confiable con Account Abstraction)
-            if (this.currentUser?.address) {
+            if (!address && this.currentUser?.address) {
               address = this.currentUser.address;
               console.log('✅ Usando dirección guardada (prioridad para Account Abstraction):', address);
             }
