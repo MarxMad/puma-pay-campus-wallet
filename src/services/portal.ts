@@ -33,12 +33,21 @@ class PortalService {
    * Inicializa el Portal SDK con configuración dinámica
    */
   async initialize(configOverride?: { apiKey: string, clientId?: string }): Promise<void> {
+    // Si ya está inicializado y no hay override, no hacer nada
     if (this.isInitialized && !configOverride) return;
 
     try {
+      // Si hay configOverride, destruir la instancia anterior para forzar nueva inicialización
+      if (configOverride && this.portal) {
+        console.log('🔄 Destruyendo instancia anterior de Portal para re-inicializar...');
+        this.portal = null;
+        this.isInitialized = false;
+      }
+
       const config = configOverride
         ? { ...PORTAL_CONFIG, apiKey: configOverride.apiKey, clientId: configOverride.clientId }
         : PORTAL_CONFIG;
+      
       this.portal = new Portal(config);
       this.isInitialized = true;
       console.log('✅ Portal SDK inicializado correctamente', configOverride ? '(dinámico)' : '');
@@ -331,7 +340,7 @@ class PortalService {
         // Timeout de seguridad
         const timeout = setTimeout(() => {
           reject(new Error('Timeout esperando a que Portal esté listo. Intenta nuevamente.'));
-        }, 15000); // 15 segundos máximo (Account Abstraction puede tomar más tiempo)
+        }, 20000); // 20 segundos máximo (Account Abstraction puede tomar más tiempo)
 
         this.portal!.onReady(async () => {
           try {
@@ -342,6 +351,18 @@ class PortalService {
               if (!this.currentUser) this.currentUser = {};
               this.currentUser.address = fromAddress;
               console.log('✅ Dirección sincronizada:', fromAddress);
+            }
+            
+            // Esperar un momento adicional para asegurar que Portal está completamente listo
+            // Esto es especialmente importante después de re-inicializar con nuevas credenciales
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Verificar que la wallet existe (opcional, pero ayuda a diagnosticar problemas)
+            try {
+              const walletExists = await this.portal!.doesWalletExist();
+              console.log('✅ Verificación de wallet:', walletExists ? 'existe' : 'no existe (se creará en primera transacción)');
+            } catch (error) {
+              console.warn('⚠️ No se pudo verificar existencia de wallet, continuando...', error);
             }
             
             console.log('✅ Portal listo. Enviando transacción con sendAsset...');
