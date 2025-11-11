@@ -318,7 +318,7 @@ class PortalService {
         clientId: credentials.clientId
       });
     } else {
-      await this.initialize();
+    await this.initialize();
     }
     
     try {
@@ -367,8 +367,16 @@ class PortalService {
                 await this.portal!.createWallet();
                 console.log('✅ Wallet creada exitosamente');
                 
-                // Esperar un momento adicional después de crear la wallet
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Esperar más tiempo después de crear la wallet para asegurar que esté completamente lista
+                console.log('⏳ Esperando a que la wallet esté completamente lista...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Verificar nuevamente que la wallet existe después de crearla
+                const walletExistsAfter = await this.portal!.doesWalletExist();
+                console.log('✅ Verificación post-creación:', walletExistsAfter ? 'existe' : 'no existe');
+              } else {
+                // Si la wallet ya existe, esperar un momento para asegurar que esté lista
+                await new Promise(resolve => setTimeout(resolve, 500));
               }
             } catch (error) {
               console.warn('⚠️ Error verificando/creando wallet:', error);
@@ -376,7 +384,8 @@ class PortalService {
               try {
                 console.log('🔄 Intentando crear wallet como fallback...');
                 await this.portal!.createWallet();
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('⏳ Esperando después de crear wallet (fallback)...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
               } catch (createError) {
                 console.warn('⚠️ No se pudo crear wallet, continuando...', createError);
               }
@@ -387,24 +396,69 @@ class PortalService {
 
             // Usar sendAsset del Portal SDK directamente - Portal maneja todo internamente
             // No necesitamos obtener la dirección antes, Portal lo hace automáticamente
-            const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
-              amount: amount.toString(),
-              to: to,
-              token: MXNB_CONTRACT_ADDRESS
-            });
-            
-            console.log('✅ Transacción MXNB enviada:', result);
-            
-            // Con Account Abstraction, el hash es un User Operation hash, no un transaction hash
-            const resultAny = result as any;
-            const txHash = typeof result === 'string' 
-              ? result 
-              : resultAny?.txHash || resultAny?.hash || resultAny?.transactionHash || resultAny?.userOpHash || 'unknown';
-            
-            console.log('✅ Hash de transacción/User Operation:', txHash);
-            console.log('ℹ️ Si es Account Abstraction, este es un User Operation hash. Puedes verlo en Jiffy Scan.');
-            
-            resolve(txHash);
+            try {
+              const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+        amount: amount.toString(),
+        to: to,
+        token: MXNB_CONTRACT_ADDRESS
+      });
+      
+              console.log('✅ Transacción MXNB enviada - resultado completo:', result);
+              console.log('📋 Tipo de resultado:', typeof result);
+              console.log('📋 Resultado es string?', typeof result === 'string');
+              
+              // Con Account Abstraction, el hash puede venir en diferentes formatos
+              let txHash: string = 'unknown';
+              
+              if (typeof result === 'string') {
+                txHash = result;
+                console.log('✅ Hash obtenido como string:', txHash);
+              } else if (result) {
+                const resultAny = result as any;
+                // Intentar diferentes propiedades comunes
+                txHash = resultAny?.txHash 
+                  || resultAny?.hash 
+                  || resultAny?.transactionHash 
+                  || resultAny?.userOpHash
+                  || resultAny?.userOperationHash
+                  || resultAny?.data?.txHash
+                  || resultAny?.data?.hash
+                  || resultAny?.data?.userOpHash
+                  || 'unknown';
+                
+                console.log('✅ Hash extraído del objeto:', txHash);
+                console.log('📋 Propiedades del objeto:', Object.keys(resultAny || {}));
+              } else {
+                console.warn('⚠️ sendAsset retornó undefined o null');
+                throw new Error('sendAsset retornó undefined. La transacción puede no haberse completado.');
+              }
+              
+              if (txHash === 'unknown') {
+                console.warn('⚠️ No se pudo extraer el hash de la transacción');
+                console.warn('📋 Resultado completo:', JSON.stringify(result, null, 2));
+                throw new Error('No se pudo obtener el hash de la transacción. Revisa los logs para más detalles.');
+              }
+              
+              console.log('✅ Hash de transacción/User Operation:', txHash);
+              console.log('ℹ️ Si es Account Abstraction, este es un User Operation hash. Puedes verlo en Jiffy Scan.');
+              
+              resolve(txHash);
+            } catch (signError: any) {
+              console.error('❌ Error al firmar/enviar transacción:', signError);
+              console.error('📋 Detalles del error:', {
+                message: signError?.message,
+                code: signError?.code,
+                status: signError?.status,
+                response: signError?.response
+              });
+              
+              // Si el error es 400, puede ser un problema de configuración o autenticación
+              if (signError?.status === 400 || signError?.code === 400) {
+                throw new Error('Error 400 al firmar transacción. Verifica que la wallet esté correctamente configurada y autenticada.');
+              }
+              
+              throw signError;
+            }
           } catch (error: any) {
             console.error('❌ Error enviando MXNB:', error);
             reject(new Error(`No se pudo enviar MXNB: ${error.message || error}`));
