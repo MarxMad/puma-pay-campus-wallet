@@ -36,11 +36,15 @@ const Welcome = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 max-w-sm w-full text-center shadow-2xl shadow-black/50">
         <div className="mb-8">
-          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-400/20 p-3">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center shadow-inner">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain" />
+          <div className="w-40 h-40 mx-auto mb-6 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-orange-500/30 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-500/10 p-4">
+            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-24 w-24 object-contain brightness-110" />
             </div>
           </div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            PumaPay
+          </h1>
+          <p className="text-sm text-gray-400">Campus Wallet</p>
         </div>
         <p className="text-gray-400 mb-8 leading-relaxed">
           Tu wallet estudiantil para pagos<br />

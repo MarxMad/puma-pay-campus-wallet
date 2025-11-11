@@ -288,9 +288,17 @@ const HomePage = () => {
         <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
           <User className="h-5 w-5" />
         </Button>
-        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg p-1">
-          <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-5 w-5 object-contain" />
+        <div className="flex items-center space-x-2">
+          <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-lg p-1.5">
+            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-8 w-8 object-contain brightness-110" />
+            </div>
+          </div>
+          <div className="hidden sm:block">
+            <h1 className="text-lg font-bold text-white">
+              PumaPay
+            </h1>
+            <p className="text-xs text-gray-400">Campus Wallet</p>
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
@@ -300,9 +308,28 @@ const HomePage = () => {
 
       {/* Wallet Info */}
       <div className="p-4">
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white mb-6">
-          <div className="mb-2">
-            <span className="text-gray-300 text-sm">Dirección de wallet</span>
+        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white mb-6 relative overflow-hidden">
+          {/* Logo decorativo en el fondo */}
+          <div className="absolute top-4 right-4 opacity-5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 object-contain" />
+          </div>
+          <div className="relative z-10">
+            {/* Logo principal */}
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-2xl flex items-center justify-center shadow-lg p-2">
+                <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center shadow-inner border border-gray-600/50">
+                  <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain brightness-110" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  PumaPay Wallet
+                </h2>
+                <p className="text-xs text-gray-400">Tu wallet estudiantil</p>
+              </div>
+            </div>
+            <div className="mb-2">
+              <span className="text-gray-300 text-sm">Dirección de wallet</span>
             <div className="flex items-center space-x-2 font-mono text-green-400 text-xs break-all mt-1">
               <span>{user?.address}</span>
               {user?.address && (
@@ -368,10 +395,15 @@ const HomePage = () => {
         </Card>
       </div>
 
-      {/* Balance Card */}
+          {/* Balance Card */}
       <div className="p-4 overflow-hidden">
         <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden shadow-2xl shadow-black/40">
-          <div className="flex items-center justify-between mb-4">
+          {/* Logo decorativo en el fondo del balance */}
+          <div className="absolute bottom-4 right-4 opacity-5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-40 w-40 object-contain" />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-gray-300 text-sm">Saldo disponible</span>
@@ -667,10 +699,11 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* Background decoration */}
-          <div className="absolute top-4 right-4 opacity-10">
-            <div className="w-20 h-20 border-4 border-white rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold">₱</span>
+          </div>
+          {/* Background decoration con logo */}
+          <div className="absolute top-4 right-4 opacity-5">
+            <div className="w-20 h-20 border-2 border-gray-600/30 rounded-full flex items-center justify-center bg-gray-800/20">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-12 w-12 object-contain brightness-75" />
             </div>
           </div>
         </Card>
@@ -1160,9 +1193,17 @@ const HomePage = () => {
           ) : (
             <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 p-8 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-green-500/5"></div>
+              <div className="absolute top-4 right-4 opacity-5">
+                <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 object-contain" />
+              </div>
               <div className="relative z-10">
-                <div className="text-gray-400 mb-4">
-                  <Banknote className="h-16 w-16 mx-auto mb-3 opacity-50 animate-pulse" />
+                {/* Logo grande en el centro */}
+                <div className="mb-6 flex justify-center">
+                  <div className="w-24 h-24 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-orange-500/30 rounded-3xl flex items-center justify-center shadow-2xl p-3">
+                    <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center shadow-inner border border-gray-600/50">
+                      <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain brightness-110" />
+                    </div>
+                  </div>
                 </div>
                 <p className="text-white font-semibold text-lg mb-2">¡Bienvenido a PumaPay Campus!</p>
                 <p className="text-gray-400 text-sm mb-6">Inicia enviando o recibiendo tu primer pago</p>

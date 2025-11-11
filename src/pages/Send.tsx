@@ -252,9 +252,16 @@ const SendPage = () => {
         <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="text-center">
-          <h1 className="text-lg font-semibold">Enviar MXNB</h1>
-          <p className="text-xs text-gray-400">Red: Arbitrum Sepolia</p>
+        <div className="flex items-center space-x-2">
+          <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-lg p-1">
+            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain brightness-110" />
+            </div>
+          </div>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-white">Enviar MXNB</h1>
+            <p className="text-xs text-gray-400">Red: Arbitrum Sepolia</p>
+          </div>
         </div>
         <div className="w-8"></div>
       </div>
