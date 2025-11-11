@@ -80,14 +80,33 @@ class PortalService {
     await this.initialize();
     
     try {
-      if (this.portal) {
-        // Verificar si existe la wallet
-        const address = await this.portal.address;
-        return !!address;
+      if (!this.portal) {
+        return !!this.currentUser?.address;
       }
-      return !!this.currentUser;
+
+      // Intentar obtener la dirección directamente - si funciona, la wallet existe
+      try {
+        const address = await this.portal.getEip155Address();
+        if (address) {
+          console.log('✅ Wallet existe en Portal:', address);
+          return true;
+        }
+      } catch (error) {
+        console.warn('⚠️ Error obteniendo dirección de Portal:', error);
+      }
+
+      // Si Portal no responde, verificar si tenemos dirección guardada
+      if (this.currentUser?.address) {
+        console.log('✅ Usando dirección guardada:', this.currentUser.address);
+        return true;
+      }
+
+      console.warn('⚠️ No se pudo verificar la wallet');
+      return false;
     } catch (error) {
-      return !!this.currentUser;
+      console.warn('⚠️ Error en doesWalletExist:', error);
+      // Si hay error pero tenemos dirección guardada, asumimos que existe
+      return !!this.currentUser?.address;
     }
   }
 
@@ -126,15 +145,30 @@ class PortalService {
         return 0;
       }
 
-      const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as { 
-        rawBalance: string, 
-        decimals: number, 
-        contractAddress?: string,
-        balance?: string,
-        symbol?: string
-      }[];
+      const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as 
+        | { 
+            rawBalance: string, 
+            decimals: number, 
+            contractAddress?: string,
+            balance?: string,
+            symbol?: string
+          }[]
+        | { error?: string };
       
       console.log('📊 Balances recibidos desde Portal:', balances);
+      
+      // Verificar si es un error
+      if (!Array.isArray(balances)) {
+        if (balances && 'error' in balances) {
+          console.warn('⚠️ Portal retornó error:', balances.error);
+          if (balances.error?.includes('wallet does not exist')) {
+            console.warn('⚠️ La wallet no existe en Portal');
+          }
+          return 0;
+        }
+        console.warn('⚠️ Respuesta de balances no es un array:', balances);
+        return 0;
+      }
       
       const mxnb = balances.find((b) => 
         b.contractAddress?.toLowerCase() === MXNB_CONTRACT_ADDRESS.toLowerCase() ||
@@ -206,16 +240,25 @@ class PortalService {
       return new Promise((resolve, reject) => {
         this.portal!.onReady(async () => {
           try {
-            // Verificar que la wallet existe
-            const walletExists = await this.portal!.doesWalletExist();
-            if (!walletExists) {
-              throw new Error('La wallet no existe. Por favor crea una wallet primero.');
+            // Obtener la dirección de la wallet (si existe, esto funcionará)
+            let address: string | null = null;
+            try {
+              address = await this.portal!.getEip155Address();
+              if (address) {
+                console.log('✅ Dirección obtenida de Portal:', address);
+              }
+            } catch (error: any) {
+              console.warn('⚠️ Error obteniendo dirección de Portal:', error);
             }
 
-            // Obtener la dirección para verificar que está lista
-            const address = await this.portal!.getEip155Address();
+            // Si no se pudo obtener de Portal pero tenemos una guardada, usarla
+            if (!address && this.currentUser?.address) {
+              address = this.currentUser.address;
+              console.log('✅ Usando dirección guardada:', address);
+            }
+
             if (!address) {
-              throw new Error('No se pudo obtener la dirección de la wallet');
+              throw new Error('No se pudo obtener la dirección de la wallet. Asegúrate de que la wallet esté creada en Portal.');
             }
 
             console.log('✅ Wallet lista para transacción:', address);
@@ -230,7 +273,10 @@ class PortalService {
             console.log('✅ Transacción MXNB enviada:', result);
             
             // Retornar hash de transacción real
-            const txHash = typeof result === 'string' ? result : result?.txHash || result?.hash || 'unknown';
+            const resultAny = result as any;
+            const txHash = typeof result === 'string' 
+              ? result 
+              : resultAny?.txHash || resultAny?.hash || resultAny?.transactionHash || 'unknown';
             resolve(txHash);
           } catch (error: any) {
             console.error('❌ Error enviando MXNB:', error);
@@ -300,7 +346,7 @@ class PortalService {
     await this.initialize();
     if (!this.portal) throw new Error('Portal no inicializado');
     try {
-      const result = await this.portal.backupWallet('password', { password });
+      const result = await this.portal.backupWallet('password' as any, { password } as any);
       console.log('✅ Backup de wallet realizado:', result);
       return result;
     } catch (error) {

@@ -652,7 +652,7 @@ const SendPage = () => {
                     setTxHash(null);
                     navigate('/home');
                   }}
-                  className="bg-white text-green-600 hover:bg-gray-100 font-bold"
+                  className="bg-white text-black hover:bg-gray-100 font-bold"
                 >
                   Continuar
                 </Button>

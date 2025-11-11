@@ -1055,7 +1055,7 @@ const HomePage = () => {
                 <div className="mt-6">
                   <Button
                     onClick={() => setShowBonusSuccess(false)}
-                    className="bg-white text-green-600 hover:bg-gray-100 font-bold py-2 px-6 rounded-full"
+                    className="bg-white text-black hover:bg-gray-100 font-bold py-2 px-6 rounded-full"
                   >
                     ¡Genial!
                   </Button>
