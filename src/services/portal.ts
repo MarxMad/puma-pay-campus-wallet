@@ -74,7 +74,7 @@ class PortalService {
   }
 
   /**
-   * Verificar si la wallet existe
+   * Verificar si la wallet existe (mejorado para Account Abstraction)
    */
   async doesWalletExist(): Promise<boolean> {
     await this.initialize();
@@ -84,25 +84,57 @@ class PortalService {
         return !!this.currentUser?.address;
       }
 
-      // Intentar obtener la dirección directamente - si funciona, la wallet existe
-      try {
-        const address = await this.portal.getEip155Address();
-        if (address) {
-          console.log('✅ Wallet existe en Portal:', address);
-          return true;
-        }
-      } catch (error) {
-        console.warn('⚠️ Error obteniendo dirección de Portal:', error);
-      }
-
-      // Si Portal no responde, verificar si tenemos dirección guardada
-      if (this.currentUser?.address) {
-        console.log('✅ Usando dirección guardada:', this.currentUser.address);
+      // Método 1: Verificar portal.address directamente
+      if (this.portal.address) {
+        console.log('✅ Wallet existe en Portal (portal.address):', this.portal.address);
         return true;
       }
 
-      console.warn('⚠️ No se pudo verificar la wallet');
-      return false;
+      // Método 2: Intentar obtener la dirección con getEip155Address (puede tomar tiempo con AA)
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          // Si no responde en 5 segundos, verificar dirección guardada
+          if (this.currentUser?.address) {
+            console.log('✅ Usando dirección guardada (timeout):', this.currentUser.address);
+            resolve(true);
+          } else {
+            console.warn('⚠️ No se pudo verificar la wallet (timeout)');
+            resolve(false);
+          }
+        }, 5000);
+
+        this.portal!.onReady(async () => {
+          try {
+            const address = await this.portal!.getEip155Address();
+            if (address) {
+              console.log('✅ Wallet existe en Portal (getEip155Address):', address);
+              clearTimeout(timeout);
+              resolve(true);
+              return;
+            }
+          } catch (error: any) {
+            // Con Account Abstraction, puede que la wallet no esté desplegada aún
+            // pero eso no significa que no exista
+            if (error?.message?.includes('wallet does not exist')) {
+              console.warn('⚠️ Portal retornó error: wallet does not exist.');
+              console.warn('⚠️ La wallet no existe en Portal - esto es normal si la wallet fue creada recientemente');
+            } else {
+              console.warn('⚠️ Error obteniendo dirección de Portal:', error);
+            }
+          }
+
+          clearTimeout(timeout);
+          
+          // Si Portal no responde, verificar si tenemos dirección guardada
+          if (this.currentUser?.address) {
+            console.log('✅ Usando dirección guardada:', this.currentUser.address);
+            resolve(true);
+          } else {
+            console.warn('⚠️ No se pudo verificar la wallet');
+            resolve(false);
+          }
+        });
+      });
     } catch (error) {
       console.warn('⚠️ Error en doesWalletExist:', error);
       // Si hay error pero tenemos dirección guardada, asumimos que existe
@@ -111,17 +143,49 @@ class PortalService {
   }
 
   /**
-   * Obtener dirección de la wallet
+   * Obtener dirección de la wallet (múltiples métodos para Account Abstraction)
    */
   async getWalletAddress(): Promise<string | null> {
     await this.initialize();
     
     try {
-      if (this.portal) {
-        return this.portal.address || null;
+      if (!this.portal) {
+        return this.currentUser?.address || null;
       }
-      return this.currentUser?.address || null;
+
+      // Método 1: Intentar obtener desde portal.address (puede estar disponible inmediatamente)
+      if (this.portal.address) {
+        console.log('✅ Dirección obtenida de portal.address:', this.portal.address);
+        return this.portal.address;
+      }
+
+      // Método 2: Intentar con getEip155Address dentro de onReady
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          // Si no responde en 3 segundos, usar dirección guardada
+          console.warn('⚠️ Timeout obteniendo dirección, usando dirección guardada');
+          resolve(this.currentUser?.address || null);
+        }, 3000);
+
+        this.portal!.onReady(async () => {
+          try {
+            const address = await this.portal!.getEip155Address();
+            if (address) {
+              console.log('✅ Dirección obtenida de getEip155Address:', address);
+              clearTimeout(timeout);
+              resolve(address);
+              return;
+            }
+          } catch (error) {
+            console.warn('⚠️ Error en getEip155Address:', error);
+          }
+          
+          clearTimeout(timeout);
+          resolve(this.currentUser?.address || null);
+        });
+      });
     } catch (error) {
+      console.warn('⚠️ Error en getWalletAddress:', error);
       return this.currentUser?.address || null;
     }
   }
@@ -249,23 +313,62 @@ class PortalService {
 
       // Asegurar que Portal esté completamente listo antes de enviar
       return new Promise((resolve, reject) => {
+        // Timeout de seguridad
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout esperando a que Portal esté listo. Intenta nuevamente.'));
+        }, 10000); // 10 segundos máximo
+
         this.portal!.onReady(async () => {
           try {
-            // Obtener la dirección de la wallet (si existe, esto funcionará)
+            clearTimeout(timeout);
+            
+            // Obtener la dirección de la wallet usando múltiples métodos
             let address: string | null = null;
-            try {
-              address = await this.portal!.getEip155Address();
-              if (address) {
-                console.log('✅ Dirección obtenida de Portal:', address);
+            
+            // Método 1: Intentar portal.address directamente (más rápido)
+            if (this.portal!.address) {
+              address = this.portal!.address;
+              console.log('✅ Dirección obtenida de portal.address:', address);
+              // Guardar para uso futuro
+              if (!this.currentUser) this.currentUser = {};
+              this.currentUser.address = address;
+            }
+            
+            // Método 2: Intentar con getEip155Address (para Account Abstraction)
+            if (!address) {
+              try {
+                address = await this.portal!.getEip155Address();
+                if (address) {
+                  console.log('✅ Dirección obtenida de getEip155Address:', address);
+                  // Guardar para uso futuro
+                  if (!this.currentUser) this.currentUser = {};
+                  this.currentUser.address = address;
+                }
+              } catch (error: any) {
+                console.warn('⚠️ Error obteniendo dirección con getEip155Address:', error);
+                // Si el error es "wallet does not exist" pero tenemos dirección guardada, usarla
+                if (error?.message?.includes('wallet does not exist') && this.currentUser?.address) {
+                  console.warn('⚠️ Portal dice que la wallet no existe, pero tenemos dirección guardada. Usando dirección guardada.');
+                  address = this.currentUser.address;
+                }
               }
-            } catch (error: any) {
-              console.warn('⚠️ Error obteniendo dirección de Portal:', error);
             }
 
-            // Si no se pudo obtener de Portal pero tenemos una guardada, usarla
+            // Método 3: Usar dirección guardada como fallback
             if (!address && this.currentUser?.address) {
               address = this.currentUser.address;
               console.log('✅ Usando dirección guardada:', address);
+            }
+
+            // Si aún no tenemos dirección, intentar obtenerla con el método helper
+            if (!address) {
+              address = await this.getWalletAddress();
+              if (address) {
+                console.log('✅ Dirección obtenida con getWalletAddress:', address);
+                // Guardar para uso futuro
+                if (!this.currentUser) this.currentUser = {};
+                this.currentUser.address = address;
+              }
             }
 
             if (!address) {
