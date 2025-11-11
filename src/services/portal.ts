@@ -397,12 +397,41 @@ class PortalService {
             // Usar sendAsset del Portal SDK directamente - Portal maneja todo internamente
             // No necesitamos obtener la dirección antes, Portal lo hace automáticamente
             try {
-              const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+              console.log('📤 Enviando transacción con sendAsset...', {
+                chainId: ARBITRUM_SEPOLIA_CHAIN_ID,
         amount: amount.toString(),
         to: to,
         token: MXNB_CONTRACT_ADDRESS
       });
       
+              // Capturar el error real del endpoint de firma
+              const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+                amount: amount.toString(),
+                to: to,
+                token: MXNB_CONTRACT_ADDRESS
+              }).catch((error: any) => {
+                // Capturar el error real antes de que se convierta en undefined
+                console.error('❌ Error capturado en sendAsset:', error);
+                console.error('📋 Detalles completos del error:', {
+                  message: error?.message,
+                  code: error?.code,
+                  status: error?.status,
+                  statusCode: error?.statusCode,
+                  response: error?.response,
+                  data: error?.data,
+                  stack: error?.stack
+                });
+                
+                // Si el error es 400, proporcionar más información
+                if (error?.status === 400 || error?.statusCode === 400 || error?.response?.status === 400) {
+                  const errorMessage = error?.response?.data?.message || error?.message || 'Error 400 al firmar transacción';
+                  console.error('❌ Error 400 en endpoint de firma:', errorMessage);
+                  throw new Error(`Error 400 al firmar transacción: ${errorMessage}. Verifica que la wallet esté correctamente configurada y autenticada con Portal.`);
+                }
+                
+                throw error;
+              });
+              
               console.log('✅ Transacción MXNB enviada - resultado completo:', result);
               console.log('📋 Tipo de resultado:', typeof result);
               console.log('📋 Resultado es string?', typeof result === 'string');
@@ -430,7 +459,7 @@ class PortalService {
                 console.log('📋 Propiedades del objeto:', Object.keys(resultAny || {}));
               } else {
                 console.warn('⚠️ sendAsset retornó undefined o null');
-                throw new Error('sendAsset retornó undefined. La transacción puede no haberse completado.');
+                throw new Error('sendAsset retornó undefined. La transacción puede no haberse completado. Revisa los logs anteriores para ver el error real.');
               }
               
               if (txHash === 'unknown') {
@@ -449,12 +478,15 @@ class PortalService {
                 message: signError?.message,
                 code: signError?.code,
                 status: signError?.status,
-                response: signError?.response
+                statusCode: signError?.statusCode,
+                response: signError?.response,
+                data: signError?.data
               });
               
               // Si el error es 400, puede ser un problema de configuración o autenticación
-              if (signError?.status === 400 || signError?.code === 400) {
-                throw new Error('Error 400 al firmar transacción. Verifica que la wallet esté correctamente configurada y autenticada.');
+              if (signError?.status === 400 || signError?.code === 400 || signError?.statusCode === 400) {
+                const errorMessage = signError?.response?.data?.message || signError?.message || 'Error 400 al firmar transacción';
+                throw new Error(`Error 400 al firmar transacción: ${errorMessage}. Verifica que la wallet esté correctamente configurada y autenticada con Portal.`);
               }
               
               throw signError;
