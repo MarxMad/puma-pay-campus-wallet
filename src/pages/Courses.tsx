@@ -275,7 +275,7 @@ const CoursesPage = () => {
               {trendingCourses.map((course) => (
                 <Card
                   key={course.id}
-                  className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 p-4 hover:border-amber-500/60 transition-colors duration-300"
+                  className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 p-4 hover:border-amber-500/60 transition-colors duration-300 text-white"
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-2">
@@ -290,7 +290,7 @@ const CoursesPage = () => {
                           {course.category}
                         </Badge>
                       </div>
-                      <h4 className="text-lg font-semibold">{course.title}</h4>
+                      <h4 className="text-lg font-semibold text-white">{course.title}</h4>
                       <p className="text-sm text-gray-400">{course.description}</p>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
@@ -330,7 +330,7 @@ const CourseCard = ({
   course: Course;
   onPurchase: (course: Course) => void;
 }) => (
-  <Card className="min-w-[280px] bg-gray-900 border border-gray-800 overflow-hidden hover:border-amber-400/40 transition-colors duration-300">
+  <Card className="min-w-[280px] bg-gray-900 border border-gray-800 overflow-hidden hover:border-amber-400/40 transition-colors duration-300 text-white">
     <div className="relative h-40">
       <img
         src={`${course.coverImage}?auto=format&fit=crop&w=600&q=80`}
@@ -350,7 +350,7 @@ const CourseCard = ({
         </Badge>
       </div>
       <div className="absolute bottom-3 left-3 right-3">
-        <h4 className="text-lg font-semibold line-clamp-2">{course.title}</h4>
+        <h4 className="text-lg font-semibold line-clamp-2 text-white">{course.title}</h4>
       </div>
     </div>
     <div className="p-4 space-y-3">
@@ -386,7 +386,7 @@ const CourseRowCard = ({
   course: Course;
   onPurchase: (course: Course) => void;
 }) => (
-  <Card className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 transition-colors duration-300">
+  <Card className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 transition-colors duration-300 text-white">
     <div className="p-4 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
       <div className="relative h-32 w-full md:w-40 rounded-xl overflow-hidden">
         <img
@@ -408,7 +408,7 @@ const CourseRowCard = ({
       </div>
       <div className="flex-1 space-y-3">
         <div>
-          <h4 className="text-lg font-semibold">{course.title}</h4>
+          <h4 className="text-lg font-semibold text-white">{course.title}</h4>
           <p className="text-sm text-gray-400">
             {course.instructor} • {course.level}
           </p>
