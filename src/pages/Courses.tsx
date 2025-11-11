@@ -245,7 +245,7 @@ const CoursesPage = () => {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
                 {filteredCourses.map((course) => (
                   <CourseRowCard
                     key={course.id}
@@ -386,34 +386,34 @@ const CourseRowCard = ({
   course: Course;
   onPurchase: (course: Course) => void;
 }) => (
-  <Card className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 transition-colors duration-300 text-white">
+  <Card className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 transition-colors duration-300 text-white w-full">
     <div className="p-4 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
-      <div className="relative h-32 w-full md:w-40 rounded-xl overflow-hidden">
+      <div className="relative h-32 w-full md:w-40 flex-shrink-0 rounded-xl overflow-hidden">
         <img
           src={`${course.coverImage}?auto=format&fit=crop&w=400&q=80`}
           alt={course.title}
           className="h-full w-full object-cover"
         />
-        <div className="absolute top-2 left-2 flex gap-2">
+        <div className="absolute top-2 left-2 flex gap-2 flex-wrap">
           <Badge
             variant="outline"
-            className="bg-black/40 border-white/20 text-gray-200"
+            className="bg-black/40 border-white/20 text-gray-200 text-xs"
           >
             {course.category}
           </Badge>
           {course.trending && (
-            <Badge className="bg-amber-500/80 text-amber-50">Trend</Badge>
+            <Badge className="bg-amber-500/80 text-amber-50 text-xs">Trend</Badge>
           )}
         </div>
       </div>
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-3 min-w-0">
         <div>
-          <h4 className="text-lg font-semibold text-white">{course.title}</h4>
-          <p className="text-sm text-gray-400">
+          <h4 className="text-lg font-semibold text-white break-words">{course.title}</h4>
+          <p className="text-sm text-gray-400 break-words">
             {course.instructor} • {course.level}
           </p>
         </div>
-        <p className="text-sm text-gray-300 line-clamp-3">{course.description}</p>
+        <p className="text-sm text-gray-300 line-clamp-3 break-words">{course.description}</p>
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
@@ -427,23 +427,23 @@ const CourseRowCard = ({
             <Badge
               key={tag}
               variant="outline"
-              className="border-gray-700 text-gray-200"
+              className="border-gray-700 text-gray-200 text-xs"
             >
               #{tag}
             </Badge>
           ))}
         </div>
       </div>
-      <div className="flex flex-col items-stretch gap-3 md:w-48">
-        <div className="text-right md:text-left">
+      <div className="flex flex-col items-stretch gap-3 md:w-48 flex-shrink-0">
+        <div className="text-left md:text-left">
           <span className="text-sm text-gray-400">Precio</span>
-          <div className="text-xl font-semibold text-amber-300">
+          <div className="text-xl font-semibold text-amber-300 break-words">
             {course.priceMXNB} MXNB
           </div>
         </div>
         <Button
           onClick={() => onPurchase(course)}
-          className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
+          className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold w-full"
         >
           Comprar con MXNB
         </Button>

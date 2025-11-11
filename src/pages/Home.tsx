@@ -348,17 +348,17 @@ const HomePage = () => {
               </div>
             </div>
             {user?.clabe && (
-              <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="text-lg font-semibold text-green-900">Tu CLABE para depósitos:</div>
-                  <div className="font-mono text-2xl text-green-800 select-all tracking-widest" style={{ letterSpacing: '0.1em' }}>{user?.clabe}</div>
-                  <div className="text-green-900 text-sm mt-1">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+              <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="text-lg font-semibold text-green-900 mb-2">Tu CLABE para depósitos:</div>
+                  <div className="font-mono text-xl md:text-2xl text-green-800 select-all tracking-widest break-all overflow-wrap-anywhere" style={{ letterSpacing: '0.1em', wordBreak: 'break-all' }}>{user?.clabe}</div>
+                  <div className="text-green-900 text-sm mt-2 break-words">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {navigator.clipboard.writeText(user?.clabe || ''); alert('CLABE copiada al portapapeles')}}
-                  className="ml-2 text-green-700 hover:text-green-900"
+                  className="text-green-700 hover:text-green-900 flex-shrink-0"
                 >
                   Copiar
                 </Button>
