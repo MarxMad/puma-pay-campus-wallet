@@ -323,10 +323,19 @@ class PortalService {
             clearTimeout(timeout);
             
             // Obtener la dirección de la wallet usando múltiples métodos
+            // IMPORTANTE: Con Account Abstraction, la wallet de smart contract solo se despliega
+            // en la primera transacción exitosa, por lo que getEip155Address() puede fallar
+            // hasta entonces. Usamos la dirección guardada como prioridad.
             let address: string | null = null;
             
-            // Método 1: Intentar portal.address directamente (más rápido)
-            if (this.portal!.address) {
+            // PRIORIDAD 1: Usar dirección guardada (más confiable con Account Abstraction)
+            if (this.currentUser?.address) {
+              address = this.currentUser.address;
+              console.log('✅ Usando dirección guardada (prioridad para Account Abstraction):', address);
+            }
+            
+            // PRIORIDAD 2: Intentar portal.address directamente (más rápido)
+            if (!address && this.portal!.address) {
               address = this.portal!.address;
               console.log('✅ Dirección obtenida de portal.address:', address);
               // Guardar para uso futuro
@@ -334,7 +343,7 @@ class PortalService {
               this.currentUser.address = address;
             }
             
-            // Método 2: Intentar con getEip155Address (para Account Abstraction)
+            // PRIORIDAD 3: Intentar con getEip155Address (puede fallar con Account Abstraction si no está desplegada)
             if (!address) {
               try {
                 address = await this.portal!.getEip155Address();
@@ -346,21 +355,16 @@ class PortalService {
                 }
               } catch (error: any) {
                 console.warn('⚠️ Error obteniendo dirección con getEip155Address:', error);
-                // Si el error es "wallet does not exist" pero tenemos dirección guardada, usarla
-                if (error?.message?.includes('wallet does not exist') && this.currentUser?.address) {
-                  console.warn('⚠️ Portal dice que la wallet no existe, pero tenemos dirección guardada. Usando dirección guardada.');
-                  address = this.currentUser.address;
+                // Con Account Abstraction, es normal que falle si la wallet aún no está desplegada
+                // La wallet se desplegará automáticamente en la primera transacción
+                if (error?.message?.includes('wallet does not exist')) {
+                  console.warn('⚠️ Portal dice que la wallet no existe. Con Account Abstraction, esto es normal si la wallet aún no está desplegada.');
+                  console.warn('⚠️ La wallet se desplegará automáticamente en la primera transacción exitosa.');
                 }
               }
             }
 
-            // Método 3: Usar dirección guardada como fallback
-            if (!address && this.currentUser?.address) {
-              address = this.currentUser.address;
-              console.log('✅ Usando dirección guardada:', address);
-            }
-
-            // Si aún no tenemos dirección, intentar obtenerla con el método helper
+            // PRIORIDAD 4: Intentar con el método helper
             if (!address) {
               address = await this.getWalletAddress();
               if (address) {
@@ -371,11 +375,13 @@ class PortalService {
               }
             }
 
+            // Si aún no tenemos dirección, lanzar error
             if (!address) {
               throw new Error('No se pudo obtener la dirección de la wallet. Asegúrate de que la wallet esté creada en Portal.');
             }
 
-            console.log('✅ Wallet lista para transacción:', address);
+            console.log('✅ Wallet lista para transacción (puede ser Account Abstraction):', address);
+            console.log('ℹ️ Con Account Abstraction, la wallet se desplegará automáticamente en esta transacción si es la primera.');
 
             // Usar sendAsset del Portal SDK para transacción real
             const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
