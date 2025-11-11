@@ -13,8 +13,11 @@ const PORTAL_CONFIG = {
   autoApprove: true,
   
   // RPC Config para Arbitrum Sepolia
+  // Usar Alchemy RPC si está disponible, sino usar el endpoint público de Arbitrum
   rpcConfig: {
-    'eip155:421614': import.meta.env.VITE_ALCHEMY_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc',
+    'eip155:421614': import.meta.env.VITE_ALCHEMY_RPC_URL 
+      || import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC_URL 
+      || 'https://sepolia-rollup.arbitrum.io/rpc',
   },
 };
 
@@ -399,19 +402,32 @@ class PortalService {
             try {
               console.log('📤 Enviando transacción con sendAsset...', {
                 chainId: ARBITRUM_SEPOLIA_CHAIN_ID,
+                amount: amount.toString(),
+                to: to,
+                token: MXNB_CONTRACT_ADDRESS
+              });
+              
+              // Capturar el error real del endpoint de firma
+              // Usar Promise.race para detectar si sendAsset nunca resuelve
+              let result: any;
+              try {
+                // Intentar enviar con timeout
+                const sendPromise = this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
         amount: amount.toString(),
         to: to,
         token: MXNB_CONTRACT_ADDRESS
       });
       
-              // Capturar el error real del endpoint de firma
-              const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
-                amount: amount.toString(),
-                to: to,
-                token: MXNB_CONTRACT_ADDRESS
-              }).catch((error: any) => {
+                const timeoutPromise = new Promise((_, reject) => {
+                  setTimeout(() => reject(new Error('Timeout: sendAsset no respondió después de 30 segundos')), 30000);
+                });
+                
+                result = await Promise.race([sendPromise, timeoutPromise]);
+              } catch (error: any) {
                 // Capturar el error real antes de que se convierta en undefined
                 console.error('❌ Error capturado en sendAsset:', error);
+                console.error('📋 Tipo de error:', typeof error);
+                console.error('📋 Error es instancia de Error?', error instanceof Error);
                 console.error('📋 Detalles completos del error:', {
                   message: error?.message,
                   code: error?.code,
@@ -419,18 +435,31 @@ class PortalService {
                   statusCode: error?.statusCode,
                   response: error?.response,
                   data: error?.data,
-                  stack: error?.stack
+                  stack: error?.stack,
+                  name: error?.name,
+                  toString: error?.toString?.()
                 });
+                
+                // Intentar extraer más información del error
+                if (error?.response) {
+                  console.error('📋 Response del error:', error.response);
+                  console.error('📋 Response data:', error.response?.data);
+                  console.error('📋 Response status:', error.response?.status);
+                }
                 
                 // Si el error es 400, proporcionar más información
                 if (error?.status === 400 || error?.statusCode === 400 || error?.response?.status === 400) {
-                  const errorMessage = error?.response?.data?.message || error?.message || 'Error 400 al firmar transacción';
+                  const errorMessage = error?.response?.data?.message 
+                    || error?.response?.data?.error 
+                    || error?.message 
+                    || 'Error 400 al firmar transacción';
                   console.error('❌ Error 400 en endpoint de firma:', errorMessage);
+                  console.error('📋 Response completa:', JSON.stringify(error?.response?.data, null, 2));
                   throw new Error(`Error 400 al firmar transacción: ${errorMessage}. Verifica que la wallet esté correctamente configurada y autenticada con Portal.`);
                 }
                 
                 throw error;
-              });
+              }
               
               console.log('✅ Transacción MXNB enviada - resultado completo:', result);
               console.log('📋 Tipo de resultado:', typeof result);
