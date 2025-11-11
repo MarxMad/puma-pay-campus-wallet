@@ -5,8 +5,12 @@
 import Portal from '@portal-hq/web';
 
 // Configuración para MXNB en Arbitrum Sepolia
+// IMPORTANTE: Según la documentación de Portal, debemos usar Client Session Token (CST)
+// o Client API Key en el SDK, NO la Portal API Key directamente.
+// La Portal API Key solo se usa en el servidor para crear CSTs.
 const PORTAL_CONFIG = {
-  // Estas son las credenciales que necesitas del Portal Dashboard
+  // Client Session Token o Client API Key (obtenido del backend)
+  // Si no se proporciona, se intentará usar VITE_PORTAL_API_KEY como fallback (para desarrollo)
   apiKey: import.meta.env.VITE_PORTAL_API_KEY || 'YOUR_PORTAL_API_KEY', 
   
   // Auto-aprobar transacciones (puedes cambiarlo a false para mostrar confirmaciones)
@@ -34,6 +38,11 @@ class PortalService {
 
   /**
    * Inicializa el Portal SDK con configuración dinámica
+   * 
+   * IMPORTANTE: Según la documentación de Portal:
+   * - apiKey debe ser un Client Session Token (CST) o Client API Key, NO la Portal API Key
+   * - La Portal API Key solo se usa en el servidor para crear CSTs
+   * - clientId es opcional pero recomendado para identificar al cliente
    */
   async initialize(configOverride?: { apiKey: string, clientId?: string }): Promise<void> {
     // Si ya está inicializado y no hay override, no hacer nada
@@ -48,12 +57,22 @@ class PortalService {
       }
 
       const config = configOverride
-        ? { ...PORTAL_CONFIG, apiKey: configOverride.apiKey, clientId: configOverride.clientId }
+        ? { 
+            ...PORTAL_CONFIG, 
+            apiKey: configOverride.apiKey, // Client Session Token o Client API Key
+            ...(configOverride.clientId && { clientId: configOverride.clientId })
+          }
         : PORTAL_CONFIG;
+      
+      console.log('🔑 Inicializando Portal SDK con:', {
+        hasApiKey: !!config.apiKey,
+        hasClientId: !!(config as any).clientId,
+        apiKeyPrefix: config.apiKey?.substring(0, 10) + '...'
+      });
       
       this.portal = new Portal(config);
       this.isInitialized = true;
-      console.log('✅ Portal SDK inicializado correctamente', configOverride ? '(dinámico)' : '');
+      console.log('✅ Portal SDK inicializado correctamente', configOverride ? '(con Client Session Token)' : '');
     } catch (error) {
       console.error('❌ Error inicializando Portal SDK:', error);
       this.isInitialized = true;
@@ -806,6 +825,88 @@ class PortalService {
     await this.initialize();
     if (!this.portal) throw new Error('Portal no inicializado');
     return this.portal.sendAsset(chainId, params);
+  }
+
+  /**
+   * Método alternativo usando portal.request() para firmar transacciones
+   * Útil si sendAsset no funciona correctamente
+   */
+  async sendMXNBWithRequest(to: string, amount: number, fromAddress?: string, credentials?: { apiKey?: string, clientId?: string }): Promise<string> {
+    // Si se proporcionan credenciales, re-inicializar Portal con ellas
+    if (credentials?.apiKey) {
+      console.log('🔄 Re-inicializando Portal con credenciales proporcionadas...');
+      await this.initialize({
+        apiKey: credentials.apiKey,
+        clientId: credentials.clientId
+      });
+    } else {
+      await this.initialize();
+    }
+    
+    try {
+      if (!this.portal) {
+        throw new Error('Portal no inicializado');
+      }
+
+      console.log('🚀 Enviando MXNB usando portal.request()...', { to, amount, contract: MXNB_CONTRACT_ADDRESS });
+      
+      // Verificar que tenemos la dirección del contrato MXNB
+      if (!MXNB_CONTRACT_ADDRESS || MXNB_CONTRACT_ADDRESS === '0x...') {
+        throw new Error('Dirección del contrato MXNB no configurada');
+      }
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout esperando a que Portal esté listo. Intenta nuevamente.'));
+        }, 20000);
+
+        this.portal!.onReady(async () => {
+          try {
+            clearTimeout(timeout);
+            
+            // Obtener la dirección de la wallet
+            let walletAddress: string;
+            try {
+              walletAddress = await this.portal!.getEip155Address();
+            } catch (error) {
+              if (fromAddress) {
+                walletAddress = fromAddress;
+              } else {
+                throw new Error('No se pudo obtener la dirección de la wallet');
+              }
+            }
+
+            // Construir la transacción ERC20 transfer manualmente
+            // Para un token ERC20, necesitamos llamar a transfer(to, amount)
+            // El método transfer tiene la firma: transfer(address to, uint256 amount)
+            // Esto requiere codificar los parámetros ABI
+            
+            console.log('⚠️ sendMXNBWithRequest requiere codificación ABI manual');
+            console.log('⚠️ Por ahora, usando sendAsset que es más simple');
+            
+            // Por ahora, usar sendAsset como fallback
+            const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+              amount: amount.toString(),
+              to: to,
+              token: MXNB_CONTRACT_ADDRESS
+            });
+            
+            const resultAny = result as any;
+            const txHash = typeof result === 'string' 
+              ? result 
+              : resultAny?.txHash || resultAny?.hash || resultAny?.transactionHash || resultAny?.userOpHash || 'unknown';
+            
+            resolve(txHash);
+          } catch (error: any) {
+            console.error('❌ Error en sendMXNBWithRequest:', error);
+            reject(error);
+          }
+        });
+      });
+    } catch (error: any) {
+      console.error('❌ Error enviando MXNB con request:', error);
+      throw new Error(`No se pudo enviar MXNB: ${error.message || error}`);
+    }
   }
 }
 

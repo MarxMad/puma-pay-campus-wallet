@@ -91,14 +91,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Autenticar contra Supabase
       const userData = await loginUsuario(email, password);
       
-      // Re-inicializar Portal con las credenciales del usuario
-      if (userData.api_key) {
-        console.log('🔄 Re-inicializando Portal con credenciales del usuario...');
+      // Obtener o refrescar Client Session Token
+      let clientSessionToken: string | undefined;
+      let portalClientId: string | undefined;
+      
+      // Si el usuario tiene portal_client_id, intentar refrescar el token
+      if (userData.portal_client_id) {
+        try {
+          console.log('🔄 Refrescando Client Session Token...');
+          const refreshed = await refreshPortalSession(userData.portal_client_id);
+          clientSessionToken = refreshed.clientSessionToken;
+          portalClientId = userData.portal_client_id;
+          console.log('✅ Client Session Token refrescado');
+        } catch (error) {
+          console.warn('⚠️ No se pudo refrescar Client Session Token, intentando crear nuevo cliente...', error);
+          // Si falla, crear un nuevo cliente
+          try {
+            const newClient = await createPortalClient();
+            clientSessionToken = newClient.clientSessionToken;
+            portalClientId = newClient.clientId;
+            console.log('✅ Nuevo cliente creado en Portal');
+          } catch (createError) {
+            console.error('❌ Error creando nuevo cliente:', createError);
+            // Continuar sin Client Session Token (modo demo)
+          }
+        }
+      } else if (userData.client_session_token) {
+        // Si tiene client_session_token guardado, usarlo (puede estar expirado)
+        clientSessionToken = userData.client_session_token;
+        portalClientId = userData.portal_client_id;
+        console.log('ℹ️ Usando Client Session Token guardado (puede estar expirado)');
+      }
+      
+      // Re-inicializar Portal con Client Session Token si está disponible
+      if (clientSessionToken) {
+        console.log('🔄 Re-inicializando Portal con Client Session Token...');
         await portalService.initialize({
-          apiKey: userData.api_key,
-          clientId: userData.client_id
+          apiKey: clientSessionToken, // Client Session Token, NO Portal API Key
+          clientId: portalClientId
         });
         console.log('✅ Portal re-inicializado correctamente');
+      } else {
+        console.warn('⚠️ No se pudo obtener Client Session Token, Portal puede no funcionar correctamente');
       }
       
       // Sincronizar usuario con Portal Service
@@ -111,8 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: userData.nombre,
         authMethod: userData.auth_method as 'portal' | 'traditional',
         clabe: userData.clabe,
-        apiKey: userData.api_key,
-        clientId: userData.client_id
+        apiKey: clientSessionToken, // Client Session Token
+        clientId: portalClientId // clientId de Portal
       });
     } catch (error) {
       console.error('Error en login:', error);
@@ -177,15 +211,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
       if (!userId) throw new Error('No se pudo obtener el ID del usuario');
       if (onStepChange) onStepChange('Asignando credenciales seguras...');
-      // 2. Asignar API Key y Client ID
-      const apiKeyObj = await asignarApiKeyAUsuario(userId);
+      // 2. Crear cliente en Portal y obtener Client Session Token
+      // IMPORTANTE: Según la documentación de Portal, debemos usar Client Session Token
+      // en el SDK, NO la Portal API Key directamente
+      let clientSessionToken: string;
+      let portalClientId: string;
+      try {
+        console.log('🔄 Creando cliente en Portal para obtener Client Session Token...');
+        const portalClient = await createPortalClient();
+        clientSessionToken = portalClient.clientSessionToken;
+        portalClientId = portalClient.clientId;
+        console.log('✅ Client Session Token obtenido:', {
+          clientId: portalClientId,
+          hasToken: !!clientSessionToken
+        });
+      } catch (error) {
+        console.error('❌ Error obteniendo Client Session Token:', error);
+        setIsLoading(false);
+        throw new Error('No se pudo obtener Client Session Token de Portal. Revisa la consola para más detalles.');
+      }
+      
+      // Guardar el clientId de Portal en la base de datos (diferente del client_id que generamos)
+      // El clientId de Portal es el ID real del cliente en Portal
       if (onStepChange) onStepChange('Creando wallet segura...');
-      // 3. Crear wallet de Portal
+      // 3. Crear wallet de Portal usando Client Session Token
       let wallet;
       try {
         wallet = await portalService.createWallet({
-          apiKey: apiKeyObj.api_key,
-          clientId: apiKeyObj.client_id
+          apiKey: clientSessionToken, // Usar Client Session Token, NO Portal API Key
+          clientId: portalClientId // Usar el clientId de Portal
         });
         console.log('Wallet creada:', wallet);
       } catch (error) {
@@ -215,15 +269,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No se pudo crear la cuenta CLABE. Revisa la consola para más detalles.');
       }
       if (onStepChange) onStepChange('Finalizando registro...');
-      // 5. Actualizar el usuario en Supabase con wallet, clabe, api_key y client_id
-      // IMPORTANTE: Guardar api_key y client_id para que el usuario pueda hacer login después
+      // 5. Actualizar el usuario en Supabase con wallet, clabe, client_session_token y portal_client_id
+      // IMPORTANTE: Guardar client_session_token y portal_client_id para que el usuario pueda hacer login después
+      // NOTA: El client_session_token expira después de 24 horas, pero se puede refrescar
       const { error: updateError } = await supabase
         .from('usuarios')
         .update({ 
           wallet_address: address, 
           clabe,
-          api_key: apiKeyObj.api_key, // Guardar la API Key asignada
-          client_id: apiKeyObj.client_id // Guardar el Client ID único
+          client_session_token: clientSessionToken, // Guardar Client Session Token
+          portal_client_id: portalClientId // Guardar el clientId de Portal
         })
         .eq('id', userId);
       
@@ -259,8 +314,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         address,
         authMethod: 'traditional',
         clabe,
-        apiKey: apiKeyObj.api_key,
-        clientId: apiKeyObj.client_id
+        apiKey: clientSessionToken, // Guardar Client Session Token (no Portal API Key)
+        clientId: portalClientId // Guardar clientId de Portal
       };
       updateUser(userData);
       setIsLoading(false);

@@ -6,6 +6,9 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const bitsoWebhook = require('./bitso-webhook');
 
+// Portal API Configuration
+const PORTAL_API_BASE_URL = 'https://api.portalhq.io/api/v1';
+
 /**
  * Construir header de autenticación para Juno API
  * @param {string} apiKey - API Key de Juno
@@ -869,6 +872,149 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
   });
 }
+
+// ================================
+// ENDPOINTS DE PORTAL (CLIENT SESSION TOKENS)
+// ================================
+
+/**
+ * Crear un nuevo Client Session Token para un usuario
+ * Endpoint: POST /api/portal/create-client
+ * 
+ * Según la documentación de Portal:
+ * - Usa Portal API Key en el servidor para crear Client Session Tokens
+ * - El Client Session Token se usa en el SDK del cliente
+ */
+app.post('/api/portal/create-client', async (req, res) => {
+  console.log('📥 Endpoint /api/portal/create-client llamado');
+  
+  try {
+    const portalApiKey = process.env.PORTAL_API_KEY;
+    
+    if (!portalApiKey) {
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Portal API Key no configurada en el servidor.' }
+      });
+    }
+
+    console.log('🔄 Creando nuevo cliente en Portal...');
+    
+    const response = await axios.post(
+      `${PORTAL_API_BASE_URL}/custodians/clients`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${portalApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    console.log('✅ Cliente creado en Portal:', {
+      clientId: response.data.id,
+      hasToken: !!response.data.clientSessionToken
+    });
+
+    res.json({
+      success: true,
+      clientId: response.data.id,
+      clientSessionToken: response.data.clientSessionToken,
+      metadata: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error creando cliente en Portal:', error);
+    if (error.response) {
+      res.status(error.response.status).json({
+        success: false,
+        error: {
+          message: error.response.data?.message || 'Error al crear cliente en Portal',
+          code: error.response.data?.code || error.response.status,
+          details: error.response.data
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Error de conexión con Portal API.' }
+      });
+    }
+  }
+});
+
+/**
+ * Refrescar Client Session Token para un cliente existente
+ * Endpoint: POST /api/portal/refresh-session/:clientId
+ * 
+ * Los Client Session Tokens expiran después de 24 horas de inactividad.
+ * Este endpoint permite refrescar el token.
+ */
+app.post('/api/portal/refresh-session/:clientId', async (req, res) => {
+  const { clientId } = req.params;
+  console.log('📥 Endpoint /api/portal/refresh-session llamado para clientId:', clientId);
+  
+  try {
+    const portalApiKey = process.env.PORTAL_API_KEY;
+    
+    if (!portalApiKey) {
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Portal API Key no configurada en el servidor.' }
+      });
+    }
+
+    if (!clientId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'clientId es requerido.' }
+      });
+    }
+
+    console.log('🔄 Refrescando Client Session Token...');
+    
+    const response = await axios.post(
+      `${PORTAL_API_BASE_URL}/custodians/clients/${clientId}/session`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${portalApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    console.log('✅ Client Session Token refrescado');
+
+    res.json({
+      success: true,
+      clientSessionToken: response.data.clientSessionToken,
+      metadata: {
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error refrescando Client Session Token:', error);
+    if (error.response) {
+      res.status(error.response.status).json({
+        success: false,
+        error: {
+          message: error.response.data?.message || 'Error al refrescar Client Session Token',
+          code: error.response.data?.code || error.response.status,
+          details: error.response.data
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Error de conexión con Portal API.' }
+      });
+    }
+  }
+});
 
 // Exportar para Vercel
 module.exports = app; 
