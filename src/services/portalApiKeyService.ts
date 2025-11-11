@@ -86,8 +86,34 @@ export async function asignarApiKeyAUsuario(userId: string) {
 
   if (updateError) throw updateError;
 
-  // 5. Nota: No guardamos client_id en la tabla usuarios porque esa columna puede no existir
-  // El client_id se guardará en localStorage con el usuario y eso es suficiente
+  // 5. Guardar el Client ID en la tabla usuarios
+  // Esto vincula la wallet creada con el client_id en Supabase
+  try {
+    const { error: clientIdError } = await supabase
+      .from('usuarios')
+      .update({ client_id: uniqueClientId })
+      .eq('id', userId);
+    
+    if (clientIdError) {
+      // Si la columna no existe, es un error de esquema que necesita ser corregido
+      if (clientIdError.code === '42703') {
+        console.error('❌ Error: La columna client_id no existe en la tabla usuarios de Supabase.');
+        console.error('❌ Por favor, agrega la columna client_id (text) a la tabla usuarios en Supabase.');
+        throw new Error('La columna client_id no existe en la tabla usuarios. Por favor, agrega esta columna en Supabase.');
+      }
+      throw clientIdError;
+    }
+    
+    console.log('✅ Client ID guardado en Supabase:', uniqueClientId);
+  } catch (error: any) {
+    console.error('❌ Error guardando client_id en usuarios:', error);
+    // Si es un error de columna faltante, lanzar el error
+    if (error?.code === '42703' || error?.message?.includes('client_id')) {
+      throw error;
+    }
+    // Para otros errores, continuar pero advertir
+    console.warn('⚠️ No se pudo guardar client_id en usuarios, pero continuaremos');
+  }
 
   // 6. Retornar la API Key con el Client ID
   return {
