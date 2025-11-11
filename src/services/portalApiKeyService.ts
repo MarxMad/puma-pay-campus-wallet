@@ -13,40 +13,54 @@ function generateUniqueClientId(userId: string): string {
 }
 
 export async function asignarApiKeyAUsuario(userId: string) {
-  // 1. Verificar si el usuario ya tiene una API Key asignada
-  // Nota: No intentamos leer client_id de usuarios porque esa columna puede no existir
-  const { data: existingUser, error: userError } = await supabase
-    .from('usuarios')
-    .select('api_key')
-    .eq('id', userId)
-    .single();
-
-  if (userError && userError.code !== 'PGRST116') { // PGRST116 = no rows returned
-    // Si el error es porque la columna no existe, continuamos
-    if (userError.code === '42703') {
-      console.warn('⚠️ Columna client_id no existe en usuarios, continuando sin leerla');
-    } else {
-      throw userError;
-    }
-  }
-
-  // Si el usuario ya tiene una API Key asignada, buscar esa API Key
-  if (existingUser?.api_key) {
-    const { data: apiKeyData, error: apiError } = await supabase
-      .from('portal_apikeys')
-      .select('*')
-      .eq('api_key', existingUser.api_key)
+  // 1. Verificar si el usuario ya tiene un Client ID guardado en la base de datos
+  // NOTA: Solo intentamos obtenerlo si la columna existe (para usuarios existentes)
+  // Para usuarios nuevos, generaremos el client_id y lo guardaremos después
+  let existingClientId: string | null = null;
+  let existingApiKey: string | null = null;
+  
+  try {
+    const { data: existingUser, error: userError } = await supabase
+      .from('usuarios')
+      .select('client_id, api_key')
+      .eq('id', userId)
       .single();
-    
-    if (!apiError && apiKeyData) {
-      // Generar un Client ID único para este usuario (siempre generamos uno nuevo para consistencia)
-      const uniqueClientId = generateUniqueClientId(userId);
-      console.log('✅ Usuario ya tiene API Key asignada, generando nuevo Client ID:', uniqueClientId);
+
+    // Si la columna no existe (error 42703), es un usuario nuevo y continuamos
+    if (userError && userError.code === '42703') {
+      console.log('ℹ️ Columna client_id no existe aún, será creada para este usuario nuevo');
+    } else if (userError && userError.code !== 'PGRST116') {
+      // Otro error, lanzarlo
+      throw userError;
+    } else if (existingUser) {
+      existingClientId = existingUser.client_id || null;
+      existingApiKey = existingUser.api_key || null;
       
-      return {
-        ...apiKeyData,
-        client_id: uniqueClientId
-      };
+      // Si el usuario ya tiene un Client ID y API Key, retornarla
+      if (existingClientId && existingApiKey) {
+        console.log('✅ Usuario ya tiene Client ID guardado:', existingClientId);
+        
+        // Buscar la API Key en la tabla portal_apikeys
+        const { data: apiKeyData, error: apiError } = await supabase
+          .from('portal_apikeys')
+          .select('*')
+          .eq('api_key', existingApiKey)
+          .single();
+        
+        if (!apiError && apiKeyData) {
+          return {
+            ...apiKeyData,
+            client_id: existingClientId
+          };
+        }
+      }
+    }
+  } catch (error: any) {
+    // Si hay un error al obtener el usuario (por ejemplo, columna no existe), continuamos
+    if (error?.code === '42703') {
+      console.log('ℹ️ Columna client_id no existe aún, será creada para este usuario nuevo');
+    } else {
+      console.warn('⚠️ Error obteniendo datos del usuario, continuando...', error);
     }
   }
 
@@ -63,14 +77,15 @@ export async function asignarApiKeyAUsuario(userId: string) {
 
   const api = apis[0];
 
-  // 3. Generar un Client ID único para este usuario
+  // 3. Generar un Client ID único para este usuario (solo si no existe)
   // IMPORTANTE: Cada usuario necesita su propio Client ID único
   // Portal usa el Client ID para identificar y autenticar a cada cliente/wallet
-  const uniqueClientId = generateUniqueClientId(userId);
+  const uniqueClientId = existingClientId || generateUniqueClientId(userId);
   
   console.log('🆔 Asignando Client ID para usuario:', {
     userId,
     clientId: uniqueClientId,
+    esNuevo: !existingClientId,
     apiKey: api.api_key?.substring(0, 10) + '...'
   });
 
@@ -86,34 +101,11 @@ export async function asignarApiKeyAUsuario(userId: string) {
 
   if (updateError) throw updateError;
 
-  // 5. Guardar el Client ID en la tabla usuarios
-  // Esto vincula la wallet creada con el client_id en Supabase
-  try {
-    const { error: clientIdError } = await supabase
-      .from('usuarios')
-      .update({ client_id: uniqueClientId })
-      .eq('id', userId);
-    
-    if (clientIdError) {
-      // Si la columna no existe, es un error de esquema que necesita ser corregido
-      if (clientIdError.code === '42703') {
-        console.error('❌ Error: La columna client_id no existe en la tabla usuarios de Supabase.');
-        console.error('❌ Por favor, agrega la columna client_id (text) a la tabla usuarios en Supabase.');
-        throw new Error('La columna client_id no existe en la tabla usuarios. Por favor, agrega esta columna en Supabase.');
-      }
-      throw clientIdError;
-    }
-    
-    console.log('✅ Client ID guardado en Supabase:', uniqueClientId);
-  } catch (error: any) {
-    console.error('❌ Error guardando client_id en usuarios:', error);
-    // Si es un error de columna faltante, lanzar el error
-    if (error?.code === '42703' || error?.message?.includes('client_id')) {
-      throw error;
-    }
-    // Para otros errores, continuar pero advertir
-    console.warn('⚠️ No se pudo guardar client_id en usuarios, pero continuaremos');
-  }
+  // 5. NO intentamos guardar el Client ID aquí porque:
+  // - Si la columna no existe, fallará
+  // - El Client ID se guardará en el paso 5 del flujo de creación de cuenta
+  // - Para usuarios existentes, ya debería estar guardado
+  console.log('ℹ️ Client ID será guardado en el paso de actualización del usuario');
 
   // 6. Retornar la API Key con el Client ID
   return {

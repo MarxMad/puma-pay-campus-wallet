@@ -215,16 +215,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No se pudo crear la cuenta CLABE. Revisa la consola para más detalles.');
       }
       if (onStepChange) onStepChange('Finalizando registro...');
-      // 5. Actualizar el usuario en Supabase con wallet, clabe y client_id
-      // El client_id ya fue guardado en asignarApiKeyAUsuario, pero lo incluimos aquí también por seguridad
-      await supabase
+      // 5. Actualizar el usuario en Supabase con wallet, clabe, api_key y client_id
+      // IMPORTANTE: Guardar api_key y client_id para que el usuario pueda hacer login después
+      const { error: updateError } = await supabase
         .from('usuarios')
         .update({ 
           wallet_address: address, 
           clabe,
-          client_id: apiKeyObj.client_id // Guardar el Client ID único en Supabase
+          api_key: apiKeyObj.api_key, // Guardar la API Key asignada
+          client_id: apiKeyObj.client_id // Guardar el Client ID único
         })
         .eq('id', userId);
+      
+      if (updateError) {
+        console.warn('⚠️ Error actualizando usuario con api_key y client_id:', updateError);
+        // Si la columna client_id no existe, intentar solo con api_key
+        if (updateError.code === '42703') {
+          console.log('ℹ️ Columna client_id no existe, intentando solo con api_key...');
+          const { error: apiKeyError } = await supabase
+            .from('usuarios')
+            .update({ 
+              wallet_address: address, 
+              clabe,
+              api_key: apiKeyObj.api_key
+            })
+            .eq('id', userId);
+          
+          if (apiKeyError) {
+            console.error('❌ Error actualizando usuario con api_key:', apiKeyError);
+            // No lanzamos error, continuamos con el registro
+          }
+        } else {
+          console.error('❌ Error actualizando usuario:', updateError);
+          // No lanzamos error, continuamos con el registro
+        }
+      } else {
+        console.log('✅ Usuario actualizado correctamente con api_key y client_id');
+      }
       // 6. Guardar usuario autenticado en localStorage
       const userData: User = {
         email,
