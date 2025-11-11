@@ -283,7 +283,10 @@ const CoursesPage = () => {
                         <Badge className="bg-amber-500/20 border-amber-400 text-amber-100">
                           Tendencia
                         </Badge>
-                        <Badge variant="outline" className="border-gray-700">
+                        <Badge
+                          variant="outline"
+                          className="border-gray-700 text-gray-200"
+                        >
                           {course.category}
                         </Badge>
                       </div>
@@ -337,9 +340,12 @@ const CourseCard = ({
       <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20" />
       <div className="absolute top-3 left-3 flex gap-2">
         {course.featured && (
-          <Badge className="bg-amber-500/80 text-gray-900">Destacado</Badge>
+          <Badge className="bg-amber-500/80 text-amber-50">Destacado</Badge>
         )}
-        <Badge variant="outline" className="bg-black/40 border-white/20">
+        <Badge
+          variant="outline"
+          className="bg-black/40 border-white/20 text-gray-200"
+        >
           {course.category}
         </Badge>
       </div>
@@ -389,11 +395,14 @@ const CourseRowCard = ({
           className="h-full w-full object-cover"
         />
         <div className="absolute top-2 left-2 flex gap-2">
-          <Badge variant="outline" className="bg-black/40 border-white/20">
+          <Badge
+            variant="outline"
+            className="bg-black/40 border-white/20 text-gray-200"
+          >
             {course.category}
           </Badge>
           {course.trending && (
-            <Badge className="bg-amber-500/80 text-gray-900">Trend</Badge>
+            <Badge className="bg-amber-500/80 text-amber-50">Trend</Badge>
           )}
         </div>
       </div>
@@ -415,7 +424,11 @@ const CourseRowCard = ({
             {course.rating.toFixed(1)} ({course.reviews})
           </span>
           {course.tags.map((tag) => (
-            <Badge key={tag} variant="outline" className="border-gray-700">
+            <Badge
+              key={tag}
+              variant="outline"
+              className="border-gray-700 text-gray-200"
+            >
               #{tag}
             </Badge>
           ))}
