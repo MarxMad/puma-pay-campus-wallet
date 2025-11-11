@@ -22,6 +22,7 @@ import CampusMap from "./pages/CampusMap";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { JunoDemo } from "./pages/JunoDemo";
+import CoursesPage from "./pages/Courses";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/juno-demo" element={<JunoDemo />} />
             <Route path="/" element={<Index />} />

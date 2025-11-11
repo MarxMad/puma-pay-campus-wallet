@@ -1,9 +1,10 @@
-import { Home, MapPin, Search, Settings } from 'lucide-react';
+import { Home, MapPin, GraduationCap, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
   { path: '/home', icon: Home, label: 'Home' },
+  { path: '/courses', icon: GraduationCap, label: 'Cursos' },
   { path: '/campus-map', icon: MapPin, label: 'Mapa' },
   // TEMPORALMENTE COMENTADO - Estadísticas
   // { path: '/statistics', icon: Search, label: 'Estadísticas' },
