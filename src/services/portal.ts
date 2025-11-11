@@ -357,12 +357,29 @@ class PortalService {
             // Esto es especialmente importante después de re-inicializar con nuevas credenciales
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Verificar que la wallet existe (opcional, pero ayuda a diagnosticar problemas)
+            // Verificar que la wallet existe, y crearla si no existe
             try {
               const walletExists = await this.portal!.doesWalletExist();
-              console.log('✅ Verificación de wallet:', walletExists ? 'existe' : 'no existe (se creará en primera transacción)');
+              console.log('✅ Verificación de wallet:', walletExists ? 'existe' : 'no existe');
+              
+              if (!walletExists) {
+                console.log('🔄 Creando wallet antes de enviar transacción...');
+                await this.portal!.createWallet();
+                console.log('✅ Wallet creada exitosamente');
+                
+                // Esperar un momento adicional después de crear la wallet
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
             } catch (error) {
-              console.warn('⚠️ No se pudo verificar existencia de wallet, continuando...', error);
+              console.warn('⚠️ Error verificando/creando wallet:', error);
+              // Intentar crear la wallet de todas formas
+              try {
+                console.log('🔄 Intentando crear wallet como fallback...');
+                await this.portal!.createWallet();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              } catch (createError) {
+                console.warn('⚠️ No se pudo crear wallet, continuando...', createError);
+              }
             }
             
             console.log('✅ Portal listo. Enviando transacción con sendAsset...');
