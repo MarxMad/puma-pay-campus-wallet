@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { ArrowLeft, QrCode, Copy, Share2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ArrowLeft, QrCode, Copy, Share2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import QRCodeSVG from 'react-qr-code';
+import { toast } from '@/hooks/use-toast';
 
 const ReceivePage = () => {
   const navigate = useNavigate();
@@ -11,10 +13,29 @@ const ReceivePage = () => {
   const [amount, setAmount] = useState('');
 
   const walletAddress = user?.address || '';
+  const [copied, setCopied] = useState(false);
+
+  // Generar contenido del QR: wallet address + monto opcional
+  const qrContent = useMemo(() => {
+    if (!walletAddress) return '';
+    
+    // Formato: pumapay:0x...?amount=100 (similar a ethereum:)
+    if (amount && parseFloat(amount) > 0) {
+      return `pumapay:${walletAddress}?amount=${amount}`;
+    }
+    return walletAddress;
+  }, [walletAddress, amount]);
 
   const handleCopyAddress = () => {
-    navigator.clipboard.writeText(walletAddress);
-    alert('¡Dirección copiada al portapapeles!');
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress);
+      setCopied(true);
+      toast({
+        title: '¡Copiado!',
+        description: 'Dirección copiada al portapapeles',
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleShare = async () => {
@@ -31,7 +52,10 @@ const ReceivePage = () => {
     } else {
       // Fallback para navegadores que no soportan Web Share API
       navigator.clipboard.writeText(walletAddress);
-      alert('¡Dirección copiada al portapapeles!');
+      toast({
+        title: '¡Copiado!',
+        description: 'Dirección copiada al portapapeles',
+      });
     }
   };
 
@@ -50,17 +74,32 @@ const ReceivePage = () => {
         {/* QR Code */}
         <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
           <div className="text-center space-y-4">
-            <div className="w-32 h-32 bg-white rounded-lg mx-auto flex items-center justify-center">
-              <div className="w-28 h-28 bg-gray-900 rounded flex items-center justify-center">
-                <QrCode className="h-16 w-16 text-white" />
+            {walletAddress ? (
+              <div className="bg-white rounded-lg p-4 mx-auto w-fit">
+                <QRCodeSVG
+                  value={qrContent}
+                  size={256}
+                  level="H"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="w-64 h-64 bg-gray-700 rounded-lg mx-auto flex items-center justify-center">
+                <QrCode className="h-16 w-16 text-gray-400" />
+              </div>
+            )}
             
             <div>
               <h3 className="text-lg font-semibold mb-2">Código QR</h3>
               <p className="text-gray-300 text-sm">
-                Comparte este código para recibir MXNB
+                {amount && parseFloat(amount) > 0
+                  ? `Escanea este código para enviar ${amount} MXNB`
+                  : 'Comparte este código para recibir MXNB'}
               </p>
+              {amount && parseFloat(amount) > 0 && (
+                <p className="text-amber-400 text-xs mt-1 font-medium">
+                  Monto solicitado: {amount} MXNB
+                </p>
+              )}
             </div>
           </div>
         </Card>
@@ -80,8 +119,17 @@ const ReceivePage = () => {
                 onClick={handleCopyAddress}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar
+                {copied ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar
+                  </>
+                )}
               </Button>
               <Button 
                 onClick={handleShare}

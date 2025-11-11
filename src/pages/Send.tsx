@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, QrCode, Camera, Copy, CheckCircle, AlertCircle, ExternalLink, Wallet } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ArrowLeft, QrCode, Camera, Copy, CheckCircle, AlertCircle, ExternalLink, Wallet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { useBalance } from '@/hooks/useBalance';
 import { portalService } from '@/services/portal';
 import { useAuth } from '@/contexts/AuthContext';
+import { Html5Qrcode } from 'html5-qrcode';
+import { toast } from '@/hooks/use-toast';
 
 const SendPage = () => {
   const navigate = useNavigate();
@@ -21,24 +23,112 @@ const SendPage = () => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [inputMethod, setInputMethod] = useState<'manual' | 'qr'>('manual');
+  const [scannedAmount, setScannedAmount] = useState<string | null>(null);
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerRef = useRef<HTMLDivElement>(null);
 
   const isValidAddress = (address: string): boolean => {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
   };
 
-  const handleQRScan = (data: string) => {
+  const handleQRScan = useCallback((data: string) => {
     console.log('📱 QR escaneado:', data);
-    // Extraer dirección si el QR contiene más información
-    const addressMatch = data.match(/0x[a-fA-F0-9]{40}/);
-    const address = addressMatch ? addressMatch[0] : data;
+    
+    // Detener el escáner
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop().catch(() => {});
+      qrScannerRef.current.clear();
+      qrScannerRef.current = null;
+    }
+    
+    setShowScanner(false);
+    
+    // Parsear formato pumapay:0x...?amount=100 o solo dirección
+    let address = '';
+    let amount = null;
+    
+    if (data.startsWith('pumapay:')) {
+      // Formato: pumapay:0x...?amount=100
+      const url = new URL(data.replace('pumapay:', 'http://'));
+      address = url.hostname || url.pathname;
+      amount = url.searchParams.get('amount');
+    } else {
+      // Solo dirección o formato ethereum:
+      const addressMatch = data.match(/0x[a-fA-F0-9]{40}/);
+      address = addressMatch ? addressMatch[0] : data;
+    }
     
     if (isValidAddress(address)) {
       setWalletAddress(address);
-      setShowScanner(false);
+      if (amount) {
+        setScannedAmount(amount);
+        setAmount(amount);
+        toast({
+          title: 'QR escaneado',
+          description: `Dirección y monto (${amount} MXNB) detectados`,
+        });
+      } else {
+        toast({
+          title: 'QR escaneado',
+          description: 'Dirección de wallet detectada',
+        });
+      }
       setInputMethod('qr');
     } else {
       setSummaryError('El código QR no contiene una dirección de wallet válida');
+      toast({
+        title: 'QR inválido',
+        description: 'El código QR no contiene una dirección válida',
+        variant: 'destructive',
+      });
     }
+  }, []);
+
+  // Inicializar escáner QR
+  useEffect(() => {
+    if (showScanner && !qrScannerRef.current) {
+      const scannerId = 'qr-reader';
+      qrScannerRef.current = new Html5Qrcode(scannerId);
+      
+      qrScannerRef.current.start(
+        { facingMode: 'environment' }, // Usar cámara trasera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          handleQRScan(decodedText);
+        },
+        (errorMessage) => {
+          // Ignorar errores de escaneo continuo
+        }
+      ).catch((err) => {
+        console.error('Error iniciando escáner:', err);
+        toast({
+          title: 'Error al acceder a la cámara',
+          description: 'Asegúrate de dar permisos de cámara al navegador',
+          variant: 'destructive',
+        });
+        setShowScanner(false);
+      });
+    }
+
+    return () => {
+      if (qrScannerRef.current && showScanner) {
+        qrScannerRef.current.stop().catch(() => {});
+        qrScannerRef.current.clear();
+        qrScannerRef.current = null;
+      }
+    };
+  }, [showScanner, handleQRScan]);
+
+  const handleCloseScanner = () => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop().catch(() => {});
+      qrScannerRef.current.clear();
+      qrScannerRef.current = null;
+    }
+    setShowScanner(false);
   };
 
   // Abrir modal de confirmación
@@ -262,26 +352,35 @@ const SendPage = () => {
                       <Camera className="h-5 w-5 mr-2" />
                       Abrir cámara QR
                     </Button>
+                    {scannedAmount && (
+                      <p className="text-xs text-amber-400 mt-2">
+                        Monto detectado: {scannedAmount} MXNB
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-gray-700 rounded-lg p-4 text-center">
-                      <p className="text-sm text-gray-300">Cámara activa</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Escanea el código QR con la dirección de wallet
+                    <div className="relative bg-gray-900 rounded-lg overflow-hidden">
+                      <div 
+                        id="qr-reader" 
+                        ref={scannerContainerRef}
+                        className="w-full"
+                        style={{ minHeight: '300px' }}
+                      />
+                      <Button
+                        onClick={handleCloseScanner}
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-3">
+                      <p className="text-xs text-blue-300 text-center">
+                        📷 Apunta la cámara al código QR. El escaneo se detendrá automáticamente cuando detecte una dirección válida.
                       </p>
                     </div>
-                    <Button 
-                      onClick={() => setShowScanner(false)}
-                      variant="ghost"
-                      className="w-full"
-                    >
-                      Cancelar escaneo
-                    </Button>
-                    <p className="text-xs text-gray-400 text-center">
-                      Nota: El escáner QR se integrará con la API de cámara del navegador.
-                      Por ahora, puedes ingresar la dirección manualmente.
-                    </p>
                   </div>
                 )}
               </div>
