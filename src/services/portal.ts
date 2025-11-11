@@ -202,20 +202,45 @@ class PortalService {
         throw new Error('Dirección del contrato MXNB no configurada');
       }
 
-      // Usar sendAsset del Portal SDK para transacción real
-      const result = await this.portal.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
-        amount: amount.toString(),
-        to: to,
-        token: MXNB_CONTRACT_ADDRESS
+      // Asegurar que Portal esté completamente listo antes de enviar
+      return new Promise((resolve, reject) => {
+        this.portal!.onReady(async () => {
+          try {
+            // Verificar que la wallet existe
+            const walletExists = await this.portal!.doesWalletExist();
+            if (!walletExists) {
+              throw new Error('La wallet no existe. Por favor crea una wallet primero.');
+            }
+
+            // Obtener la dirección para verificar que está lista
+            const address = await this.portal!.getEip155Address();
+            if (!address) {
+              throw new Error('No se pudo obtener la dirección de la wallet');
+            }
+
+            console.log('✅ Wallet lista para transacción:', address);
+
+            // Usar sendAsset del Portal SDK para transacción real
+            const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
+              amount: amount.toString(),
+              to: to,
+              token: MXNB_CONTRACT_ADDRESS
+            });
+            
+            console.log('✅ Transacción MXNB enviada:', result);
+            
+            // Retornar hash de transacción real
+            const txHash = typeof result === 'string' ? result : result?.txHash || result?.hash || 'unknown';
+            resolve(txHash);
+          } catch (error: any) {
+            console.error('❌ Error enviando MXNB:', error);
+            reject(new Error(`No se pudo enviar MXNB: ${error.message || error}`));
+          }
+        });
       });
-      
-      console.log('✅ Transacción MXNB enviada:', result);
-      
-      // Retornar hash de transacción real
-      return typeof result === 'string' ? result : result?.txHash || result?.hash || 'unknown';
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error enviando MXNB:', error);
-      throw new Error(`No se pudo enviar MXNB: ${error.message}`);
+      throw new Error(`No se pudo enviar MXNB: ${error.message || error}`);
     }
   }
 

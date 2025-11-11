@@ -291,7 +291,7 @@ const SendPage = () => {
                   setShowScanner(false);
                 }}
                 variant={inputMethod === 'manual' ? 'default' : 'outline'}
-                className={`flex-1 ${inputMethod === 'manual' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                className={`flex-1 ${inputMethod === 'manual' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white'}`}
               >
                 <Wallet className="h-4 w-4 mr-2" />
                 Manual
@@ -302,7 +302,7 @@ const SendPage = () => {
                   setShowScanner(true);
                 }}
                 variant={inputMethod === 'qr' ? 'default' : 'outline'}
-                className={`flex-1 ${inputMethod === 'qr' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                className={`flex-1 ${inputMethod === 'qr' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white'}`}
               >
                 <QrCode className="h-4 w-4 mr-2" />
                 Escanear QR
@@ -444,10 +444,10 @@ const SendPage = () => {
                     onClick={() => setAmount(quickAmount)}
                     disabled={hasInsufficientFunds(parseFloat(quickAmount))}
                     variant="outline"
-                    className={`text-sm ${
+                    className={`text-sm border-gray-600 text-gray-200 ${
                       hasInsufficientFunds(parseFloat(quickAmount)) 
                         ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:bg-gray-600'
+                        : 'hover:bg-gray-700 hover:text-white'
                     }`}
                   >
                     ${quickAmount}
@@ -575,7 +575,7 @@ const SendPage = () => {
                 variant="outline"
                 onClick={() => setShowConfirmDialog(false)}
                 disabled={isLoading}
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white"
               >
                 Cancelar
               </Button>

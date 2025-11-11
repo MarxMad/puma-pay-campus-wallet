@@ -134,7 +134,7 @@ const ReceivePage = () => {
               <Button 
                 onClick={handleShare}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white"
               >
                 <Share2 className="h-4 w-4 mr-2" />
                 Compartir
@@ -165,7 +165,7 @@ const ReceivePage = () => {
                   key={quickAmount}
                   onClick={() => setAmount(quickAmount)}
                   variant="outline"
-                  className="text-sm hover:bg-gray-600"
+                  className="text-sm border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white"
                 >
                   ${quickAmount}
                 </Button>
