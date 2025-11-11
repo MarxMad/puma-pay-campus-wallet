@@ -314,88 +314,31 @@ class PortalService {
         throw new Error('Dirección del contrato MXNB no configurada');
       }
 
-      // Asegurar que Portal esté completamente listo antes de enviar
+      // Según la documentación de Portal, NO necesitamos obtener la dirección antes de enviar.
+      // Portal SDK maneja todo internamente, incluso con Account Abstraction.
+      // La wallet de smart contract se desplegará automáticamente en la primera transacción.
       return new Promise((resolve, reject) => {
         // Timeout de seguridad
         const timeout = setTimeout(() => {
           reject(new Error('Timeout esperando a que Portal esté listo. Intenta nuevamente.'));
-        }, 10000); // 10 segundos máximo
+        }, 15000); // 15 segundos máximo (Account Abstraction puede tomar más tiempo)
 
         this.portal!.onReady(async () => {
           try {
             clearTimeout(timeout);
             
-            // Obtener la dirección de la wallet usando múltiples métodos
-            // IMPORTANTE: Con Account Abstraction, la wallet de smart contract solo se despliega
-            // en la primera transacción exitosa, por lo que getEip155Address() puede fallar
-            // hasta entonces. Usamos la dirección guardada como prioridad.
-            let address: string | null = null;
-            
-            // PRIORIDAD 0: Usar dirección proporcionada como parámetro (más confiable)
+            // Sincronizar dirección si se proporciona (para logging, no requerida para la transacción)
             if (fromAddress) {
-              address = fromAddress;
-              console.log('✅ Usando dirección proporcionada como parámetro:', address);
-              // Sincronizar con currentUser
               if (!this.currentUser) this.currentUser = {};
-              this.currentUser.address = address;
+              this.currentUser.address = fromAddress;
+              console.log('✅ Dirección sincronizada:', fromAddress);
             }
             
-            // PRIORIDAD 1: Usar dirección guardada (más confiable con Account Abstraction)
-            if (!address && this.currentUser?.address) {
-              address = this.currentUser.address;
-              console.log('✅ Usando dirección guardada (prioridad para Account Abstraction):', address);
-            }
-            
-            // PRIORIDAD 2: Intentar portal.address directamente (más rápido)
-            if (!address && this.portal!.address) {
-              address = this.portal!.address;
-              console.log('✅ Dirección obtenida de portal.address:', address);
-              // Guardar para uso futuro
-              if (!this.currentUser) this.currentUser = {};
-              this.currentUser.address = address;
-            }
-            
-            // PRIORIDAD 3: Intentar con getEip155Address (puede fallar con Account Abstraction si no está desplegada)
-            if (!address) {
-              try {
-                address = await this.portal!.getEip155Address();
-                if (address) {
-                  console.log('✅ Dirección obtenida de getEip155Address:', address);
-                  // Guardar para uso futuro
-                  if (!this.currentUser) this.currentUser = {};
-                  this.currentUser.address = address;
-                }
-              } catch (error: any) {
-                console.warn('⚠️ Error obteniendo dirección con getEip155Address:', error);
-                // Con Account Abstraction, es normal que falle si la wallet aún no está desplegada
-                // La wallet se desplegará automáticamente en la primera transacción
-                if (error?.message?.includes('wallet does not exist')) {
-                  console.warn('⚠️ Portal dice que la wallet no existe. Con Account Abstraction, esto es normal si la wallet aún no está desplegada.');
-                  console.warn('⚠️ La wallet se desplegará automáticamente en la primera transacción exitosa.');
-                }
-              }
-            }
+            console.log('✅ Portal listo. Enviando transacción con sendAsset...');
+            console.log('ℹ️ Con Account Abstraction, la wallet se desplegará automáticamente si es la primera transacción.');
 
-            // PRIORIDAD 4: Intentar con el método helper
-            if (!address) {
-              address = await this.getWalletAddress();
-              if (address) {
-                console.log('✅ Dirección obtenida con getWalletAddress:', address);
-                // Guardar para uso futuro
-                if (!this.currentUser) this.currentUser = {};
-                this.currentUser.address = address;
-              }
-            }
-
-            // Si aún no tenemos dirección, lanzar error
-            if (!address) {
-              throw new Error('No se pudo obtener la dirección de la wallet. Asegúrate de que la wallet esté creada en Portal.');
-            }
-
-            console.log('✅ Wallet lista para transacción (puede ser Account Abstraction):', address);
-            console.log('ℹ️ Con Account Abstraction, la wallet se desplegará automáticamente en esta transacción si es la primera.');
-
-            // Usar sendAsset del Portal SDK para transacción real
+            // Usar sendAsset del Portal SDK directamente - Portal maneja todo internamente
+            // No necesitamos obtener la dirección antes, Portal lo hace automáticamente
             const result = await this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
               amount: amount.toString(),
               to: to,
@@ -404,11 +347,15 @@ class PortalService {
             
             console.log('✅ Transacción MXNB enviada:', result);
             
-            // Retornar hash de transacción real
+            // Con Account Abstraction, el hash es un User Operation hash, no un transaction hash
             const resultAny = result as any;
             const txHash = typeof result === 'string' 
               ? result 
-              : resultAny?.txHash || resultAny?.hash || resultAny?.transactionHash || 'unknown';
+              : resultAny?.txHash || resultAny?.hash || resultAny?.transactionHash || resultAny?.userOpHash || 'unknown';
+            
+            console.log('✅ Hash de transacción/User Operation:', txHash);
+            console.log('ℹ️ Si es Account Abstraction, este es un User Operation hash. Puedes verlo en Jiffy Scan.');
+            
             resolve(txHash);
           } catch (error: any) {
             console.error('❌ Error enviando MXNB:', error);
