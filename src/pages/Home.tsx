@@ -330,66 +330,67 @@ const HomePage = () => {
             </div>
             <div className="mb-2">
               <span className="text-gray-300 text-sm">Dirección de wallet</span>
-            <div className="flex items-center space-x-2 font-mono text-green-400 text-xs break-all mt-1">
-              <span>{user?.address}</span>
-              {user?.address && (
+              <div className="flex items-center space-x-2 font-mono text-green-400 text-xs break-all mt-1">
+                <span>{user?.address}</span>
+                {user?.address && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.address);
+                      alert('¡Dirección copiada!');
+                    }}
+                    title="Copiar dirección"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            {user?.clabe && (
+              <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-lg font-semibold text-green-900">Tu CLABE para depósitos:</div>
+                  <div className="font-mono text-2xl text-green-800 select-all tracking-widest" style={{ letterSpacing: '0.1em' }}>{user?.clabe}</div>
+                  <div className="text-green-900 text-sm mt-1">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+                </div>
                 <Button
-                  size="icon"
                   variant="ghost"
-                  onClick={() => {
-                    navigator.clipboard.writeText(user.address);
-                    alert('¡Dirección copiada!');
-                  }}
-                  title="Copiar dirección"
+                  size="sm"
+                  onClick={() => {navigator.clipboard.writeText(user?.clabe || ''); alert('CLABE copiada al portapapeles')}}
+                  className="ml-2 text-green-700 hover:text-green-900"
                 >
-                  <Copy className="w-4 h-4" />
+                  Copiar
                 </Button>
-              )}
-            </div>
-          </div>
-          {user?.clabe && (
-            <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="text-lg font-semibold text-green-900">Tu CLABE para depósitos:</div>
-                <div className="font-mono text-2xl text-green-800 select-all tracking-widest" style={{ letterSpacing: '0.1em' }}>{user?.clabe}</div>
-                <div className="text-green-900 text-sm mt-1">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {navigator.clipboard.writeText(user?.clabe || ''); alert('CLABE copiada al portapapeles')}}
-                className="ml-2 text-green-700 hover:text-green-900"
-              >
-                Copiar
-              </Button>
-            </div>
-          )}
-          {user?.clabe && (
-            <div className="mt-4 mb-6">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-2">
-                <div className="font-semibold text-blue-800 mb-1">¿Cómo funciona el fondeo?</div>
-                <div className="text-xs text-blue-700">
-                  1. Deposita MXN a tu CLABE desde cualquier banco vía SPEI.<br />
-                  2. Juno detecta el depósito y automáticamente convierte los MXN en MXNB.<br />
-                  3. Tu balance de MXNB se actualiza en PumaPay y puedes usarlo en el campus.
+            )}
+            {user?.clabe && (
+              <div className="mt-4 mb-6">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-2">
+                  <div className="font-semibold text-blue-800 mb-1">¿Cómo funciona el fondeo?</div>
+                  <div className="text-xs text-blue-700">
+                    1. Deposita MXN a tu CLABE desde cualquier banco vía SPEI.<br />
+                    2. Juno detecta el depósito y automáticamente convierte los MXN en MXNB.<br />
+                    3. Tu balance de MXNB se actualiza en PumaPay y puedes usarlo en el campus.
+                  </div>
+                </div>
+                <div className="p-4 bg-green-50 border border-green-200 rounded">
+                  <div className="font-semibold text-green-800 mb-1">¿Cómo funciona el retiro?</div>
+                  <div className="text-xs text-green-700">
+                    1. Enlaza tu cuenta bancaria personal (CLABE) en tu perfil.<br />
+                    2. Solicita un retiro/redemption desde la app.<br />
+                    3. Juno convierte tus MXNB a MXN y los transfiere a tu cuenta bancaria.
+                  </div>
                 </div>
               </div>
-              <div className="p-4 bg-green-50 border border-green-200 rounded">
-                <div className="font-semibold text-green-800 mb-1">¿Cómo funciona el retiro?</div>
-                <div className="text-xs text-green-700">
-                  1. Enlaza tu cuenta bancaria personal (CLABE) en tu perfil.<br />
-                  2. Solicita un retiro/redemption desde la app.<br />
-                  3. Juno convierte tus MXNB a MXN y los transfiere a tu cuenta bancaria.
-                </div>
+            )}
+            <div className="mt-4">
+              <span className="text-gray-300 text-sm">Balance MXNB</span>
+              <div className="text-3xl font-bold mt-1">
+                {typeof available === 'number' && !isNaN(available)
+                  ? `$${available.toFixed(2)}`
+                  : 'Cargando...'}
               </div>
-            </div>
-          )}
-          <div className="mt-4">
-            <span className="text-gray-300 text-sm">Balance MXNB</span>
-            <div className="text-3xl font-bold mt-1">
-              {typeof available === 'number' && !isNaN(available)
-                ? `$${available.toFixed(2)}`
-                : 'Cargando...'}
             </div>
           </div>
         </Card>
