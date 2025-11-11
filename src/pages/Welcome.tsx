@@ -38,7 +38,7 @@ const Welcome = () => {
         <div className="mb-8">
           <div className="w-40 h-40 mx-auto mb-6 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-orange-500/30 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-orange-500/10 p-4">
             <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-24 w-24 object-contain brightness-110" />
+              <img src="/PumaPay.png" alt="PumaPay" className="h-24 w-24 object-contain brightness-110 rounded-full" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">

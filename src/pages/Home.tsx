@@ -291,7 +291,7 @@ const HomePage = () => {
         <div className="flex items-center space-x-2">
           <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-lg p-1.5">
             <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-8 w-8 object-contain brightness-110" />
+              <img src="/PumaPay.png" alt="PumaPay" className="h-8 w-8 object-contain brightness-110 rounded-full" />
             </div>
           </div>
           <div className="hidden sm:block">
@@ -318,7 +318,7 @@ const HomePage = () => {
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-2xl flex items-center justify-center shadow-lg p-2">
                 <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center shadow-inner border border-gray-600/50">
-                  <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain brightness-110" />
+                  <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain brightness-110 rounded-xl" />
                 </div>
               </div>
               <div>
@@ -566,7 +566,7 @@ const HomePage = () => {
           
           {/* Estadísticas rápidas */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border border-orange-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-orange-500/10">
+            <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-orange-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-orange-500/20">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
                   <TrendingDown className="h-6 w-6 text-white" />
@@ -576,10 +576,10 @@ const HomePage = () => {
                   <p className="text-white font-bold text-lg truncate">${totalExpenses.toFixed(2)}</p>
                 </div>
               </div>
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-lg border border-green-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-green-500/10">
+            <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-green-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-green-500/20">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
                   <TrendingUp className="h-6 w-6 text-white" />
@@ -589,7 +589,7 @@ const HomePage = () => {
                   <p className="text-white font-bold text-lg truncate">${totalIncome.toFixed(2)}</p>
                 </div>
               </div>
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
             </Card>
           </div>
 
@@ -722,7 +722,7 @@ const HomePage = () => {
           </Badge>
         </div>
         <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
-          <Card className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 backdrop-blur-lg border border-yellow-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-yellow-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
                 <Star className="h-6 w-6 text-white fill-white" />
@@ -733,7 +733,7 @@ const HomePage = () => {
               </p>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-lg border border-blue-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-blue-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
                 <Zap className="h-6 w-6 text-white" />
@@ -744,7 +744,7 @@ const HomePage = () => {
               </p>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-lg border border-green-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-green-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
             <div className="text-center">
               <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
                 <Banknote className="h-6 w-6 text-white" />
@@ -772,8 +772,8 @@ const HomePage = () => {
         
         <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* Cafetería Las Islas */}
-          <Card className="bg-gradient-to-br from-orange-600/40 to-red-600/40 backdrop-blur-xl border-orange-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/30"></div>
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-orange-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/50"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -806,8 +806,8 @@ const HomePage = () => {
           </Card>
 
           {/* Café y Cuernito */}
-          <Card className="bg-gradient-to-br from-yellow-600/40 to-orange-600/40 backdrop-blur-xl border-yellow-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/30"></div>
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-yellow-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/50"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -840,8 +840,8 @@ const HomePage = () => {
           </Card>
 
           {/* Librería Central */}
-          <Card className="bg-gradient-to-br from-blue-600/40 to-indigo-600/40 backdrop-blur-xl border-blue-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/30"></div>
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-blue-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/50"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -874,8 +874,8 @@ const HomePage = () => {
           </Card>
 
           {/* Gimnasio */}
-          <Card className="bg-gradient-to-br from-green-600/40 to-emerald-600/40 backdrop-blur-xl border-green-500/50 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/30"></div>
+          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-green-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gray-900/50"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -1202,7 +1202,7 @@ const HomePage = () => {
                 <div className="mb-6 flex justify-center">
                   <div className="w-24 h-24 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-orange-500/30 rounded-3xl flex items-center justify-center shadow-2xl p-3">
                     <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center shadow-inner border border-gray-600/50">
-                      <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain brightness-110" />
+                      <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain brightness-110 rounded-2xl" />
                     </div>
                   </div>
                 </div>
