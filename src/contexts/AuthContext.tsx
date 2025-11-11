@@ -215,10 +215,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No se pudo crear la cuenta CLABE. Revisa la consola para más detalles.');
       }
       if (onStepChange) onStepChange('Finalizando registro...');
-      // 5. Actualizar el usuario en Supabase con wallet y clabe
+      // 5. Actualizar el usuario en Supabase con wallet, clabe y client_id
       await supabase
         .from('usuarios')
-        .update({ wallet_address: address, clabe })
+        .update({ 
+          wallet_address: address, 
+          clabe,
+          client_id: apiKeyObj.client_id // Guardar el Client ID único
+        })
         .eq('id', userId);
       // 6. Guardar usuario autenticado en localStorage
       const userData: User = {
