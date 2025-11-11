@@ -298,9 +298,19 @@ class PortalService {
    * @param to - Dirección destino
    * @param amount - Cantidad a enviar
    * @param fromAddress - Dirección del usuario (opcional, se obtiene automáticamente si no se proporciona)
+   * @param credentials - Credenciales de Portal (opcional, se usan si están disponibles)
    */
-  async sendMXNB(to: string, amount: number, fromAddress?: string): Promise<string> {
-    await this.initialize();
+  async sendMXNB(to: string, amount: number, fromAddress?: string, credentials?: { apiKey?: string, clientId?: string }): Promise<string> {
+    // Si se proporcionan credenciales, re-inicializar Portal con ellas
+    if (credentials?.apiKey) {
+      console.log('🔄 Re-inicializando Portal con credenciales proporcionadas...');
+      await this.initialize({
+        apiKey: credentials.apiKey,
+        clientId: credentials.clientId
+      });
+    } else {
+      await this.initialize();
+    }
     
     try {
       if (!this.portal) {

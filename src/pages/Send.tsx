@@ -185,7 +185,12 @@ const SendPage = () => {
       
       // Enviar MXNB a wallet usando Portal SDK (TRANSACCIÓN REAL EN ARBITRUM)
       // Pasar la dirección del usuario para Account Abstraction
-      const hash = await portalService.sendMXNB(walletAddress, amountNum, user?.address);
+      const hash = await portalService.sendMXNB(
+        walletAddress, 
+        amountNum, 
+        user?.address,
+        user?.apiKey ? { apiKey: user.apiKey, clientId: user.clientId } : undefined
+      );
       
       console.log('✅ Transacción enviada en Arbitrum:', hash);
       setTxHash(hash);

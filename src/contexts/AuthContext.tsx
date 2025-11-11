@@ -11,6 +11,8 @@ interface User {
   name?: string;
   authMethod: 'portal' | 'traditional';
   clabe?: string;
+  apiKey?: string;
+  clientId?: string;
 }
 
 interface AuthContextType {
@@ -44,10 +46,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = JSON.parse(stored);
           setUser(userData);
           
-          // Si es usuario de Portal, sincronizar con el servicio
-          if (userData.authMethod === 'portal') {
+          // Si es usuario de Portal, re-inicializar Portal con las credenciales correctas
+          if (userData.authMethod === 'portal' || userData.authMethod === 'traditional') {
             // Restaurar estado en el servicio Portal
             portalService.setCurrentUser({ address: userData.address });
+            
+            // Si tenemos credenciales, re-inicializar Portal con ellas
+            if (userData.apiKey) {
+              console.log('🔄 Re-inicializando Portal con credenciales del usuario...');
+              try {
+                await portalService.initialize({
+                  apiKey: userData.apiKey,
+                  clientId: userData.clientId
+                });
+                console.log('✅ Portal re-inicializado correctamente');
+              } catch (error) {
+                console.warn('⚠️ Error re-inicializando Portal:', error);
+              }
+            }
           }
         }
       } catch (error) {
@@ -74,13 +90,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Autenticar contra Supabase
       const userData = await loginUsuario(email, password);
+      
+      // Re-inicializar Portal con las credenciales del usuario
+      if (userData.api_key) {
+        console.log('🔄 Re-inicializando Portal con credenciales del usuario...');
+        await portalService.initialize({
+          apiKey: userData.api_key,
+          clientId: userData.client_id
+        });
+        console.log('✅ Portal re-inicializado correctamente');
+      }
+      
+      // Sincronizar usuario con Portal Service
+      portalService.setCurrentUser({ address: userData.wallet_address });
+      
       // Guardar usuario autenticado en localStorage
       updateUser({
         address: userData.wallet_address,
         email: userData.email,
         name: userData.nombre,
         authMethod: userData.auth_method as 'portal' | 'traditional',
-        clabe: userData.clabe
+        clabe: userData.clabe,
+        apiKey: userData.api_key,
+        clientId: userData.client_id
       });
     } catch (error) {
       console.error('Error en login:', error);
@@ -195,6 +227,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         address,
         authMethod: 'traditional',
         clabe,
+        apiKey: apiKeyObj.api_key,
+        clientId: apiKeyObj.client_id
       };
       updateUser(userData);
       setIsLoading(false);
