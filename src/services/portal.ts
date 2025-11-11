@@ -145,32 +145,43 @@ class PortalService {
         return 0;
       }
 
-      const balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID) as unknown as 
-        | { 
-            rawBalance: string, 
-            decimals: number, 
-            contractAddress?: string,
-            balance?: string,
-            symbol?: string
-          }[]
-        | { error?: string };
-      
-      console.log('📊 Balances recibidos desde Portal:', balances);
-      
-      // Verificar si es un error
-      if (!Array.isArray(balances)) {
-        if (balances && 'error' in balances) {
-          console.warn('⚠️ Portal retornó error:', balances.error);
-          if (balances.error?.includes('wallet does not exist')) {
-            console.warn('⚠️ La wallet no existe en Portal');
-          }
-          return 0;
-        }
-        console.warn('⚠️ Respuesta de balances no es un array:', balances);
+      let balances: any;
+      try {
+        balances = await this.portal.getBalances(ARBITRUM_SEPOLIA_CHAIN_ID);
+      } catch (error: any) {
+        console.warn('⚠️ Error obteniendo balances de Portal:', error);
         return 0;
       }
       
-      const mxnb = balances.find((b) => 
+      console.log('📊 Balances recibidos desde Portal:', balances);
+      
+      // Verificar si es null, undefined, o un error
+      if (!balances) {
+        console.warn('⚠️ Portal retornó null o undefined');
+        return 0;
+      }
+      
+      // Verificar si es un objeto de error
+      if (typeof balances === 'object' && !Array.isArray(balances)) {
+        if ('error' in balances) {
+          console.warn('⚠️ Portal retornó error:', balances.error);
+          if (balances.error?.includes('wallet does not exist')) {
+            console.warn('⚠️ La wallet no existe en Portal - esto es normal si la wallet fue creada recientemente');
+          }
+          return 0;
+        }
+        // Si es un objeto pero no tiene 'error', podría ser un formato inesperado
+        console.warn('⚠️ Respuesta de balances no es un array ni un error reconocido:', balances);
+        return 0;
+      }
+      
+      // Verificar que es un array antes de usar .find()
+      if (!Array.isArray(balances)) {
+        console.warn('⚠️ Respuesta de balances no es un array:', typeof balances, balances);
+        return 0;
+      }
+      
+      const mxnb = balances.find((b: any) => 
         b.contractAddress?.toLowerCase() === MXNB_CONTRACT_ADDRESS.toLowerCase() ||
         b.symbol?.toLowerCase() === 'mxnb'
       );
