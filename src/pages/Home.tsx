@@ -3,6 +3,7 @@ import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight,
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { bitsoService } from '@/services/bitso';
 import { portalService } from '@/services/portal';
@@ -530,6 +531,126 @@ const HomePage = () => {
           </div>
           */}
           
+          {/* Estadísticas rápidas */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border border-orange-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-orange-500/10">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                  <TrendingDown className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-300 text-xs font-medium">Gastos del mes</p>
+                  <p className="text-white font-bold text-lg truncate">${totalExpenses.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-lg border border-green-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-green-500/10">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-300 text-xs font-medium">Ingresos del mes</p>
+                  <p className="text-white font-bold text-lg truncate">${totalIncome.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+            </Card>
+          </div>
+
+          {/* Gráfico de gastos semanales */}
+          {weeklySpending.some(d => d.amount > 0) && (
+            <div className="mb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <BarChart3 className="h-5 w-5 text-blue-400" />
+                <span className="text-sm text-gray-300 font-medium">Gastos de la semana</span>
+                <div className="flex-1"></div>
+                <span className="text-xs text-gray-400 font-semibold">
+                  Total: ${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}
+                </span>
+              </div>
+              
+              <div className="h-28 flex items-end justify-between space-x-2 px-1">
+                {weeklySpending.map((day, i) => {
+                  const maxAmount = Math.max(...weeklySpending.map(d => d.amount), 100);
+                  const heightPercentage = day.amount > 0 ? Math.max((day.amount / maxAmount) * 100, 8) : 8;
+                  const isHovered = hoveredDay === i;
+                  const isToday = day.day === ['D', 'L', 'M', 'M', 'J', 'V', 'S'][new Date().getDay()];
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className="flex flex-col items-center space-y-2 flex-1 relative cursor-pointer group"
+                      onMouseEnter={() => setHoveredDay(i)}
+                      onMouseLeave={() => setHoveredDay(null)}
+                    >
+                      <div className="w-full bg-gray-700/30 rounded-lg relative overflow-hidden" style={{ height: '80px' }}>
+                        {day.amount > 0 ? (
+                          <div 
+                            className={`w-full absolute bottom-0 rounded-lg transition-all duration-500 ease-out transform ${
+                              isHovered ? 'scale-110' : 'scale-100'
+                            } ${
+                              isToday 
+                                ? 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400' 
+                                : 'bg-gradient-to-t from-orange-600 via-orange-500 to-orange-400'
+                            }`}
+                            style={{ 
+                              height: `${heightPercentage}%`,
+                              animationDelay: `${i * 100}ms`,
+                              boxShadow: isHovered ? (isToday ? '0 0 20px rgba(59, 130, 246, 0.6)' : '0 0 20px rgba(249, 115, 22, 0.6)') : 'none'
+                            }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
+                            {isToday && (
+                              <div className="absolute inset-0 bg-blue-400/20 rounded-lg animate-pulse"></div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-full h-2 bg-gray-600/50 rounded-lg absolute bottom-0 opacity-50"></div>
+                        )}
+                        {isToday && (
+                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <span className={`text-xs font-semibold block transition-all duration-200 ${
+                          isToday 
+                            ? 'text-blue-400' 
+                            : isHovered 
+                              ? 'text-orange-400' 
+                              : 'text-gray-400'
+                        }`}>
+                          {day.day}
+                        </span>
+                        {isHovered && day.amount > 0 && (
+                          <span className="text-xs text-white font-bold mt-1 block">
+                            ${day.amount.toFixed(0)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span>Hoy</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span>Otros días</span>
+                </div>
+                <div className="text-gray-300 font-medium">
+                  Promedio: ${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Acciones rápidas: Enviar y Recibir */}
           <div className="flex justify-center items-center gap-6 my-8">
             {quickActions.map((action, index) => (
@@ -555,12 +676,62 @@ const HomePage = () => {
         </Card>
       </div>
 
+      {/* Logros y Badges */}
+      <div className="px-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
+            <Trophy className="h-5 w-5 text-yellow-400" />
+            <span>Logros</span>
+          </h3>
+          <Badge className="bg-yellow-500/20 border-yellow-400/50 text-yellow-300">
+            {realTransactions.length} transacciones
+          </Badge>
+        </div>
+        <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
+          <Card className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 backdrop-blur-lg border border-yellow-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Star className="h-6 w-6 text-white fill-white" />
+              </div>
+              <p className="text-white font-semibold text-sm">Primer pago</p>
+              <p className="text-yellow-300 text-xs mt-1">
+                {realTransactions.length > 0 ? '✓ Completado' : 'En progreso'}
+              </p>
+            </div>
+          </Card>
+          <Card className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-lg border border-blue-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <p className="text-white font-semibold text-sm">Usuario activo</p>
+              <p className="text-blue-300 text-xs mt-1">
+                {realTransactions.length >= 5 ? '✓ Completado' : `${realTransactions.length}/5`}
+              </p>
+            </div>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-lg border border-green-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Banknote className="h-6 w-6 text-white" />
+              </div>
+              <p className="text-white font-semibold text-sm">Ahorrador</p>
+              <p className="text-green-300 text-xs mt-1">
+                {available >= 500 ? '✓ Completado' : 'En progreso'}
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       {/* Promociones del Campus */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-semibold">🔥 Promociones del Campus</h3>
+          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
+            <Sparkles className="h-5 w-5 text-orange-400" />
+            <span>Promociones del Campus</span>
+          </h3>
           <div className="flex items-center space-x-1 text-orange-400">
-            <Sparkles className="h-4 w-4" />
             <span className="text-sm font-medium">Descuentos exclusivos</span>
           </div>
         </div>
@@ -907,23 +1078,25 @@ const HomePage = () => {
       {/* Recent Transactions */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-semibold">Transacciones recientes</h3>
-          {/* TEMPORALMENTE COMENTADO - Botón de estadísticas */}
-          {/* 
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-orange-400 hover:text-orange-300"
-            onClick={() => navigate('/statistics')}
-          >
-            Ver todas
-          </Button>
-          */}
+          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
+            <Activity className="h-5 w-5 text-blue-400" />
+            <span>Transacciones recientes</span>
+          </h3>
+          {realTransactions.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-orange-400 hover:text-orange-300"
+              onClick={() => navigate('/statistics')}
+            >
+              Ver todas
+            </Button>
+          )}
         </div>
         
         <div className="space-y-3">
           {realTransactions.length > 0 ? (
-            (realTransactions as TransactionWithToken[]).map((tx, idx) => {
+            (realTransactions as TransactionWithToken[]).slice(0, 5).map((tx, idx) => {
               // Icono según token
               let icon = '💰';
               if (!tx.isMXNB) icon = '💱';
@@ -932,50 +1105,85 @@ const HomePage = () => {
               const amount = (typeof tx.amount === 'number' && !isNaN(tx.amount)) ? tx.amount : 0;
               // Color
               const amountColor = !tx.isMXNB ? 'text-blue-400' : (tx.type === 'expense' ? 'text-red-400' : 'text-green-400');
+              const bgColor = !tx.isMXNB ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-red-500/20' : 'bg-green-500/20');
               // Símbolo
               const symbol = tx.tokenSymbol || tx.currency || 'MXNB';
               // Fecha
               let dateStr = '-';
               if (tx.date instanceof Date && !isNaN(tx.date.getTime())) {
-                dateStr = tx.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const now = new Date();
+                const diffMs = now.getTime() - tx.date.getTime();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffHours / 24);
+                
+                if (diffDays === 0) {
+                  if (diffHours === 0) dateStr = 'Hace un momento';
+                  else dateStr = `Hace ${diffHours}h`;
+                } else if (diffDays === 1) {
+                  dateStr = 'Ayer';
+                } else {
+                  dateStr = `Hace ${diffDays}d`;
+                }
               }
               return (
-                <Card key={idx} className="bg-gray-800 border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center`}>
-                        <span className="text-white text-lg">{icon}</span>
-                  </div>
-                  <div>
-                        <p className="text-white font-medium text-sm">{tx.description || 'Transacción'}</p>
-                        <p className="text-gray-400 text-xs">{tx.type === 'expense' ? 'Gasto' : 'Depósito'} • {dateStr}</p>
-                        {/* Mostrar hash real si existe */}
-                        {tx.txHash && (
-                          <div className="text-xs text-gray-400 break-all mt-1">
-                            <span className="font-mono">Hash:</span> {tx.txHash}
-                          </div>
-                        )}
-                        {/* Mostrar símbolo si no es MXNB */}
+                <Card key={idx} className={`${bgColor} border-gray-700/50 p-4 hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden`}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300`}>
+                        <span className="text-white text-xl">{icon}</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm">{tx.description || 'Transacción'}</p>
+                        <p className="text-gray-300 text-xs flex items-center space-x-2 mt-1">
+                          <span>{tx.type === 'expense' ? 'Gasto' : 'Depósito'}</span>
+                          <span>•</span>
+                          <span>{dateStr}</span>
+                        </p>
                         {!tx.isMXNB && (
-                          <div className="text-xs text-blue-400 mt-1">Token: {symbol}</div>
-                      )}
+                          <Badge className="mt-1 bg-blue-500/30 border-blue-400/50 text-blue-300 text-xs">
+                            {symbol}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    <div className={`text-lg font-bold ${amountColor}`}>{tx.type === 'expense' ? '-' : '+'}${amount.toFixed(2)} {symbol}</div>
+                    <div className="text-right">
+                      <div className={`text-xl font-bold ${amountColor} group-hover:scale-110 transition-transform duration-300`}>
+                        {tx.type === 'expense' ? '-' : '+'}${amount.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{symbol}</div>
+                    </div>
                   </div>
                 </Card>
               );
             })
           ) : (
-            <Card className="bg-gray-800 border-gray-700 p-6 text-center">
-              <div className="text-gray-400 mb-2">
-                <Banknote className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 p-8 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-green-500/5"></div>
+              <div className="relative z-10">
+                <div className="text-gray-400 mb-4">
+                  <Banknote className="h-16 w-16 mx-auto mb-3 opacity-50 animate-pulse" />
                 </div>
-              <p className="text-gray-400 text-sm mb-1">¡Bienvenido a PumaPay Campus!</p>
-              <p className="text-gray-500 text-xs mb-4">Inicia enviando o recibiendo tu primer pago</p>
-              <div className="flex space-x-3 justify-center">
-                <Button onClick={() => navigate('/send')} size="sm" className="bg-orange-500 hover:bg-orange-600">Enviar dinero</Button>
-                <Button onClick={() => navigate('/receive')} size="sm" className="bg-green-500 hover:bg-green-600">Recibir dinero</Button>
+                <p className="text-white font-semibold text-lg mb-2">¡Bienvenido a PumaPay Campus!</p>
+                <p className="text-gray-400 text-sm mb-6">Inicia enviando o recibiendo tu primer pago</p>
+                <div className="flex space-x-3 justify-center">
+                  <Button 
+                    onClick={() => navigate('/send')} 
+                    size="sm" 
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Enviar dinero
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/receive')} 
+                    size="sm" 
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Recibir dinero
+                  </Button>
+                </div>
               </div>
             </Card>
           )}
