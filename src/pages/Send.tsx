@@ -54,7 +54,7 @@ const SendPage = () => {
       amount = url.searchParams.get('amount');
     } else {
       // Solo dirección o formato ethereum:
-      const addressMatch = data.match(/0x[a-fA-F0-9]{40}/);
+    const addressMatch = data.match(/0x[a-fA-F0-9]{40}/);
       address = addressMatch ? addressMatch[0] : data;
     }
     
@@ -185,6 +185,14 @@ const SendPage = () => {
       
       // Enviar MXNB a wallet usando Portal SDK (TRANSACCIÓN REAL EN ARBITRUM)
       // Pasar la dirección del usuario para Account Abstraction
+      console.log('🔑 Credenciales del usuario para enviar:', {
+        hasApiKey: !!user?.apiKey,
+        hasClientId: !!user?.clientId,
+        apiKeyPrefix: user?.apiKey?.substring(0, 20) + '...',
+        apiKeyLength: user?.apiKey?.length,
+        clientId: user?.clientId
+      });
+      
       const hash = await portalService.sendMXNB(
         walletAddress, 
         amountNum, 
@@ -264,9 +272,9 @@ const SendPage = () => {
               <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain brightness-110 rounded-full" />
             </div>
           </div>
-          <div className="text-center">
+        <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Enviar MXNB</h1>
-            <p className="text-xs text-gray-400">Red: Arbitrum Sepolia</p>
+          <p className="text-xs text-gray-400">Red: Arbitrum Sepolia</p>
           </div>
         </div>
         <div className="w-8"></div>

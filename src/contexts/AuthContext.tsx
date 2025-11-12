@@ -117,10 +117,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } else if (userData.client_session_token) {
-        // Si tiene client_session_token guardado, usarlo (puede estar expirado)
+        // Si tiene client_session_token guardado, intentar usarlo primero
+        // Si falla, se refrescará o se creará uno nuevo
         clientSessionToken = userData.client_session_token;
         portalClientId = userData.portal_client_id;
         console.log('ℹ️ Usando Client Session Token guardado (puede estar expirado)');
+        console.log('🔑 Token guardado:', {
+          hasToken: !!clientSessionToken,
+          tokenPrefix: clientSessionToken?.substring(0, 20) + '...',
+          tokenLength: clientSessionToken?.length,
+          hasClientId: !!portalClientId,
+          clientId: portalClientId
+        });
+      } else {
+        // Si no tiene token, crear uno nuevo
+        console.log('⚠️ Usuario no tiene Client Session Token, creando uno nuevo...');
+        try {
+          const newClient = await createPortalClient();
+          clientSessionToken = newClient.clientSessionToken;
+          portalClientId = newClient.clientId;
+          console.log('✅ Nuevo Client Session Token creado');
+          
+          // Guardar el nuevo token en la base de datos
+          try {
+            await supabase
+              .from('usuarios')
+              .update({
+                client_session_token: clientSessionToken,
+                portal_client_id: portalClientId
+              })
+              .eq('id', userData.id);
+            console.log('✅ Client Session Token guardado en la base de datos');
+          } catch (updateError) {
+            console.warn('⚠️ No se pudo guardar el Client Session Token en la base de datos:', updateError);
+          }
+        } catch (createError) {
+          console.error('❌ Error creando nuevo Client Session Token:', createError);
+          // Continuar sin token (fallará al enviar transacciones)
+        }
       }
       
       // Re-inicializar Portal con Client Session Token si está disponible

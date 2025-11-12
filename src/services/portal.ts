@@ -335,11 +335,19 @@ class PortalService {
     // Si se proporcionan credenciales, re-inicializar Portal con ellas
     if (credentials?.apiKey) {
       console.log('🔄 Re-inicializando Portal con credenciales proporcionadas...');
+      console.log('🔑 Credenciales recibidas:', {
+        hasApiKey: !!credentials.apiKey,
+        hasClientId: !!credentials.clientId,
+        apiKeyPrefix: credentials.apiKey?.substring(0, 20) + '...',
+        apiKeyLength: credentials.apiKey?.length,
+        clientId: credentials.clientId
+      });
       await this.initialize({
         apiKey: credentials.apiKey,
         clientId: credentials.clientId
       });
     } else {
+      console.log('⚠️ No se proporcionaron credenciales, usando configuración por defecto');
     await this.initialize();
     }
     
@@ -430,7 +438,13 @@ class PortalService {
               // Usar Promise.race para detectar si sendAsset nunca resuelve
               let result: any;
               try {
+                // Verificar que Portal esté correctamente inicializado
+                console.log('🔍 Verificando estado de Portal antes de enviar...');
+                console.log('🔍 Portal inicializado:', !!this.portal);
+                console.log('🔍 Portal address:', this.portal?.address || 'no disponible');
+                
                 // Intentar enviar con timeout
+                console.log('📤 Llamando a sendAsset...');
                 const sendPromise = this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
         amount: amount.toString(),
         to: to,
@@ -442,6 +456,7 @@ class PortalService {
                 });
                 
                 result = await Promise.race([sendPromise, timeoutPromise]);
+                console.log('✅ sendAsset completó sin errores, resultado:', result);
               } catch (error: any) {
                 // Capturar el error real antes de que se convierta en undefined
                 console.error('❌ Error capturado en sendAsset:', error);
