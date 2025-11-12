@@ -506,34 +506,41 @@ class PortalService {
                 console.log('✅ Hash extraído del objeto:', txHash);
                 console.log('📋 Propiedades del objeto:', Object.keys(resultAny || {}));
               } else {
-                console.warn('⚠️ sendAsset retornó undefined o null');
-                console.warn('🎬 MODO DEMO: Generando hash simulado para la demo');
+                console.error('❌ sendAsset retornó undefined o null');
+                throw new Error('No se pudo enviar la transacción: sendAsset retornó undefined. Verifica que la wallet esté correctamente autenticada con Client Session Token.');
                 
-                // Generar un hash simulado para la demo
-                // Formato: 0x seguido de 64 caracteres hexadecimales
-                const simulatedHash = `0x${Array.from({ length: 64 }, () => 
-                  Math.floor(Math.random() * 16).toString(16)
-                ).join('')}`;
-                
-                console.log('✅ Hash simulado generado para demo:', simulatedHash);
-                console.log('ℹ️ Esta es una transacción simulada para propósitos de demostración');
-                
-                txHash = simulatedHash;
+                // CÓDIGO DE SIMULACIÓN COMENTADO - Descomentar solo para demos
+                // console.warn('🎬 MODO DEMO: Generando hash simulado para la demo');
+                // 
+                // // Generar un hash simulado para la demo
+                // // Formato: 0x seguido de 64 caracteres hexadecimales
+                // const simulatedHash = `0x${Array.from({ length: 64 }, () => 
+                //   Math.floor(Math.random() * 16).toString(16)
+                // ).join('')}`;
+                // 
+                // console.log('✅ Hash simulado generado para demo:', simulatedHash);
+                // console.log('ℹ️ Esta es una transacción simulada para propósitos de demostración');
+                // 
+                // txHash = simulatedHash;
               }
               
               if (txHash === 'unknown') {
-                console.warn('⚠️ No se pudo extraer el hash de la transacción');
-                console.warn('🎬 MODO DEMO: Generando hash simulado para la demo');
+                console.error('❌ No se pudo extraer el hash de la transacción');
+                throw new Error('No se pudo obtener el hash de la transacción. La transacción puede no haberse enviado correctamente.');
                 
-                // Generar un hash simulado para la demo
-                const simulatedHash = `0x${Array.from({ length: 64 }, () => 
-                  Math.floor(Math.random() * 16).toString(16)
-                ).join('')}`;
-                
-                console.log('✅ Hash simulado generado para demo:', simulatedHash);
-                console.log('ℹ️ Esta es una transacción simulada para propósitos de demostración');
-                
-                txHash = simulatedHash;
+                // CÓDIGO DE SIMULACIÓN COMENTADO - Descomentar solo para demos
+                // console.warn('⚠️ No se pudo extraer el hash de la transacción');
+                // console.warn('🎬 MODO DEMO: Generando hash simulado para la demo');
+                // 
+                // // Generar un hash simulado para la demo
+                // const simulatedHash = `0x${Array.from({ length: 64 }, () => 
+                //   Math.floor(Math.random() * 16).toString(16)
+                // ).join('')}`;
+                // 
+                // console.log('✅ Hash simulado generado para demo:', simulatedHash);
+                // console.log('ℹ️ Esta es una transacción simulada para propósitos de demostración');
+                // 
+                // txHash = simulatedHash;
               }
               
               console.log('✅ Hash de transacción/User Operation:', txHash);
