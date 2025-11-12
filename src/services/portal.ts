@@ -443,6 +443,47 @@ class PortalService {
                 console.log('🔍 Portal inicializado:', !!this.portal);
                 console.log('🔍 Portal address:', this.portal?.address || 'no disponible');
                 
+                // Interceptar errores de red antes de que el SDK los procese
+                let networkError: any = null;
+                const originalFetch = window.fetch;
+                
+                // Interceptor temporal para capturar errores 400
+                const errorInterceptor = async (url: string | URL | Request, options?: RequestInit) => {
+                  const urlString = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url;
+                  
+                  if (urlString.includes('mpc-client.portalhq.io/v1/sdk/sign')) {
+                    console.log('🔍 Interceptando petición a endpoint de firma...');
+                    try {
+                      const response = await originalFetch(url, options);
+                      if (!response.ok) {
+                        console.error('❌ Error de red detectado:', response.status, response.statusText);
+                        try {
+                          const errorData = await response.clone().json();
+                          console.error('❌ Detalles del error de red:', errorData);
+                          networkError = {
+                            status: response.status,
+                            statusText: response.statusText,
+                            data: errorData
+                          };
+                        } catch {
+                          networkError = {
+                            status: response.status,
+                            statusText: response.statusText
+                          };
+                        }
+                      }
+                      return response;
+                    } catch (fetchError) {
+                      console.error('❌ Error en fetch interceptor:', fetchError);
+                      throw fetchError;
+                    }
+                  }
+                  return originalFetch(url, options);
+                };
+                
+                // Temporalmente reemplazar fetch para interceptar
+                (window as any).fetch = errorInterceptor;
+                
                 // Intentar enviar con timeout
                 console.log('📤 Llamando a sendAsset...');
                 const sendPromise = this.portal!.sendAsset(ARBITRUM_SEPOLIA_CHAIN_ID, {
@@ -456,7 +497,21 @@ class PortalService {
                 });
                 
                 result = await Promise.race([sendPromise, timeoutPromise]);
-                console.log('✅ sendAsset completó sin errores, resultado:', result);
+                
+                // Restaurar fetch original
+                (window as any).fetch = originalFetch;
+                
+                // Si hay un error de red y el resultado es undefined, lanzar el error
+                if (networkError && !result) {
+                  console.error('❌ Error de red detectado y sendAsset retornó undefined');
+                  const errorMessage = networkError.data?.message 
+                    || networkError.data?.error 
+                    || networkError.statusText 
+                    || 'Error al firmar transacción';
+                  throw new Error(`Error ${networkError.status} al firmar transacción: ${errorMessage}. Verifica que la wallet esté correctamente autenticada con Client Session Token.`);
+                }
+                
+                console.log('✅ sendAsset completó, resultado:', result);
               } catch (error: any) {
                 // Capturar el error real antes de que se convierta en undefined
                 console.error('❌ Error capturado en sendAsset:', error);
