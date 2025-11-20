@@ -10,8 +10,8 @@ Este módulo conecta los circuitos Noir (`circuits/savings-proof`) con los contr
 flowchart LR
     A[Usuario PumaPay] -->|1. Balance local| B[Noir Circuit<br>savings-proof]
     B -->|2. `nargo compile`| C[target/savings_proof.json]
-    C -->|3. Inputs (Prover.toml)| D[/nargo prove/]
-    D -->|4. `proofs/savings_proof.proof`| E[Empaquetar blob<br>(fields + proof)]
+    C -->|3. Inputs (Prover.toml)| D["nargo prove"]
+    D -->|4. `proofs/savings_proof.proof`| E["Empaquetar blob<br/>(fields + proof)"]
     E -->|5. submit_proof| F[SavingsGoals Contract]
     F -->|invoke_contract| G[UltraHonk Verifier]
     G -->|Keccak proof_id| F
