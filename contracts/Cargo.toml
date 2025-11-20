@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "ultrahonk-verifier",
+    "savings-goals"
+]
+resolver = "2"
+

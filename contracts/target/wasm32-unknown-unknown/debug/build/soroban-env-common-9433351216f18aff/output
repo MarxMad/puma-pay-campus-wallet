@@ -1,0 +1,6 @@
+cargo:rerun-if-changed=build.rs
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-env-18107856c3a52b04/0a0c2df/.git/index
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-env-18107856c3a52b04/0a0c2df/.git/HEAD
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-env-18107856c3a52b04/0a0c2df/.git/refs
+cargo:rustc-env=GIT_REVISION=0a0c2df704edeb3cdafabfcc759eddccd6775337
+

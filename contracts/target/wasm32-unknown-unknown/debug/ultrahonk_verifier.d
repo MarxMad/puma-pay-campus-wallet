@@ -1,0 +1,1 @@
+/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/wasm32-unknown-unknown/debug/ultrahonk_verifier.wasm: /Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/ultrahonk-verifier/src/lib.rs

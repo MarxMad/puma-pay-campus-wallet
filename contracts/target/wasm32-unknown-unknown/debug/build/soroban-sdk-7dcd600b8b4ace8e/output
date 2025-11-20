@@ -1,0 +1,7 @@
+cargo::rustc-check-cfg=cfg(soroban_sdk_internal_no_rssdkver_meta)
+cargo:rustc-env=RUSTC_VERSION=1.91.1
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-sdk-df48d49759b97bac/3cf10a9/.git/index
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-sdk-df48d49759b97bac/3cf10a9/.git/HEAD
+cargo:rerun-if-changed=/Users/gerryp/.cargo/git/checkouts/rs-soroban-sdk-df48d49759b97bac/3cf10a9/.git/refs
+cargo:rustc-env=GIT_REVISION=3cf10a984dba03f68b4f2ed653b715063e983bba
+

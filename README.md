@@ -22,6 +22,16 @@ Una wallet digital universitaria moderna que permite a los estudiantes de la UNA
 - **Historial Completo**: Seguimiento de todas las transacciones
 - **Progreso Visual**: Barras de progreso y métricas en tiempo real
 
+### 🎓 Educación Financiera y Ahorro (En Desarrollo)
+- **Metas de Ahorro**: Establece y alcanza objetivos financieros con verificación ZK
+- **Zero-Knowledge Proofs**: Demuestra cumplimiento de metas sin revelar datos privados
+- **Rankings Anónimos**: Compara tu progreso con otros estudiantes sin comprometer privacidad
+- **Badges y Recompensas**: Sistema de gamificación basado en comportamiento financiero responsable
+- **DeFindex Integration**: Analytics agregados del campus para educación comparativa
+- **Verificación de Presupuesto**: Prueba cumplimiento de presupuesto sin exponer gastos detallados
+
+> **Nota**: Las funcionalidades de ZK Proofs y educación financiera están en desarrollo activo como parte de la migración a Stellar. Ver [Plan de Implementación ZK Proofs](./docs/ZK_PROOFS_PLAN.md) para más detalles.
+
 ## 🛠️ Tecnologías Utilizadas
 
 ### Frontend
@@ -39,9 +49,16 @@ Una wallet digital universitaria moderna que permite a los estudiantes de la UNA
 - **Webhooks** para notificaciones en tiempo real
 
 ### Blockchain
-- **Arbitrum Sepolia** (testnet)
+- **Arbitrum Sepolia** (testnet) - Actual
+- **Stellar + Soroban** (en migración) - Futuro
 - **Portal SDK** para wallets MPC (Multi-Party Computation)
 - **MXNB Tokens** respaldados por pesos mexicanos
+
+### Zero-Knowledge Proofs (En Desarrollo)
+- **Noir** para circuitos de verificación
+- **Ultrahonk** para verificación de proofs en Soroban
+- **ZK Proofs** para privacidad en metas de ahorro y presupuestos
+- **DeFindex** para analytics agregados y rankings anónimos
 
 ## 🚀 Instalación y Configuración
 

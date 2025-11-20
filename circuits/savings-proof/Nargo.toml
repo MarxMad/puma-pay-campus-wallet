@@ -1,0 +1,6 @@
+[package]
+name = "savings_proof"
+type = "bin"
+
+[dependencies]
+

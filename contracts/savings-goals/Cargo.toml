@@ -1,0 +1,18 @@
+[package]
+name = "savings-goals"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk", rev = "3cf10a984dba03f68b4f2ed653b715063e983bba", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+

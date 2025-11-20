@@ -1,0 +1,14 @@
+/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/deps/serde-f879a4da2af9b500.d: /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/build/serde-897e8a4f9bde8e30/out/private.rs
+
+/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/deps/libserde-f879a4da2af9b500.rlib: /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/build/serde-897e8a4f9bde8e30/out/private.rs
+
+/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/deps/libserde-f879a4da2af9b500.rmeta: /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/build/serde-897e8a4f9bde8e30/out/private.rs
+
+/Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/Users/gerryp/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/build/serde-897e8a4f9bde8e30/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/gerryp/Documents/Documentos/puma-pay-campus-wallet/contracts/target/debug/build/serde-897e8a4f9bde8e30/out
