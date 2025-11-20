@@ -45,6 +45,27 @@ cd circuits/savings-proof
 /Users/gerryp/.nargo/bin/nargo prove     # usa Prover.toml y crea proofs/savings_proof.proof
 ```
 
+## 🧬 Diagrama del circuito y pruebas ZK
+
+```mermaid
+sequenceDiagram
+    participant UI as Frontend (React)
+    participant Noir as Circuito Noir
+    participant Nargo as nargo CLI
+    participant File as Artefactos (target/proofs)
+    participant Saver as Contract SavingsGoals
+    participant Verifier as Contract Ultrahonk
+
+    UI->>Noir: balance, target_amount
+    Noir-->>UI: ACIR + ABI (`savings_proof.json`)
+    UI->>Nargo: ejecutar `nargo prove`
+    Nargo-->>File: genera `proofs/savings_proof.proof`
+    UI->>Saver: submit_proof(proof_blob)
+    Saver->>Verifier: verify_proof_with_stored_vk(blob)
+    Verifier-->>Saver: proof_id válido
+    Saver-->>UI: goal logrado + proof_id
+```
+
 ---
 
 ## 🧠 Detalle del contrato `savings-goals`
@@ -89,6 +110,7 @@ pub struct Goal {
 
 ## ✅ Checklist de Integración
 
+- [x] Diagrama principal y flujo de circuito renderizado con bloques Mermaid (asegúrate de que el visor de tu IDE o GitHub soporte bloques ```mermaid```).
 - [x] Circuito Noir compila (`nargo compile`).
 - [x] Proof ejemplo generado (`nargo prove` → `proofs/savings_proof.proof`).
 - [x] `savings-goals` y `ultrahonk-verifier` compilados a Wasm.
