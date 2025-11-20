@@ -446,31 +446,49 @@ class PortalService {
                 // Interceptar errores de red antes de que el SDK los procese
                 let networkError: any = null;
                 const originalFetch = window.fetch;
+                const originalXHR = window.XMLHttpRequest;
                 
-                // Interceptor temporal para capturar errores 400
+                // Interceptor temporal para capturar errores 400 con fetch
                 const errorInterceptor = async (url: string | URL | Request, options?: RequestInit) => {
                   const urlString = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url;
                   
+                  console.log('🔍 Interceptor fetch llamado:', urlString.substring(0, 100));
+                  
                   if (urlString.includes('mpc-client.portalhq.io/v1/sdk/sign')) {
-                    console.log('🔍 Interceptando petición a endpoint de firma...');
+                    console.log('🔍 ✅ Interceptando petición a endpoint de firma...');
                     try {
                       const response = await originalFetch(url, options);
+                      console.log('🔍 Respuesta recibida:', response.status, response.statusText);
+                      
                       if (!response.ok) {
                         console.error('❌ Error de red detectado:', response.status, response.statusText);
                         try {
                           const errorData = await response.clone().json();
-                          console.error('❌ Detalles del error de red:', errorData);
+                          console.error('❌ Detalles del error de red:', JSON.stringify(errorData, null, 2));
                           networkError = {
                             status: response.status,
                             statusText: response.statusText,
                             data: errorData
                           };
-                        } catch {
-                          networkError = {
-                            status: response.status,
-                            statusText: response.statusText
-                          };
+                        } catch (jsonError) {
+                          console.error('❌ Error parseando JSON del error:', jsonError);
+                          try {
+                            const errorText = await response.clone().text();
+                            console.error('❌ Error como texto:', errorText);
+                            networkError = {
+                              status: response.status,
+                              statusText: response.statusText,
+                              data: { error: errorText }
+                            };
+                          } catch {
+                            networkError = {
+                              status: response.status,
+                              statusText: response.statusText
+                            };
+                          }
                         }
+                      } else {
+                        console.log('✅ Respuesta OK del endpoint de firma');
                       }
                       return response;
                     } catch (fetchError) {
@@ -481,8 +499,57 @@ class PortalService {
                   return originalFetch(url, options);
                 };
                 
-                // Temporalmente reemplazar fetch para interceptar
+                // Interceptor para XMLHttpRequest (por si el SDK lo usa)
+                const XHRInterceptor = function(this: XMLHttpRequest) {
+                  const xhr = new originalXHR();
+                  const originalOpen = xhr.open;
+                  const originalSend = xhr.send;
+                  
+                  xhr.open = function(method: string, url: string | URL, ...args: any[]) {
+                    const urlString = typeof url === 'string' ? url : url.toString();
+                    console.log('🔍 XHR open llamado:', method, urlString.substring(0, 100));
+                    
+                    if (urlString.includes('mpc-client.portalhq.io/v1/sdk/sign')) {
+                      console.log('🔍 ✅ Interceptando XHR a endpoint de firma...');
+                      
+                      xhr.addEventListener('load', function() {
+                        console.log('🔍 XHR load event:', xhr.status, xhr.statusText);
+                        if (xhr.status >= 400) {
+                          console.error('❌ Error XHR detectado:', xhr.status, xhr.statusText);
+                          try {
+                            const errorData = JSON.parse(xhr.responseText);
+                            console.error('❌ Detalles del error XHR:', JSON.stringify(errorData, null, 2));
+                            networkError = {
+                              status: xhr.status,
+                              statusText: xhr.statusText,
+                              data: errorData
+                            };
+                          } catch {
+                            console.error('❌ Error XHR como texto:', xhr.responseText);
+                            networkError = {
+                              status: xhr.status,
+                              statusText: xhr.statusText,
+                              data: { error: xhr.responseText }
+                            };
+                          }
+                        }
+                      });
+                      
+                      xhr.addEventListener('error', function() {
+                        console.error('❌ XHR error event');
+                      });
+                    }
+                    
+                    return originalOpen.apply(this, [method, url, ...args] as any);
+                  };
+                  
+                  return xhr;
+                } as any;
+                
+                // Temporalmente reemplazar fetch y XHR para interceptar
+                console.log('🔍 Reemplazando window.fetch y XMLHttpRequest con interceptores...');
                 (window as any).fetch = errorInterceptor;
+                (window as any).XMLHttpRequest = XHRInterceptor;
                 
                 // Intentar enviar con timeout
                 console.log('📤 Llamando a sendAsset...');
@@ -498,14 +565,21 @@ class PortalService {
                 
                 result = await Promise.race([sendPromise, timeoutPromise]);
                 
-                // Restaurar fetch original
+                // Esperar un poco antes de restaurar para asegurar que todas las peticiones se completen
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Restaurar fetch y XHR originales
+                console.log('🔍 Restaurando window.fetch y XMLHttpRequest originales...');
                 (window as any).fetch = originalFetch;
+                (window as any).XMLHttpRequest = originalXHR;
                 
                 // Si hay un error de red y el resultado es undefined, lanzar el error
                 if (networkError && !result) {
                   console.error('❌ Error de red detectado y sendAsset retornó undefined');
+                  console.error('❌ networkError completo:', networkError);
                   const errorMessage = networkError.data?.message 
                     || networkError.data?.error 
+                    || networkError.data?.error?.message
                     || networkError.statusText 
                     || 'Error al firmar transacción';
                   throw new Error(`Error ${networkError.status} al firmar transacción: ${errorMessage}. Verifica que la wallet esté correctamente autenticada con Client Session Token.`);
