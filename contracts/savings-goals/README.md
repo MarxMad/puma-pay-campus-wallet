@@ -11,7 +11,7 @@ flowchart LR
     A[Usuario PumaPay] -->|Paso 1 Balance local| B[Noir Circuit<br>savings-proof]
     B -->|Paso 2 nargo compile| C[target/savings_proof.json]
     C -->|Paso 3 inputs Prover toml| D[nargo prove]
-    D -->|Paso 4 proofs/savings_proof.proof| E[Empaquetar blob<br/>(fields + proof)]
+    D -->|Paso 4 proofs/savings_proof.proof| E[Empaquetar blob (fields + proof)]
     E -->|Paso 5 submit_proof| F[SavingsGoals Contract]
     F -->|invoke_contract| G[UltraHonk Verifier]
     G -->|Keccak proof_id| F
