@@ -1,6 +1,0 @@
-cargo:rustc-check-cfg=cfg(docs)
-cargo:rerun-if-changed=.git/index
-cargo:rerun-if-changed=.git/HEAD
-cargo:rerun-if-changed=.git/refs
-cargo:rustc-env=GIT_REVISION=89cc1cbadf1b9a16843826954dede7fec514d8e7
-
