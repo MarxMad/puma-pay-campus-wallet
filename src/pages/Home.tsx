@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { bitsoService } from '@/services/bitso';
-import { portalService } from '@/services/portal';
+// ⚠️ COMENTADO - Ahora usamos Stellar
+// import { bitsoService } from '@/services/bitso';
+// import { portalService } from '@/services/portal';
+// import { junoService } from '@/services/junoService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
 import { SkeletonBalance } from '../components/SkeletonLoader';
 import { BottomNav } from '@/components/BottomNav';
-import { junoService } from '@/services/junoService';
+import { stellarService } from '@/services/stellarService';
 
 // Extensión temporal del tipo Transaction para props extra de portalService
-type TransactionWithToken = import('@/types/categories').Transaction & { isMXNB?: boolean; tokenSymbol?: string };
+type TransactionWithToken = import('@/types/categories').Transaction & { isUSDC?: boolean; tokenSymbol?: string };
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -23,107 +25,70 @@ const HomePage = () => {
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
   const { user, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [bonusClaimed, setBonusClaimed] = useState(false);
-  const [bonusLoading, setBonusLoading] = useState(false);
-  const [bonusMsg, setBonusMsg] = useState('');
-  const [showBonusSuccess, setShowBonusSuccess] = useState(false);
-  const [showBonusAnimation, setShowBonusAnimation] = useState(false);
+  const [fundingLoading, setFundingLoading] = useState(false);
+  const [fundingMsg, setFundingMsg] = useState('');
+  const [showFundingSuccess, setShowFundingSuccess] = useState(false);
+  const [showFundingAnimation, setShowFundingAnimation] = useState(false);
+  const [funded, setFunded] = useState(false);
 
   useEffect(() => {
-    setBonusClaimed(localStorage.getItem('pumapay_bonus_claimed') === 'true');
-  }, []);
+    // Verificar si la cuenta ya fue fondeada
+    const fundedKey = `pumapay_funded_${user?.address}`;
+    setFunded(localStorage.getItem(fundedKey) === 'true');
+  }, [user?.address]);
 
-  const handleClaimBonus = async () => {
-    console.log('🎁 Iniciando proceso de bonus para usuario:', user);
+  const handleFundAccount = async () => {
+    console.log('💰 Iniciando fondeo de cuenta Stellar:', user);
     
-    if (!user?.address || !user?.clabe || !user?.name) {
-      alert('No se encontró tu dirección de wallet o CLABE. Completa tu registro primero.');
+    if (!user?.address) {
+      alert('No se encontró tu dirección de wallet. Completa tu registro primero.');
       return;
     }
     
-    setBonusLoading(true);
-    setBonusMsg('Procesando bonus de bienvenida...');
+    setFundingLoading(true);
+    setFundingMsg('Fondeando cuenta en testnet...');
     
     try {
-      console.log('🔄 Paso 1: Creando mock deposit de 100 MXN...');
-      setBonusMsg('Creando depósito de 100 MXN...');
+      console.log('🔄 Fondeando cuenta con Friendbot (10,000 XLM)...');
+      setFundingMsg('Solicitando 10,000 XLM desde Friendbot...');
       
-      // 1. Mock deposit a la CLABE del usuario (Issuance)
-      const depositResult = await junoService.createMockDeposit({
-        amount: 100,
-        receiver_clabe: user.clabe,
-        receiver_name: user.name,
-        sender_name: 'PumaPay Campus'
-      });
+      // Llamar a friendbot para fondear la cuenta
+      const result = await stellarService.fundWithFriendbot(user.address);
       
-      console.log('✅ Mock deposit creado:', depositResult);
-      setBonusMsg('Depósito creado. Convirtiendo a MXNB...');
+      console.log('✅ Cuenta fondeada exitosamente:', result);
+      setFundingMsg('¡Cuenta fondeada exitosamente!');
       
-      // Pequeña pausa para que el sistema procese
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('🔄 Paso 2: Enviando 100 MXNB a wallet...');
-      setBonusMsg('Enviando MXNB a tu wallet...');
-      
-      // 2. Withdrawal a la wallet del usuario (On-chain)
-      const withdrawalResult = await junoService.sendOnchainWithdrawal({
-        address: user.address,
-        amount: 100,
-        asset: 'MXNB',
-        blockchain: 'ARBITRUM',
-        compliance: {}
-      });
-      
-      console.log('✅ Withdrawal enviado:', withdrawalResult);
-      setBonusMsg('¡Bonus de bienvenida enviado! Actualizando balance...');
-      
-      // 3. Agregar transacción al historial local
-      const bonusTransaction = {
-        id: `bonus_${Date.now()}`,
-        amount: 100,
-        type: 'income',
-        description: 'Bonus de bienvenida PumaPay',
-        categoryId: '',
-        date: new Date(),
-        txHash: withdrawalResult.txHash || 'bonus',
-        recipient: user.address,
-        isMXNB: true,
-        tokenSymbol: 'MXNB'
-      };
-      
-      // Disparar evento para actualizar balance
-      window.dispatchEvent(new CustomEvent('transactionAdded', { 
-        detail: bonusTransaction 
-      }));
-      window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
-      
-      // Marcar bonus como reclamado
-      localStorage.setItem('pumapay_bonus_claimed', 'true');
-      setBonusClaimed(true);
-      
-      setBonusMsg('¡Bonus de bienvenida de 100 MXNB enviado exitosamente!');
+      // Marcar como fondeada
+      const fundedKey = `pumapay_funded_${user.address}`;
+      localStorage.setItem(fundedKey, 'true');
+      setFunded(true);
       
       // Mostrar animación de éxito
-      setShowBonusAnimation(true);
-      setShowBonusSuccess(true);
+      setShowFundingAnimation(true);
+      setShowFundingSuccess(true);
       
       // Ocultar animación después de 3 segundos
       setTimeout(() => {
-        setShowBonusAnimation(false);
+        setShowFundingAnimation(false);
       }, 3000);
       
       // Ocultar mensaje de éxito después de 5 segundos
       setTimeout(() => {
-        setShowBonusSuccess(false);
+        setShowFundingSuccess(false);
       }, 5000);
       
-      console.log('🎉 Proceso de bonus completado exitosamente');
+      // Actualizar balance después de un pequeño delay
+      setTimeout(() => {
+        refreshBalance();
+      }, 2000);
       
-    } catch (error) {
-      console.error('❌ Error en proceso de bonus:', error);
-      setBonusMsg(`Error al reclamar el bonus: ${error.message || 'Intenta nuevamente.'}`);
+      console.log('🎉 Proceso de fondeo completado exitosamente');
+      
+    } catch (error: any) {
+      console.error('❌ Error fondeando cuenta:', error);
+      setFundingMsg(`Error al fondear cuenta: ${error.message || 'Intenta nuevamente.'}`);
     } finally {
-      setBonusLoading(false);
+      setFundingLoading(false);
     }
   };
 
@@ -187,7 +152,8 @@ const HomePage = () => {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!balanceLoading && !isRefreshing) {
-        console.log('🔄 Actualización periódica del balance...');
+        // Log removido para reducir spam en consola
+        // console.log('🔄 Actualización periódica del balance...');
         setIsRefreshing(true);
         try {
           await refreshBalance();
@@ -248,6 +214,12 @@ const HomePage = () => {
   // Función handleDeposit eliminada - los depósitos se hacen en /receive
 
   const quickActions = [
+    {
+      icon: Target,
+      label: 'Metas',
+      action: () => navigate('/savings-goals'),
+      color: 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
+    },
     { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600', action: () => navigate('/send') },
     { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600', action: () => navigate('/receive') },
   ];
@@ -347,12 +319,14 @@ const HomePage = () => {
                 )}
               </div>
             </div>
+            {/* ⚠️ COMENTADO - Tarjetas de advertencia sobre CLABE y wallet */}
+            {/*
             {user?.clabe && (
               <div className="bg-green-100 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="text-lg font-semibold text-green-900 mb-2">Tu CLABE para depósitos:</div>
                   <div className="font-mono text-xl md:text-2xl text-green-800 select-all tracking-widest break-all overflow-wrap-anywhere" style={{ letterSpacing: '0.1em', wordBreak: 'break-all' }}>{user?.clabe}</div>
-                  <div className="text-green-900 text-sm mt-2 break-words">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+                  <div className="text-green-900 text-sm mt-2 break-words">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en USDC.</div>
                 </div>
                 <Button
                   variant="ghost"
@@ -370,8 +344,8 @@ const HomePage = () => {
                   <div className="font-semibold text-blue-800 mb-1">¿Cómo funciona el fondeo?</div>
                   <div className="text-xs text-blue-700">
                     1. Deposita MXN a tu CLABE desde cualquier banco vía SPEI.<br />
-                    2. Juno detecta el depósito y automáticamente convierte los MXN en MXNB.<br />
-                    3. Tu balance de MXNB se actualiza en PumaPay y puedes usarlo en el campus.
+                    2. El sistema detecta el depósito y automáticamente convierte los MXN en USDC.<br />
+                    3. Tu balance de USDC se actualiza en PumaPay y puedes usarlo en el campus.
                   </div>
                 </div>
                 <div className="p-4 bg-green-50 border border-green-200 rounded">
@@ -379,13 +353,14 @@ const HomePage = () => {
                   <div className="text-xs text-green-700">
                     1. Enlaza tu cuenta bancaria personal (CLABE) en tu perfil.<br />
                     2. Solicita un retiro/redemption desde la app.<br />
-                    3. Juno convierte tus MXNB a MXN y los transfiere a tu cuenta bancaria.
+                    3. El sistema convierte tus USDC a MXN y los transfiere a tu cuenta bancaria.
                   </div>
                 </div>
               </div>
             )}
+            */}
             <div className="mt-4">
-              <span className="text-gray-300 text-sm">Balance MXNB</span>
+              <span className="text-gray-300 text-sm">Balance USDC</span>
               <div className="text-3xl font-bold mt-1">
                 {typeof available === 'number' && !isNaN(available)
                   ? `$${available.toFixed(2)}`
@@ -458,7 +433,7 @@ const HomePage = () => {
                 {showBalance ? (
                   <>
                     ${available.toFixed(2)}
-                    <span className="text-lg text-gray-400 ml-2">MXNB</span>
+                    <span className="text-lg text-gray-400 ml-2">USDC</span>
                   </>
                 ) : (
                   '••••••'
@@ -466,7 +441,7 @@ const HomePage = () => {
               </div>
               {showBalance && available === 0 && (
                 <p className="text-sm text-gray-400">
-                  Tu wallet está lista. Recibe MXNB para empezar a usar PumaPay.
+                  Tu wallet está lista. Recibe USDC para empezar a usar PumaPay.
                 </p>
               )}
             </div>
@@ -794,11 +769,11 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Chilaquiles con pollo</span>
-                  <span className="font-bold text-orange-200 drop-shadow-lg">75 MXNB</span>
+                  <span className="font-bold text-orange-200 drop-shadow-lg">75 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Café americano</span>
-                  <span className="font-bold text-orange-200 drop-shadow-lg">25 MXNB</span>
+                  <span className="font-bold text-orange-200 drop-shadow-lg">25 USDC</span>
                 </div>
               </div>
             </div>
@@ -828,11 +803,11 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Café especial</span>
-                  <span className="font-bold text-yellow-200 drop-shadow-lg">80 MXNB</span>
+                  <span className="font-bold text-yellow-200 drop-shadow-lg">80 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Jugo de naranja</span>
-                  <span className="font-bold text-yellow-200 drop-shadow-lg">25 MXNB</span>
+                  <span className="font-bold text-yellow-200 drop-shadow-lg">25 USDC</span>
                 </div>
               </div>
             </div>
@@ -862,11 +837,11 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Álgebra Lineal</span>
-                  <span className="font-bold text-blue-200 drop-shadow-lg">120 MXNB</span>
+                  <span className="font-bold text-blue-200 drop-shadow-lg">120 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Cálculo Diferencial</span>
-                  <span className="font-bold text-blue-200 drop-shadow-lg">95 MXNB</span>
+                  <span className="font-bold text-blue-200 drop-shadow-lg">95 USDC</span>
                 </div>
               </div>
             </div>
@@ -896,11 +871,11 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Membresía mensual</span>
-                  <span className="font-bold text-green-200 drop-shadow-lg">200 MXNB</span>
+                  <span className="font-bold text-green-200 drop-shadow-lg">200 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
                   <span className="text-sm text-white font-medium">Clase de natación</span>
-                  <span className="font-bold text-green-200 drop-shadow-lg">50 MXNB</span>
+                  <span className="font-bold text-green-200 drop-shadow-lg">50 USDC</span>
                 </div>
               </div>
             </div>
@@ -1133,15 +1108,15 @@ const HomePage = () => {
             (realTransactions as TransactionWithToken[]).slice(0, 5).map((tx, idx) => {
               // Icono según token
               let icon = '💰';
-              if (!tx.isMXNB) icon = '💱';
+              if (!tx.isUSDC) icon = '💱';
               else if (tx.type === 'expense') icon = '💸';
               // Monto seguro
               const amount = (typeof tx.amount === 'number' && !isNaN(tx.amount)) ? tx.amount : 0;
               // Color
-              const amountColor = !tx.isMXNB ? 'text-blue-400' : (tx.type === 'expense' ? 'text-red-400' : 'text-green-400');
-              const bgColor = !tx.isMXNB ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-red-500/20' : 'bg-green-500/20');
+              const amountColor = !tx.isUSDC ? 'text-blue-400' : (tx.type === 'expense' ? 'text-red-400' : 'text-green-400');
+              const bgColor = !tx.isUSDC ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-red-500/20' : 'bg-green-500/20');
               // Símbolo
-              const symbol = tx.tokenSymbol || tx.currency || 'MXNB';
+              const symbol = tx.tokenSymbol || tx.currency || 'USDC';
               // Fecha
               let dateStr = '-';
               if (tx.date instanceof Date && !isNaN(tx.date.getTime())) {
@@ -1174,7 +1149,7 @@ const HomePage = () => {
                           <span>•</span>
                           <span>{dateStr}</span>
                         </p>
-                        {!tx.isMXNB && (
+                        {!tx.isUSDC && (
                           <Badge className="mt-1 bg-blue-500/30 border-blue-400/50 text-blue-300 text-xs">
                             {symbol}
                           </Badge>
@@ -1232,31 +1207,33 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Mostrar botón de bonus siempre para pruebas */}
-      <div className="my-4 flex flex-col items-center justify-center">
-        <button
-          onClick={handleClaimBonus}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg animate-bounce disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-105 active:scale-95"
-          disabled={bonusLoading}
-        >
-          {bonusLoading ? (
-            <span className="flex items-center"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Procesando…</span>
-          ) : (
-            '🎁 Reclamar bonus de bienvenida (+100 MXNB)'
+      {/* Botón para fondear cuenta en testnet */}
+      {!funded && (
+        <div className="my-4 flex flex-col items-center justify-center px-4">
+          <button
+            onClick={handleFundAccount}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-105 active:scale-95"
+            disabled={fundingLoading}
+          >
+            {fundingLoading ? (
+              <span className="flex items-center"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Fondeando…</span>
+            ) : (
+              '💰 Fondear en testnet (10,000 XLM)'
+            )}
+          </button>
+          {fundingMsg && (
+            <div className="mt-3 text-blue-200 text-center text-sm animate-pulse">{fundingMsg}</div>
           )}
-        </button>
-        {bonusMsg && (
-          <div className="mt-3 text-green-200 text-center text-sm animate-pulse">{bonusMsg}</div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Modal de animación de éxito del bonus */}
-      {showBonusSuccess && (
-        <Dialog open={showBonusSuccess} onOpenChange={setShowBonusSuccess}>
-          <DialogContent className="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 border-none text-white p-0 overflow-hidden max-w-md">
+      {/* Modal de animación de éxito del fondeo */}
+      {showFundingSuccess && (
+        <Dialog open={showFundingSuccess} onOpenChange={setShowFundingSuccess}>
+          <DialogContent className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 border-none text-white p-0 overflow-hidden max-w-md">
             <div className="relative p-8 text-center">
               {/* Confetti animation */}
-              {showBonusAnimation && (
+              {showFundingAnimation && (
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   {[...Array(20)].map((_, i) => (
                     <div
@@ -1269,7 +1246,7 @@ const HomePage = () => {
                         animationDuration: `${1 + Math.random() * 1}s`,
                       }}
                     >
-                      <PartyPopper className="w-4 h-4 text-yellow-300" />
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
                     </div>
                   ))}
                 </div>
@@ -1279,32 +1256,32 @@ const HomePage = () => {
               <div className="relative z-10">
                 <div className="mb-4 flex justify-center">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-green-500 rounded-full p-6 animate-pulse">
-                      <Gift className="w-16 h-16 text-white" />
+                    <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
+                    <div className="relative bg-blue-500 rounded-full p-6 animate-pulse">
+                      <Zap className="w-16 h-16 text-white" />
                     </div>
                   </div>
                 </div>
                 
-                <h2 className="text-3xl font-bold mb-2 animate-bounce">¡Bonus Reclamado!</h2>
-                <p className="text-lg mb-4 text-green-100">
-                  Has recibido <span className="font-bold text-yellow-300 text-2xl">100 MXNB</span>
+                <h2 className="text-3xl font-bold mb-2 animate-bounce">¡Cuenta Fondeada!</h2>
+                <p className="text-lg mb-4 text-blue-100">
+                  Has recibido <span className="font-bold text-yellow-300 text-2xl">10,000 XLM</span>
                 </p>
                 
                 <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
-                    <CheckCircle className="w-5 h-5 text-green-300" />
-                    <span className="text-sm">Depósito creado exitosamente</span>
+                    <CheckCircle className="w-5 h-5 text-blue-300" />
+                    <span className="text-sm">Fondeo exitoso en testnet</span>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
-                    <CheckCircle className="w-5 h-5 text-green-300" />
-                    <span className="text-sm">MXNB enviado a tu wallet</span>
+                    <CheckCircle className="w-5 h-5 text-blue-300" />
+                    <span className="text-sm">10,000 XLM disponibles</span>
                   </div>
                 </div>
                 
                 <div className="mt-6">
                   <Button
-                    onClick={() => setShowBonusSuccess(false)}
+                    onClick={() => setShowFundingSuccess(false)}
                     className="bg-white text-black hover:bg-gray-100 font-bold py-2 px-6 rounded-full"
                   >
                     ¡Genial!

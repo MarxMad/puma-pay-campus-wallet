@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { portalService } from '@/services/portal';
-import { junoService } from '@/services/junoService';
-import { ethersBalanceService } from '@/services/ethersBalance';
+// ⚠️ COMENTADO - Ahora usamos Stellar
+// import { portalService } from '@/services/portal';
+// import { junoService } from '@/services/junoService';
+// import { ethersBalanceService } from '@/services/ethersBalance';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BALANCE_STORAGE_KEY = 'pumapay_mxnb_balance';
@@ -68,22 +69,62 @@ export const useBalance = () => {
   const REFRESH_COOLDOWN = 5000; // 5 segundos mínimo entre refreshes
 
   // Función para recalcular balance basado en transacciones
-  const recalculateBalance = () => {
+  // Memoizada para evitar recreaciones y loops infinitos
+  const recalculateBalance = useCallback(() => {
     const rawTransactions = localStorage.getItem('pumapay_transactions');
-    console.log(`🔍 Raw localStorage data:`, rawTransactions);
     
-    const transactions = JSON.parse(rawTransactions || '[]');
-    console.log(`📊 Transacciones parseadas:`, transactions);
-    console.log(`📈 Total transacciones encontradas: ${transactions.length}`);
+    // Solo calcular si hay transacciones o si no hay balance cacheado
+    if (!rawTransactions) {
+      const cached = localStorage.getItem(BALANCE_STORAGE_KEY);
+      if (cached) {
+        try {
+          const cachedState = JSON.parse(cached);
+          if (cachedState.balance !== undefined) {
+            setBalanceState({
+              ...cachedState,
+              isLoading: false,
+              lastUpdated: new Date(cachedState.lastUpdated || Date.now())
+            });
+            return cachedState.balance;
+          }
+        } catch (e) {
+          // Ignorar errores de parse
+        }
+      }
+      // Si no hay transacciones ni cache, balance es 0
+      const zeroState = {
+        balance: 0,
+        available: 0,
+        isLoading: false,
+        lastUpdated: new Date()
+      };
+      setBalanceState(zeroState);
+      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(zeroState));
+      return 0;
+    }
     
-    const incomeTransactions = transactions.filter((t: any) => t.type === 'income');
-    const expenseTransactions = transactions.filter((t: any) => t.type === 'expense');
+    const transactions = JSON.parse(rawTransactions);
     
-    console.log(`💚 Ingresos encontrados: ${incomeTransactions.length}`, incomeTransactions);
-    console.log(`💸 Gastos encontrados: ${expenseTransactions.length}`, expenseTransactions);
+    // Si no hay transacciones, retornar 0
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      const zeroState = {
+        balance: 0,
+        available: 0,
+        isLoading: false,
+        lastUpdated: new Date()
+      };
+      setBalanceState(zeroState);
+      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(zeroState));
+      return 0;
+    }
     
-    const totalIncome = incomeTransactions.reduce((sum: number, t: any) => sum + t.amount, 0);
-    const totalExpenses = expenseTransactions.reduce((sum: number, t: any) => sum + t.amount, 0);
+    const totalIncome = transactions
+      .filter((t: any) => t.type === 'income')
+      .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    
+    const totalExpenses = transactions
+      .filter((t: any) => t.type === 'expense')
+      .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
     
     const correctBalance = Math.max(totalIncome - totalExpenses, 0);
     
@@ -97,63 +138,62 @@ export const useBalance = () => {
     setBalanceState(newState);
     localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
     
-    console.log(`💰 Balance recalculado: Ingresos $${totalIncome} - Gastos $${totalExpenses} = $${correctBalance}`);
-    
-    // Actualizar el contador de transacciones
-    localStorage.setItem('pumapay_last_transaction_count', transactions.length.toString());
-    
     return correctBalance;
-  };
+  }, []); // Sin dependencias - función pura que solo lee localStorage
 
   // Escuchar cuando se agreguen nuevas transacciones para recalcular balance
+  // Optimizado: solo recalcula cuando realmente hay cambios
+  // Usar useRef para mantener referencia estable a recalculateBalance
+  const recalculateBalanceRef = useRef(recalculateBalance);
+  recalculateBalanceRef.current = recalculateBalance;
+  
   useEffect(() => {
-    const handleTransactionAdded = (event: CustomEvent) => {
-      console.log('🔄 Nueva transacción detectada, recalculando balance...');
-      setTimeout(() => {
-        console.log('⏱️ Ejecutando recálculo después de delay por evento transactionAdded');
-        recalculateBalance();
-      }, 300); // Incrementar delay
+    let timeoutId: NodeJS.Timeout;
+    
+    const handleTransactionAdded = () => {
+      // Debounce: esperar 500ms antes de recalcular para evitar múltiples cálculos
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        recalculateBalanceRef.current();
+      }, 500);
     };
 
     const handleForceUpdate = () => {
-      console.log('🚀 Forzando actualización de balance...');
-      setTimeout(() => {
-        console.log('⏱️ Ejecutando recálculo después de delay por forceUpdate');
-        recalculateBalance();
-      }, 100); // Pequeño delay también aquí
+      // Debounce también para forceUpdate
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        recalculateBalanceRef.current();
+      }, 300);
     };
 
-    window.addEventListener('transactionAdded', handleTransactionAdded as EventListener);
+    window.addEventListener('transactionAdded', handleTransactionAdded);
     window.addEventListener('forceBalanceUpdate', handleForceUpdate);
     
     return () => {
-      window.removeEventListener('transactionAdded', handleTransactionAdded as EventListener);
+      clearTimeout(timeoutId);
+      window.removeEventListener('transactionAdded', handleTransactionAdded);
       window.removeEventListener('forceBalanceUpdate', handleForceUpdate);
     };
-  }, []);
+  }, []); // Sin dependencias - usamos ref para acceder a la función
 
   // Función para agregar fondos (depósito) - NO USAR, solo para emergencias
-  const addFunds = (amount: number) => {
-    console.log(`💸 AddFunds llamado con $${amount} - Recomendamos usar addTransaction en su lugar`);
-    
-    // Como medida de emergencia, forzar recálculo después de un pequeño delay
-    setTimeout(() => {
-      recalculateBalance();
-    }, 100);
-  };
+  const addFunds = useCallback((amount: number) => {
+    // El balance se actualizará automáticamente cuando se agregue la transacción
+    // No necesitamos hacer nada aquí, el evento transactionAdded lo manejará
+  }, []);
 
   // Función para enviar dinero (débito)
-  const sendMoney = (amount: number) => {
+  const sendMoney = useCallback((amount: number) => {
     if (balanceState.available >= amount) {
       // El balance se actualizará automáticamente cuando se agregue la transacción de gasto
-      setTimeout(() => {
-        recalculateBalance();
-      }, 100);
       return true; // Transacción exitosa
     }
     return false; // Fondos insuficientes
-  };
+  }, [balanceState.available]);
 
+  // ⚠️ COMENTADO - Procesos de balance de Bitso, Juno, Portal, Ethereum
+  // Ahora usamos Stellar para obtener el balance
+  /*
   // Función para obtener balance real desde blockchain usando ethers.js (FUENTE PRINCIPAL)
   // Memoizada para evitar recreaciones
   const getRealBalanceFromBlockchain = useCallback(async (walletAddress: string): Promise<number> => {
@@ -196,10 +236,22 @@ export const useBalance = () => {
       return 0;
     }
   }, []);
+  */
+  
+  // Funciones vacías para compatibilidad
+  const getRealBalanceFromBlockchain = useCallback(async (walletAddress: string): Promise<number> => {
+    console.warn('⚠️ getRealBalanceFromBlockchain está deshabilitado. Usa Stellar en su lugar.');
+    return 0;
+  }, []);
 
-  // Función para recargar balance manualmente
-  // Prioridad: 1) ethers.js (blockchain), 2) Juno API, 3) Portal SDK
-  // Memoizada con useCallback para evitar recreaciones innecesarias
+  const getRealBalanceFromJuno = useCallback(async (): Promise<number> => {
+    console.warn('⚠️ getRealBalanceFromJuno está deshabilitado. Usa Stellar en su lugar.');
+    return 0;
+  }, []);
+
+  // ⚠️ COMENTADO - refreshBalance ahora solo usa recalculateBalance (transacciones locales)
+  // La obtención de balance desde Bitso, Juno, Portal, Ethereum está deshabilitada
+  // Ahora usamos Stellar para obtener el balance real
   const refreshBalance = useCallback(async () => {
     // Prevenir múltiples llamadas simultáneas
     if (isRefreshingRef.current) {
@@ -220,6 +272,8 @@ export const useBalance = () => {
     setBalanceState(prev => ({ ...prev, isLoading: true }));
     
     try {
+      // ⚠️ COMENTADO - Procesos de balance de Bitso, Juno, Portal, Ethereum
+      /*
       const walletAddress = user?.address;
       
       // 1. Intentar obtener balance desde blockchain usando ethers.js (FUENTE PRINCIPAL)
@@ -252,6 +306,10 @@ export const useBalance = () => {
         typeof junoBalance === 'number' ? junoBalance : 0,
         typeof portalBalance === 'number' ? portalBalance : 0
       );
+      */
+      
+      // Ahora solo recalculamos desde transacciones locales
+      const balance = recalculateBalance();
       
       const newState = {
         balance,
@@ -262,25 +320,25 @@ export const useBalance = () => {
       
       setBalanceState(newState);
       localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-      console.log('✅ Balance actualizado:', {
-        blockchain: blockchainBalance,
-        juno: junoBalance,
-        portal: portalBalance,
-        final: balance
-      });
+      // Log solo en desarrollo
+      // console.log('✅ Balance actualizado desde transacciones locales');
     } catch (error) {
       console.error('❌ Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
     } finally {
       isRefreshingRef.current = false;
     }
-  }, [user?.address, getRealBalanceFromBlockchain, getRealBalanceFromJuno]);
+  }, [user?.address, recalculateBalance]);
 
-  // Al montar, obtener balance real desde blockchain (ethers.js), Juno y Portal
-  // Solo se ejecuta una vez cuando el usuario se autentica
+  // ⚠️ COMENTADO - Ya no obtenemos balance desde blockchain, Juno o Portal
+  // Solo recalculamos desde transacciones locales
+  // Optimizado: solo se ejecuta una vez al montar o cuando cambia el usuario
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
     if (!isAuthenticated || !user) {
       // Si no hay usuario, resetear balance
+      hasInitializedRef.current = false;
       setBalanceState({
         balance: 0,
         available: 0,
@@ -289,6 +347,13 @@ export const useBalance = () => {
       });
       return;
     }
+
+    // Solo inicializar una vez por usuario
+    if (hasInitializedRef.current) {
+      return;
+    }
+
+    hasInitializedRef.current = true;
 
     // Cargar balance inicial desde cache si existe
     const cached = localStorage.getItem(BALANCE_STORAGE_KEY);
@@ -301,16 +366,24 @@ export const useBalance = () => {
             lastUpdated: new Date(cachedState.lastUpdated || Date.now()),
             isLoading: false
           });
-          console.log('📦 Balance cargado desde cache:', cachedState.balance);
+          // Solo recalcular si hay transacciones nuevas (comparar contador)
+          const lastCount = localStorage.getItem('pumapay_last_transaction_count');
+          const currentTransactions = JSON.parse(localStorage.getItem('pumapay_transactions') || '[]');
+          if (lastCount !== currentTransactions.length.toString()) {
+            // Hay transacciones nuevas, recalcular
+            recalculateBalance();
+          }
+          return; // Ya cargamos desde cache, no necesitamos recalcular
         }
       } catch (e) {
-        console.warn('⚠️ Error cargando balance desde cache:', e);
+        // Ignorar errores de parse
       }
     }
 
-    // Llamar refreshBalance solo una vez al inicio
-    refreshBalance();
-  }, [isAuthenticated, user?.address, refreshBalance]);
+    // Si no hay cache, recalcular desde transacciones
+    recalculateBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.address]); // recalculateBalance es estable (memoizada sin dependencias)
 
   return {
     ...balanceState,

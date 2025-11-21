@@ -1,9 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { portalService } from '@/services/portal';
-import { junoService } from '@/services/junoService';
-import { registrarUsuario, loginUsuario } from '@/services/userService';
-import { asignarApiKeyAUsuario } from '@/services/portalApiKeyService';
+// ⚠️ COMENTADO - Ahora usamos Stellar directamente
+// import { portalService } from '@/services/portal';
+// import { junoService } from '@/services/junoService';
+// import { asignarApiKeyAUsuario } from '@/services/portalApiKeyService';
+import { registrarUsuario, loginUsuario, obtenerUsuarioPorEmail } from '@/services/userService';
 import { supabase } from '@/services/supabaseClient';
+import { stellarService } from '@/services/stellarService';
+import bcrypt from 'bcryptjs';
+import CryptoJS from 'crypto-js';
+
+// Helper para encriptar/desencriptar la secret key de Stellar
+// La secret key se guarda encriptada en el campo 'clabe' de Supabase
+const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'pumapay-stellar-secret-key-2024';
+
+export const encryptSecretKey = (secretKey: string): string => {
+  return CryptoJS.AES.encrypt(secretKey, ENCRYPTION_KEY).toString();
+};
+
+export const decryptSecretKey = (encryptedSecretKey: string): string => {
+  const bytes = CryptoJS.AES.decrypt(encryptedSecretKey, ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
 
 interface User {
   address: string;
@@ -46,6 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = JSON.parse(stored);
           setUser(userData);
           
+          // ⚠️ COMENTADO - Ya no usamos Portal, ahora usamos Stellar directamente
+          /*
           // Si es usuario de Portal, re-inicializar Portal con las credenciales correctas
           if (userData.authMethod === 'portal' || userData.authMethod === 'traditional') {
             // Restaurar estado en el servicio Portal
@@ -65,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
           }
+          */
         }
       } catch (error) {
         console.error('Error cargando autenticación:', error);
@@ -91,6 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Autenticar contra Supabase
       const userData = await loginUsuario(email, password);
       
+      // ⚠️ COMENTADO - Ya no usamos Portal Client Session Token
+      // Ahora usamos Stellar directamente, no necesitamos tokens de Portal
+      /*
       // Obtener o refrescar Client Session Token
       let clientSessionToken: string | undefined;
       let portalClientId: string | undefined;
@@ -156,7 +179,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Continuar sin token (fallará al enviar transacciones)
         }
       }
+      */
       
+      // ⚠️ COMENTADO - Ya no usamos Portal
+      /*
       // Re-inicializar Portal con Client Session Token si está disponible
       if (clientSessionToken) {
         console.log('🔄 Re-inicializando Portal con Client Session Token...');
@@ -171,16 +197,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Sincronizar usuario con Portal Service
       portalService.setCurrentUser({ address: userData.wallet_address });
+      */
       
       // Guardar usuario autenticado en localStorage
       updateUser({
         address: userData.wallet_address,
         email: userData.email,
         name: userData.nombre,
-        authMethod: userData.auth_method as 'portal' | 'traditional',
-        clabe: userData.clabe,
-        apiKey: clientSessionToken, // Client Session Token
-        clientId: portalClientId // clientId de Portal
+        authMethod: 'traditional', // Todos usan Stellar ahora
+        clabe: userData.clabe
       });
     } catch (error) {
       console.error('Error en login:', error);
@@ -191,32 +216,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Login con Portal (Google/Apple)
-  const loginWithPortal = async (method: 'google' | 'apple') => {
-    setIsLoading(true);
-    try {
-      let result;
-      if (method === 'google') {
-        result = await portalService.loginWithGoogle();
-      } else {
-        result = await portalService.loginWithApple();
-      }
-
-      const userData: User = {
-        address: result.address,
-        name: method === 'google' ? 'Usuario Google' : 'Usuario Apple',
-        authMethod: 'portal'
-      };
-
-      updateUser(userData);
-    } catch (error) {
-      console.error('Error en login Portal:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+  const loginWithPortal = async (_method: 'google' | 'apple') => {
+    // Portal está deshabilitado temporalmente en esta rama.
+    throw new Error('El inicio de sesión con Portal no está disponible en esta versión.');
   };
 
-  // Crear cuenta nueva
+  // Crear cuenta nueva con Stellar
   // onStepChange permite mostrar el progreso en el frontend
   const createAccount = async (
     email: string,
@@ -227,135 +232,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     setIsLoading(true);
     try {
-      await portalService.logout();
       const nombre = name;
       const apellido = '';
       const auth_method = 'traditional';
-      if (onStepChange) onStepChange('Guardando usuario...');
-      // 1. Guardar usuario en Supabase (sin wallet ni clabe)
-      const userInsert = await registrarUsuario({
-        nombre,
-        apellido,
-        email,
-        password,
-        wallet_address: '',
-        clabe: '',
-        auth_method
-      });
-      const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
-      if (!userId) throw new Error('No se pudo obtener el ID del usuario');
-      if (onStepChange) onStepChange('Asignando credenciales seguras...');
-      // 2. Crear cliente en Portal y obtener Client Session Token
-      // IMPORTANTE: Según la documentación de Portal, debemos usar Client Session Token
-      // en el SDK, NO la Portal API Key directamente
-      let clientSessionToken: string;
-      let portalClientId: string;
-      try {
-        console.log('🔄 Creando cliente en Portal para obtener Client Session Token...');
-        const portalClient = await createPortalClient();
-        clientSessionToken = portalClient.clientSessionToken;
-        portalClientId = portalClient.clientId;
-        console.log('✅ Client Session Token obtenido:', {
-          clientId: portalClientId,
-          hasToken: !!clientSessionToken
-        });
-      } catch (error) {
-        console.error('❌ Error obteniendo Client Session Token:', error);
+      
+      if (onStepChange) onStepChange('Verificando correo...');
+
+      // Validar si el correo ya está registrado antes de crear la wallet Stellar
+      const existingUser = await obtenerUsuarioPorEmail(email);
+      if (existingUser) {
         setIsLoading(false);
-        throw new Error('No se pudo obtener Client Session Token de Portal. Revisa la consola para más detalles.');
+        throw new Error('Este correo electrónico ya está registrado. Por favor, usa otro correo o inicia sesión.');
+      }
+
+      if (onStepChange) onStepChange('Creando wallet Stellar...');
+      
+      // 1. Crear cuenta Stellar
+      let address: string;
+      let secretKey: string;
+      try {
+        const account = await stellarService.createAccount();
+        address = account.publicKey;
+        secretKey = account.secretKey;
+        console.log('✅ Wallet Stellar creada:', address);
+      } catch (error: any) {
+        console.error('❌ Error al crear wallet Stellar:', error);
+        setIsLoading(false);
+        throw new Error(`No se pudo crear la wallet Stellar: ${error.message || 'Error desconocido'}`);
       }
       
-      // Guardar el clientId de Portal en la base de datos (diferente del client_id que generamos)
-      // El clientId de Portal es el ID real del cliente en Portal
-      if (onStepChange) onStepChange('Creando wallet segura...');
-      // 3. Crear wallet de Portal usando Client Session Token
-      let wallet;
-      try {
-        wallet = await portalService.createWallet({
-          apiKey: clientSessionToken, // Usar Client Session Token, NO Portal API Key
-          clientId: portalClientId // Usar el clientId de Portal
-        });
-        console.log('Wallet creada:', wallet);
-      } catch (error) {
-        console.error('Error al crear wallet:', error);
-        setIsLoading(false);
-        throw new Error('No se pudo crear la wallet. Revisa la consola para más detalles.');
-      }
-      const address = wallet.address || (await portalService.getWalletAddress());
-      // Backup automático de la wallet usando la contraseña del registro
-      if (onStepChange) onStepChange('Respaldando tu wallet...');
-      try {
-        await portalService.backupWallet(password);
-        console.log('✅ Backup de wallet realizado correctamente');
-      } catch (error) {
-        console.warn('⚠️ No se pudo respaldar la wallet, pero se continuará con el registro:', error);
-        // NO lanzamos error, solo avisamos
-      }
-      if (onStepChange) onStepChange('Creando cuenta CLABE...');
-      // 4. Crear la cuenta CLABE
-      let clabe: string | undefined = undefined;
-      try {
-        const clabeResult = await junoService.createUserClabe();
-        clabe = clabeResult.clabe;
-      } catch (e) {
-        console.error('No se pudo crear la CLABE:', e);
-        setIsLoading(false);
-        throw new Error('No se pudo crear la cuenta CLABE. Revisa la consola para más detalles.');
-      }
-      if (onStepChange) onStepChange('Finalizando registro...');
-      // 5. Actualizar el usuario en Supabase con wallet, clabe, client_session_token y portal_client_id
-      // IMPORTANTE: Guardar client_session_token y portal_client_id para que el usuario pueda hacer login después
-      // NOTA: El client_session_token expira después de 24 horas, pero se puede refrescar
-      const { error: updateError } = await supabase
-        .from('usuarios')
-        .update({ 
-          wallet_address: address, 
-          clabe,
-          client_session_token: clientSessionToken, // Guardar Client Session Token
-          portal_client_id: portalClientId // Guardar el clientId de Portal
-        })
-        .eq('id', userId);
+      if (onStepChange) onStepChange('Guardando usuario en Supabase...');
       
-      if (updateError) {
-        console.warn('⚠️ Error actualizando usuario con api_key y client_id:', updateError);
-        // Si la columna client_id no existe, intentar solo con api_key
-        if (updateError.code === '42703') {
-          console.log('ℹ️ Columna client_id no existe, intentando solo con api_key...');
-          const { error: apiKeyError } = await supabase
-            .from('usuarios')
-            .update({ 
-              wallet_address: address, 
-              clabe,
-              api_key: apiKeyObj.api_key
-            })
-            .eq('id', userId);
-          
-          if (apiKeyError) {
-            console.error('❌ Error actualizando usuario con api_key:', apiKeyError);
-            // No lanzamos error, continuamos con el registro
-          }
-        } else {
-          console.error('❌ Error actualizando usuario:', updateError);
-          // No lanzamos error, continuamos con el registro
+      // 2. Encriptar la secret key antes de guardarla en el campo 'clabe'
+      // NOTA: Guardamos la secret key encriptada en el campo 'clabe' (antes se usaba para CLABE bancaria)
+      // Esto permite recuperarla cuando el usuario necesite hacer transacciones
+      const encryptedSecretKey = encryptSecretKey(secretKey);
+      
+      // 3. Guardar usuario en Supabase con wallet Stellar
+      // La estructura es la misma que antes, solo cambia que:
+      // - wallet_address es una dirección Stellar (G...)
+      // - clabe contiene la secret key encriptada (en lugar de CLABE bancaria)
+      // La validación de correo duplicado se hace automáticamente por Supabase si hay unique constraint
+      let userInsert;
+      try {
+        userInsert = await registrarUsuario({
+          nombre,
+          apellido,
+          email,
+          password,
+          wallet_address: address, // Dirección Stellar (G...)
+          clabe: encryptedSecretKey, // Secret key encriptada (antes era CLABE bancaria)
+          auth_method,
+          api_key: undefined // Ya no usamos api_key para la secret key
+        });
+      } catch (error: any) {
+        // Si es error de correo duplicado, mostrar mensaje amigable
+        if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+          throw new Error('Este correo electrónico ya está registrado. Por favor, usa otro correo o inicia sesión.');
         }
-      } else {
-        console.log('✅ Usuario actualizado correctamente con api_key y client_id');
+        throw error;
       }
-      // 6. Guardar usuario autenticado en localStorage
+      
+      const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
+      if (!userId) {
+        throw new Error('No se pudo obtener el ID del usuario después del registro');
+      }
+      
+      console.log('✅ Usuario registrado en Supabase con ID:', userId);
+      
+      if (onStepChange) onStepChange('Finalizando registro...');
+      
+      // 4. Guardar usuario autenticado en localStorage
+      // NOTA: No guardamos la secret key en localStorage por seguridad
+      // El usuario necesitará hacer login para acceder a su cuenta
       const userData: User = {
         email,
         name: nombre,
         address,
-        authMethod: 'traditional',
-        clabe,
-        apiKey: clientSessionToken, // Guardar Client Session Token (no Portal API Key)
-        clientId: portalClientId // Guardar clientId de Portal
+        authMethod: 'traditional'
       };
       updateUser(userData);
+      
       setIsLoading(false);
-      return { address, clabe };
-    } catch (error) {
+      console.log('✅ Registro completado exitosamente');
+      return { address };
+    } catch (error: any) {
       setIsLoading(false);
+      // Si es error de correo duplicado, mostrar mensaje amigable
+      if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        throw new Error('Este correo electrónico ya está registrado. Por favor, usa otro correo o inicia sesión.');
+      }
       throw error;
     }
   };
@@ -364,7 +330,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    portalService.logout();
+    // ⚠️ COMENTADO - Ya no usamos Portal
+    // portalService.logout();
   };
 
   return (

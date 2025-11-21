@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Bell, User, Settings as SettingsIcon, Shield, Home, Search, Settings, CreditCard, History, LogOut, Edit, Phone, Mail, Calendar, ChevronRight, Download, Copy, Tag } from 'lucide-react';
+import { Bell, User, Settings as SettingsIcon, Shield, Home, Search, Settings, CreditCard, History, LogOut, Edit, Phone, Mail, Calendar, ChevronRight, Download, Copy, Tag, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -56,6 +56,12 @@ const Profile = () => {
   ];
 
   const menuItems = [
+    { 
+      icon: Target, 
+      label: 'Metas de Ahorro', 
+      color: 'bg-purple-500',
+      action: () => navigate('/savings-goals')
+    },
     { 
       icon: Tag, 
       label: 'Gestionar categorías', 
@@ -153,7 +159,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
-          {/* Header */}
+      {/* Header */}
       <div className="flex items-center justify-between p-4 text-white">
         <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
           <Bell className="h-5 w-5" />
@@ -161,19 +167,19 @@ const Profile = () => {
         <h1 className="text-lg font-semibold">Mi Perfil</h1>
         <Button variant="ghost" size="sm" onClick={handleEditProfile}>
           <Edit className="h-4 w-4" />
-              </Button>
-            </div>
+        </Button>
+      </div>
             
       <div className="p-4 space-y-6">
         {/* Profile Info Card */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
-            <div className="text-center mb-6">
+          <div className="text-center mb-6">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-orange-400/20">
-                <span className="text-3xl font-bold">
-                  {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
-                </span>
-              </div>
-              <h1 className="text-xl font-bold">{user?.name || 'Usuario'}</h1>
+              <span className="text-3xl font-bold">
+                {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
+              </span>
+            </div>
+            <h1 className="text-xl font-bold">{user?.name || 'Usuario'}</h1>
             <p className="text-gray-400 mb-2">{user?.email || 'Sin email'}</p>
             
             {/* Wallet Info */}
@@ -199,12 +205,14 @@ const Profile = () => {
                 </span>
               </div>
             </div>
+            {/* Sección CLABE para depósitos - COMENTADA */}
+            {/*
             {user?.clabe && (
   <div className="bg-blue-50 p-4 rounded-lg mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div className="flex-1 min-w-0 text-center md:text-left">
       <div className="text-lg md:text-xl font-bold text-blue-900 mb-2">CLABE para depósitos SPEI:</div>
       <div className="font-mono text-lg md:text-2xl text-blue-800 select-all tracking-widest mb-2 break-all overflow-wrap-anywhere" style={{ letterSpacing: '0.1em', wordBreak: 'break-all' }}>{user.clabe}</div>
-      <div className="text-blue-900 text-sm md:text-base break-words">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en MXNB.</div>
+      <div className="text-blue-900 text-sm md:text-base break-words">Deposita MXN a esta CLABE desde cualquier banco para fondear tu wallet PumaPay. Cada depósito se convertirá automáticamente en USDC.</div>
     </div>
     <Button
       variant="ghost"
@@ -216,7 +224,9 @@ const Profile = () => {
     </Button>
   </div>
 )}
-{/* Formulario para registrar CLABE de retiro */}
+            */}
+            {/* Formulario para registrar CLABE de retiro - COMENTADO */}
+            {/*
 <Card className="bg-gray-700 border-gray-600 p-4 mt-4">
   <h3 className="text-lg font-semibold text-white mb-2">Registrar cuenta bancaria (retiro a CLABE)</h3>
   <form
@@ -293,10 +303,11 @@ const Profile = () => {
     <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 mt-2">Registrar cuenta</Button>
   </form>
 </Card>
-            </div>
+            */}
+          </div>
         </Card>
 
-          {/* Menu Items */}
+        {/* Menu Items */}
         <Card className="bg-gray-800 border-gray-700 p-6 text-white">
           <h3 className="text-lg font-semibold mb-4">Configuración</h3>
           <div className="space-y-3">
@@ -322,15 +333,15 @@ const Profile = () => {
             
             {/* Logout Button */}
             <div 
-            onClick={handleLogout}
+              onClick={handleLogout}
               className="flex items-center space-x-4 p-4 bg-red-900/20 rounded-xl hover:bg-red-900/30 transition-colors cursor-pointer border border-red-800/30"
             >
               <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
                 <LogOut className="h-5 w-5 text-white" />
               </div>
               <span className="flex-1 font-medium text-red-400">Cerrar sesión</span>
-            <ChevronRight className="w-4 h-4 text-red-400" />
-          </div>
+              <ChevronRight className="w-4 h-4 text-red-400" />
+            </div>
         </Card>
       </div>
 
@@ -368,7 +379,7 @@ const Profile = () => {
         </div>
       )}
 
-        <BottomNav />
+      <BottomNav />
     </div>
   );
 };

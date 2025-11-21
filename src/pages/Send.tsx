@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useBalance } from '@/hooks/useBalance';
-import { portalService } from '@/services/portal';
+// import { portalService } from '@/services/portal'; // Comentado - ahora usamos Stellar
+import { stellarService } from '@/services/stellarService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from '@/hooks/use-toast';
@@ -176,13 +177,33 @@ const SendPage = () => {
         throw new Error('Dirección de wallet inválida');
       }
       
-      console.log('🚀 Enviando MXNB a wallet en Arbitrum:', { 
+      console.log('🚀 Enviando MXNB a wallet en Stellar:', { 
         to: walletAddress, 
         amount: amountNum,
-        network: 'Arbitrum Sepolia',
-        token: 'MXNB'
+        network: 'Stellar',
+        asset: 'MXNB'
       });
       
+      // IMPLEMENTACIÓN STELLAR (Nueva)
+      // Enviar MXNB usando Stellar SDK
+      // Obtener secret key del usuario (en producción, esto vendría del backend de forma segura)
+      // Por ahora, asumimos que el usuario tiene su secret key almacenada de forma segura
+      const userSecretKey = user?.secretKey; // TODO: Obtener de forma segura
+      
+      if (!userSecretKey) {
+        throw new Error('Secret key del usuario no disponible. Por favor, inicia sesión.');
+      }
+      
+      const hash = await stellarService.sendUSDC(
+        walletAddress,
+        amountNum,
+        userSecretKey
+      );
+      
+      console.log('✅ Transacción enviada en Stellar:', hash);
+      
+      // IMPLEMENTACIÓN ARBITRUM (Comentada)
+      /*
       // Enviar MXNB a wallet usando Portal SDK (TRANSACCIÓN REAL EN ARBITRUM)
       // Pasar la dirección del usuario para Account Abstraction
       console.log('🔑 Credenciales del usuario para enviar:', {
@@ -201,6 +222,7 @@ const SendPage = () => {
       );
       
       console.log('✅ Transacción enviada en Arbitrum:', hash);
+      */
       setTxHash(hash);
       
       // Actualizar balance
@@ -223,7 +245,7 @@ const SendPage = () => {
           recipient: walletAddress,
           isMXNB: true,
           tokenSymbol: 'MXNB',
-          network: 'Arbitrum Sepolia'
+          network: 'Stellar'
         }
       }));
       
@@ -274,7 +296,7 @@ const SendPage = () => {
           </div>
         <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Enviar MXNB</h1>
-          <p className="text-xs text-gray-400">Red: Arbitrum Sepolia</p>
+          <p className="text-xs text-gray-400">Red: Stellar</p>
           </div>
         </div>
         <div className="w-8"></div>
@@ -300,7 +322,7 @@ const SendPage = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">Dirección de destino</h3>
               <p className="text-gray-300 text-sm mb-4">
-                Ingresa la dirección de la wallet del destinatario en Arbitrum
+                Ingresa la dirección Stellar del destinatario (debe comenzar con "G")
               </p>
             </div>
 
@@ -432,7 +454,7 @@ const SendPage = () => {
                   {walletAddress}
                 </p>
                 <p className="text-green-400 text-xs mt-2">
-                  Red: <span className="font-semibold">Arbitrum Sepolia</span> | Token: <span className="font-semibold">MXNB</span>
+                  Red: <span className="font-semibold">Stellar</span> | Asset: <span className="font-semibold">MXNB</span>
                 </p>
               </div>
             )}
@@ -454,7 +476,7 @@ const SendPage = () => {
                   min="0"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">MXNB (Arbitrum Sepolia)</p>
+                <p className="text-xs text-gray-400 mt-1">MXNB (Stellar)</p>
               </div>
 
               {/* Quick amount buttons */}
@@ -502,7 +524,7 @@ const SendPage = () => {
                 <span>Confirmar Transacción MXNB</span>
               </DialogTitle>
               <DialogDescription className="text-gray-400 pt-2">
-                Revisa los detalles antes de enviar. Esta transacción se realizará en <strong>Arbitrum Sepolia</strong>.
+                Revisa los detalles antes de enviar. Esta transacción se realizará en <strong>Stellar</strong>.
               </DialogDescription>
             </DialogHeader>
 
@@ -515,7 +537,7 @@ const SendPage = () => {
                   </div>
                   <div>
                     <span className="text-sm font-semibold text-white">MXNB</span>
-                    <p className="text-xs text-gray-300">Arbitrum Sepolia Network</p>
+                    <p className="text-xs text-gray-300">Stellar Network</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -585,7 +607,7 @@ const SendPage = () => {
                     Esta transacción es <strong>irreversible</strong> e <strong>inmediata</strong>.
                   </p>
                   <p className="text-xs text-yellow-200">
-                    Asegúrate de que la dirección de destino sea correcta y esté en la red <strong>Arbitrum Sepolia</strong>.
+                    Asegúrate de que la dirección Stellar de destino sea correcta (debe comenzar con "G").
                   </p>
                 </div>
               </div>
@@ -634,7 +656,7 @@ const SendPage = () => {
                 
                 <DialogTitle className="text-2xl font-bold mb-2">¡Transacción Exitosa!</DialogTitle>
                 <DialogDescription className="text-green-100 mb-4">
-                  Tu transferencia de <strong>{amountNum.toFixed(2)} MXNB</strong> ha sido enviada correctamente en <strong>Arbitrum Sepolia</strong>.
+                  Tu transferencia de <strong>{amountNum.toFixed(2)} MXNB</strong> ha sido enviada correctamente en <strong>Stellar</strong>.
                 </DialogDescription>
 
                 <div className="bg-white/20 rounded-lg p-3 mb-4 backdrop-blur-sm">

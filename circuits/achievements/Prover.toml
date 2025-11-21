@@ -1,0 +1,9 @@
+savings_months = "6"
+total_savings = "3000"
+transactions_count = "50"
+budget_compliance_rate = "85"
+min_months = "3"
+min_total_savings = "1000"
+min_transactions = "20"
+min_compliance_rate = "70"
+

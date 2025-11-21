@@ -1,7 +1,10 @@
 [workspace]
 members = [
     "ultrahonk-verifier",
-    "savings-goals"
+    "savings-goals",
+    "course-completion",
+    "user-levels",
+    "defindex"
 ]
 resolver = "2"
 

@@ -329,7 +329,10 @@ const CourseCard = ({
 }: {
   course: Course;
   onPurchase: (course: Course) => void;
-}) => (
+}) => {
+  const navigate = useNavigate();
+  
+  return (
   <Card className="min-w-[280px] bg-gray-900 border border-gray-800 overflow-hidden hover:border-amber-400/40 transition-colors duration-300 text-white">
     <div className="relative h-40">
       <img
@@ -369,15 +372,25 @@ const CourseCard = ({
           {course.rating.toFixed(1)}
         </span>
       </div>
-      <Button
-        onClick={() => onPurchase(course)}
-        className="w-full bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
-      >
-        Comprar · {course.priceMXNB} MXNB
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => navigate(`/courses/${course.id}`)}
+          variant="outline"
+          className="flex-1 border-gray-700 text-gray-200 hover:bg-gray-800"
+        >
+          Ver Curso
+        </Button>
+        <Button
+          onClick={() => onPurchase(course)}
+          className="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
+        >
+          {course.priceMXNB} MXNB
+        </Button>
+      </div>
     </div>
   </Card>
-);
+  );
+};
 
 const CourseRowCard = ({
   course,

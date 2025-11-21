@@ -38,6 +38,24 @@ export async function registrarUsuario({
   return data;
 }
 
+export async function obtenerUsuarioPorEmail(email: string) {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('id, email')
+    .eq('email', email)
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  return data[0];
+}
+
 export async function loginUsuario(email: string, password: string) {
   const { data, error } = await supabase
     .from('usuarios')
@@ -48,4 +66,4 @@ export async function loginUsuario(email: string, password: string) {
   const valido = await bcrypt.compare(password, data.password_hash);
   if (!valido) throw new Error('Contraseña incorrecta');
   return data;
-} 
+}

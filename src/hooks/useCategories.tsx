@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Category, Transaction, GlobalBudget, DEFAULT_CATEGORIES, DEFAULT_GLOBAL_BUDGET } from '@/types/categories';
-import { portalService } from '@/services/portal';
-import { ethers } from 'ethers';
+// ⚠️ COMENTADO - Ya no usamos Portal ni ethers
+// import { portalService } from '@/services/portal';
+// import { ethers } from 'ethers';
 
 const CATEGORIES_STORAGE_KEY = 'pumapay_categories';
 const TRANSACTIONS_STORAGE_KEY = 'pumapay_transactions';
 const GLOBAL_BUDGET_STORAGE_KEY = 'pumapay_global_budget';
 
+// ⚠️ COMENTADO - Ya no verificamos contratos MXNB, ahora usamos Stellar
+/*
 const MXNB_CONTRACT_ADDRESS = import.meta.env.VITE_MXNB_CONTRACT_ADDRESS;
 const ALCHEMY_RPC_URL = import.meta.env.VITE_ALCHEMY_RPC_URL;
 const ERC20_ABI = [
@@ -16,10 +19,14 @@ const ERC20_ABI = [
 // DEBUG: Mostrar configuración
 console.log('[DEBUG] MXNB_CONTRACT_ADDRESS:', MXNB_CONTRACT_ADDRESS);
 console.log('[DEBUG] ALCHEMY_RPC_URL:', ALCHEMY_RPC_URL);
+*/
 
 // Extensión temporal del tipo Transaction para props extra
-type TransactionWithToken = Transaction & { isMXNB?: boolean; tokenSymbol?: string; tokenAddress?: string; decimals?: number };
+type TransactionWithToken = Transaction & { isUSDC?: boolean; tokenSymbol?: string; tokenAddress?: string; decimals?: number };
 
+// ⚠️ COMENTADO - Ya no obtenemos transacciones desde blockchain usando ethers
+// Ahora usamos Stellar para transacciones
+/*
 // Función para obtener transacciones MXNB reales de la blockchain
 async function fetchMXNBTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
   if (!walletAddress || !MXNB_CONTRACT_ADDRESS || !ALCHEMY_RPC_URL) {
@@ -93,6 +100,7 @@ async function fetchMXNBTransactions(walletAddress: string): Promise<Transaction
 }
 
 // Función para obtener transacciones ETH nativas de la wallet
+/*
 async function fetchETHTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
   if (!walletAddress || !ALCHEMY_RPC_URL) return [];
   const provider = new ethers.providers.JsonRpcProvider(ALCHEMY_RPC_URL);
@@ -105,6 +113,18 @@ async function fetchETHTransactions(walletAddress: string): Promise<TransactionW
   // return history
   //   .filter(tx => tx.from.toLowerCase() === walletAddress.toLowerCase() || (tx.to && tx.to.toLowerCase() === walletAddress.toLowerCase()))
   //   .map(...)
+}
+*/
+
+// Funciones vacías para compatibilidad (ya no se usan)
+async function fetchMXNBTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
+  console.warn('⚠️ fetchMXNBTransactions está deshabilitado. Usa Stellar en su lugar.');
+  return [];
+}
+
+async function fetchETHTransactions(walletAddress: string): Promise<TransactionWithToken[]> {
+  console.warn('⚠️ fetchETHTransactions está deshabilitado. Usa Stellar en su lugar.');
+  return [];
 }
 
 export const useCategories = () => {
@@ -126,18 +146,32 @@ export const useCategories = () => {
           localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
         }
 
-        // Obtener dirección de la wallet (puedes ajustar según tu contexto de auth)
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Obtener dirección de la wallet desde AuthContext (clave correcta: 'pumapay_auth')
+        const user = JSON.parse(localStorage.getItem('pumapay_auth') || '{}');
         const walletAddress = user?.address;
-        console.log('[DEBUG] Dirección de wallet detectada:', walletAddress);
+        // Log solo si hay wallet address (evitar spam en consola)
+        // if (walletAddress) console.log('[DEBUG] Dirección de wallet detectada:', walletAddress);
         if (walletAddress) {
+          // ⚠️ COMENTADO - Ya no obtenemos transacciones desde blockchain usando ethers
+          // Ahora usamos Stellar para transacciones
+          /*
           const [mxnbTxs, ethTxs] = await Promise.all([
             fetchMXNBTransactions(walletAddress),
             fetchETHTransactions(walletAddress)
           ]);
           // Unir y ordenar por fecha descendente
           const allTxs = [...mxnbTxs, ...ethTxs];
-          allTxs.sort((a, b) => b.date.getTime() - a.date.getTime());
+          */
+          // Por ahora, solo usamos transacciones locales
+          // Cargar transacciones desde localStorage
+          const storedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+          const allTxs: TransactionWithToken[] = storedTransactions 
+            ? JSON.parse(storedTransactions) 
+            : [];
+          // Ordenar por fecha descendente si hay transacciones
+          if (allTxs.length > 0) {
+            allTxs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          }
           setTransactions(allTxs);
         } else {
           setTransactions([]);

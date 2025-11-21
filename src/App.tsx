@@ -23,6 +23,9 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { JunoDemo } from "./pages/JunoDemo";
 import CoursesPage from "./pages/Courses";
+import { ZKDemo } from "./pages/ZKDemo";
+import { SavingsGoals } from "./pages/SavingsGoals";
+import { CourseDetail } from "./pages/CourseDetail";
 
 const queryClient = new QueryClient();
 
@@ -47,8 +50,11 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+            <Route path="/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+            <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/juno-demo" element={<JunoDemo />} />
+            <Route path="/zk-demo" element={<ZKDemo />} />
             <Route path="/" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

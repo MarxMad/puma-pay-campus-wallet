@@ -4,7 +4,13 @@ const cors = require('cors');
 require('dotenv').config();
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const fs = require('fs').promises;
+const path = require('path');
 const bitsoWebhook = require('./bitso-webhook');
+
+const execAsync = promisify(exec);
 
 // Portal API Configuration
 const PORTAL_API_BASE_URL = 'https://api.portalhq.io/api/v1';
@@ -1013,6 +1019,388 @@ app.post('/api/portal/refresh-session/:clientId', async (req, res) => {
         error: { message: 'Error de conexión con Portal API.' }
       });
     }
+  }
+});
+
+// ================================
+// ENDPOINTS DE ZK PROOFS
+// ================================
+
+/**
+ * Generar ZK Proof usando circuito Noir
+ * Endpoint: POST /api/zk/generate-proof
+ */
+app.post('/api/zk/generate-proof', async (req, res) => {
+  console.log('📥 Endpoint /api/zk/generate-proof llamado');
+  try {
+    const { balance, targetAmount } = req.body;
+
+    if (!balance || !targetAmount) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'balance y targetAmount son requeridos' }
+      });
+    }
+
+    const balanceNum = parseInt(balance);
+    const targetNum = parseInt(targetAmount);
+
+    if (balanceNum < targetNum) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'balance debe ser mayor o igual a targetAmount' }
+      });
+    }
+
+    // Ruta al circuito Noir
+    const circuitPath = path.join(__dirname, '../circuits/savings-proof');
+    const nargoPath = process.env.NARGO_PATH || '/Users/gerryp/.nargo/bin/nargo';
+
+    // Verificar que nargo existe (REQUERIDO)
+    let nargoExists = false;
+    try {
+      // Intentar verificar si nargo está en el PATH
+      await execAsync(`which nargo`);
+      nargoExists = true;
+      nargoPath = 'nargo'; // Usar nargo del PATH
+    } catch (error) {
+      // Si no está en PATH, verificar la ruta específica
+      try {
+        await fs.access(nargoPath);
+        nargoExists = true;
+      } catch (accessError) {
+        nargoExists = false;
+      }
+    }
+
+    if (!nargoExists) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: 'nargo no está disponible. Por favor, instala Noir: curl -L https://noir-lang.github.io/noirup/install | bash',
+          code: 'NARGO_NOT_FOUND',
+          installation: 'curl -L https://noir-lang.github.io/noirup/install | bash'
+        }
+      });
+    }
+
+    // Verificar que el circuito existe
+    try {
+      await fs.access(circuitPath);
+      await fs.access(path.join(circuitPath, 'Nargo.toml'));
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `Circuito Noir no encontrado en: ${circuitPath}`,
+          code: 'CIRCUIT_NOT_FOUND'
+        }
+      });
+    }
+
+    // Actualizar Prover.toml con los valores
+    const proverToml = `balance = "${balanceNum}"
+target_amount = "${targetNum}"
+`;
+    
+    try {
+      await fs.writeFile(
+        path.join(circuitPath, 'Prover.toml'),
+        proverToml,
+        'utf8'
+      );
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `No se pudo escribir Prover.toml: ${error.message}`,
+          code: 'PROVER_WRITE_ERROR'
+        }
+      });
+    }
+
+    // Generar proof real con nargo (REQUERIDO)
+    let proofHex = null;
+    let publicInputs = [];
+
+    try {
+      console.log('🔄 Ejecutando nargo prove...');
+      const { stdout, stderr } = await execAsync(
+        `cd ${circuitPath} && ${nargoPath} prove`,
+        { timeout: 60000 } // 60 segundos timeout
+      );
+
+      // Leer el proof generado
+      const proofPath = path.join(circuitPath, 'proofs/savings_proof.proof');
+      const proofContent = await fs.readFile(proofPath, 'utf8');
+      proofHex = '0x' + proofContent.trim();
+      publicInputs = [(balanceNum - targetNum).toString()]; // Solo diferencia pública
+      console.log('✅ Proof generado exitosamente con nargo');
+    } catch (error) {
+      console.error('❌ Error ejecutando nargo prove:', error);
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `Error generando proof con nargo: ${error.message || error.stderr || 'Error desconocido'}`,
+          code: 'NARGO_PROVE_ERROR',
+          details: error.stderr || error.stdout
+        }
+      });
+    }
+
+    if (!proofHex || proofHex.length < 100) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: 'Proof generado es inválido o muy corto',
+          code: 'INVALID_PROOF'
+        }
+      });
+    }
+
+    // Generar proof ID (hash del proof)
+    const proofId = '0x' + crypto.createHash('sha256').update(proofHex).digest('hex');
+
+    res.json({
+      success: true,
+      proof: proofHex,
+      publicInputs,
+      proofId,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        generatedWith: 'nargo'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/zk/generate-proof:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Error generando proof' }
+    });
+  }
+});
+
+/**
+ * Generar proof ZK de completitud de curso
+ * Endpoint: POST /api/zk/generate-course-proof
+ */
+app.post('/api/zk/generate-course-proof', async (req, res) => {
+  console.log('📥 Endpoint /api/zk/generate-course-proof llamado');
+  try {
+    const { score, passing_score, questions_answered, total_questions } = req.body;
+
+    if (!score || !passing_score || !questions_answered || !total_questions) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'score, passing_score, questions_answered y total_questions son requeridos' }
+      });
+    }
+
+    const scoreNum = parseInt(score);
+    const passingScoreNum = parseInt(passing_score);
+    const questionsAnsweredNum = parseInt(questions_answered);
+    const totalQuestionsNum = parseInt(total_questions);
+
+    if (scoreNum < passingScoreNum) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'score debe ser mayor o igual a passing_score' }
+      });
+    }
+
+    if (questionsAnsweredNum !== totalQuestionsNum) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'questions_answered debe ser igual a total_questions' }
+      });
+    }
+
+    // Ruta al circuito Noir
+    const circuitPath = path.join(__dirname, '../circuits/course-completion');
+    let nargoPath = process.env.NARGO_PATH || '/Users/gerryp/.nargo/bin/nargo';
+
+    // Verificar que nargo existe (REQUERIDO)
+    let nargoExists = false;
+    try {
+      // Intentar verificar si nargo está en el PATH
+      await execAsync(`which nargo`);
+      nargoExists = true;
+      nargoPath = 'nargo'; // Usar nargo del PATH
+    } catch (error) {
+      // Si no está en PATH, verificar la ruta específica
+      try {
+        await fs.access(nargoPath);
+        nargoExists = true;
+      } catch (accessError) {
+        nargoExists = false;
+      }
+    }
+
+    if (!nargoExists) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: 'nargo no está disponible. Por favor, instala Noir: curl -L https://noir-lang.github.io/noirup/install | bash',
+          code: 'NARGO_NOT_FOUND',
+          installation: 'curl -L https://noir-lang.github.io/noirup/install | bash'
+        }
+      });
+    }
+
+    // Verificar que el circuito existe
+    try {
+      await fs.access(circuitPath);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: `Circuito no encontrado en: ${circuitPath}`,
+          code: 'CIRCUIT_NOT_FOUND'
+        }
+      });
+    }
+
+    // Actualizar Prover.toml con los valores del request
+    const proverTomlPath = path.join(circuitPath, 'Prover.toml');
+    const proverToml = `score = "${score}"
+passing_score = "${passing_score}"
+questions_answered = "${questions_answered}"
+total_questions = "${total_questions}"
+`;
+
+    await fs.writeFile(proverTomlPath, proverToml, 'utf-8');
+
+    // Generar proof usando nargo
+    console.log('🔄 Generando proof de curso con nargo...');
+    const { stdout, stderr } = await execAsync(
+      `cd ${circuitPath} && ${nargoPath} prove`,
+      { timeout: 60000 }
+    );
+
+    if (stderr && !stderr.includes('Proof') && !stdout.includes('Proof')) {
+      console.warn('⚠️ Advertencias de nargo:', stderr);
+    }
+
+    // Leer el proof generado
+    const proofPath = path.join(circuitPath, 'proofs', 'course_completion.proof');
+    const verifierTomlPath = path.join(circuitPath, 'Verifier.toml');
+
+    let proofBlob = '';
+    let publicInputs = [];
+
+    try {
+      proofBlob = await fs.readFile(proofPath, 'utf-8');
+      
+      // Leer Verifier.toml para obtener public inputs
+      const verifierToml = await fs.readFile(verifierTomlPath, 'utf-8');
+      // Parsear Verifier.toml (formato simple)
+      const lines = verifierToml.split('\n');
+      publicInputs = lines
+        .filter(line => line.trim() && !line.startsWith('#'))
+        .map(line => line.split('=')[1]?.trim())
+        .filter(Boolean);
+    } catch (readError) {
+      console.error('Error leyendo proof o Verifier.toml:', readError);
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: 'Error leyendo proof generado',
+          code: 'PROOF_READ_ERROR',
+          details: readError.message
+        }
+      });
+    }
+
+    // Generar proof ID (hash del proof)
+    const proofId = crypto.createHash('sha256').update(proofBlob).digest('hex').substring(0, 32);
+
+    console.log('✅ Proof de curso generado exitosamente:', proofId);
+
+    res.json({
+      success: true,
+      proof: proofBlob,
+      publicInputs,
+      proofId,
+      circuit: 'course-completion'
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/zk/generate-course-proof:', error);
+    res.status(500).json({
+      success: false,
+      error: { 
+        message: `Error generando proof de curso: ${error.message || error.stderr || 'Error desconocido'}`,
+        code: 'NARGO_PROVE_ERROR',
+        details: error.stderr || error.stdout
+      }
+    });
+  }
+});
+
+// ================================
+// ENDPOINTS DE SOROBAN
+// ================================
+
+/**
+ * Invocar contrato Soroban
+ * Endpoint: POST /api/soroban/invoke-contract
+ */
+app.post('/api/soroban/invoke-contract', async (req, res) => {
+  console.log('📥 Endpoint /api/soroban/invoke-contract llamado');
+  try {
+    const { contractAddress, function: functionName, args, network } = req.body;
+
+    if (!contractAddress || !functionName) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'contractAddress y function son requeridos' }
+      });
+    }
+
+    // Verificar que el SDK de Soroban esté configurado
+    const sorobanRpcUrl = process.env.SOROBAN_RPC_URL;
+    const sorobanNetworkPassphrase = process.env.SOROBAN_NETWORK_PASSPHRASE;
+
+    if (!sorobanRpcUrl) {
+      return res.status(500).json({
+        success: false,
+        error: { 
+          message: 'SOROBAN_RPC_URL no está configurado. Por favor, configura las variables de entorno.',
+          code: 'SOROBAN_NOT_CONFIGURED'
+        }
+      });
+    }
+
+    // En producción, esto debe usar el SDK de Soroban real
+    // Por ahora, retornamos error indicando que necesita implementación
+    console.log('🔄 Intentando invocar contrato Soroban:', {
+      contractAddress,
+      function: functionName,
+      network: network || 'testnet',
+      rpcUrl: sorobanRpcUrl
+    });
+
+    return res.status(501).json({
+      success: false,
+      error: { 
+        message: 'Invocación de contratos Soroban no implementada. Por favor, integra el SDK de Soroban (@stellar/stellar-sdk) en el backend.',
+        code: 'NOT_IMPLEMENTED',
+        details: {
+          contractAddress,
+          function: functionName,
+          requiredSDK: '@stellar/stellar-sdk',
+          documentation: 'https://developers.stellar.org/docs/smart-contracts/getting-started'
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/soroban/invoke-contract:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || 'Error invocando contrato' }
+    });
   }
 });
 

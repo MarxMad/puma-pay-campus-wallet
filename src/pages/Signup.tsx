@@ -21,6 +21,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [signupStep, setSignupStep] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ const Signup = () => {
     }
     try {
       setSignupStep('Guardando usuario...');
+      setEmailError(null);
       console.log('🔄 Iniciando creación de cuenta...');
       const fullName = `${formData.name} ${formData.lastName}`.trim();
       const result = await createAccount(
@@ -106,6 +108,9 @@ const Signup = () => {
         description: error instanceof Error ? error.message : "No se pudo crear la cuenta o la wallet. Intenta de nuevo.",
         variant: "destructive",
       });
+      if (error instanceof Error && /correo/i.test(error.message)) {
+        setEmailError(error.message);
+      }
     }
   };
 
@@ -173,11 +178,19 @@ const Signup = () => {
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="bg-gray-700 border-gray-600 text-white mt-1"
+              onChange={(e) => {
+                setFormData({...formData, email: e.target.value});
+                if (emailError) setEmailError(null);
+              }}
+              className={`bg-gray-700 border-gray-600 text-white mt-1 ${emailError ? 'border-red-500' : ''}`}
               placeholder="alex@estudiante.unam.mx"
               required
             />
+            {emailError && (
+              <div className="mt-1 text-xs text-red-400">
+                {emailError}
+              </div>
+            )}
           </div>
 
           <div>

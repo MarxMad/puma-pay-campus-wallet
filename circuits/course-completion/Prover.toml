@@ -1,0 +1,10 @@
+# Configuración para generar proof de completitud de curso
+# 
+# Ejemplo: Curso con 10 preguntas, passing_score = 7 (70%), 
+# estudiante obtuvo 9/10 (90%) = Gold badge
+
+score = "9"              # Puntuación obtenida (privado)
+passing_score = "7"      # Puntuación mínima para pasar (público)
+questions_answered = "10" # Preguntas respondidas (privado)
+total_questions = "10"    # Total de preguntas (público)
+

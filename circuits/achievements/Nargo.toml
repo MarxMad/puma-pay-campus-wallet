@@ -1,0 +1,6 @@
+[package]
+name = "achievements"
+type = "bin"
+
+[dependencies]
+

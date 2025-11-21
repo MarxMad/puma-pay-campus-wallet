@@ -1,0 +1,8 @@
+[package]
+name = "course-completion"
+type = "bin"
+authors = ["PumaPay Team"]
+compiler_version = ">=0.20.0"
+
+[dependencies]
+
