@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { useBalance } from '@/hooks/useBalance';
-// import { portalService } from '@/services/portal'; // Comentado - ahora usamos Stellar
 import { stellarService } from '@/services/stellarService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -29,7 +28,11 @@ const SendPage = () => {
   const scannerContainerRef = useRef<HTMLDivElement>(null);
 
   const isValidAddress = (address: string): boolean => {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
+    if (!address) return false;
+    if (address.startsWith('G') && address.length === 56) {
+      return stellarService.isValidStellarAddress(address);
+    }
+    return false;
   };
 
   const handleQRScan = useCallback((data: string) => {
@@ -44,21 +47,22 @@ const SendPage = () => {
     
     setShowScanner(false);
     
-    // Parsear formato pumapay:0x...?amount=100 o solo dirección
+    // Parsear formato pumapay:stellar...?amount=100 o solo dirección
     let address = '';
     let amount = null;
-    
-    if (data.startsWith('pumapay:')) {
-      // Formato: pumapay:0x...?amount=100
-      const url = new URL(data.replace('pumapay:', 'http://'));
-      address = url.hostname || url.pathname;
+
+    if (data.startsWith('pumapay:') || data.startsWith('stellar:')) {
+      const normalized = data.startsWith('pumapay:')
+        ? data.replace('pumapay:', 'http://')
+        : data.replace('stellar:', 'http://');
+      const url = new URL(normalized);
+      address = (url.hostname || url.pathname).toUpperCase();
       amount = url.searchParams.get('amount');
     } else {
-      // Solo dirección o formato ethereum:
-    const addressMatch = data.match(/0x[a-fA-F0-9]{40}/);
-      address = addressMatch ? addressMatch[0] : data;
+      const addressMatch = data.toUpperCase().match(/G[A-Z0-9]{55}/);
+      address = addressMatch ? addressMatch[0] : data.toUpperCase();
     }
-    
+
     if (isValidAddress(address)) {
       setWalletAddress(address);
       if (amount) {
@@ -141,7 +145,7 @@ const SendPage = () => {
 
     // Validar dirección de wallet
     if (!isValidAddress(walletAddress)) {
-      setSummaryError('Dirección de wallet inválida. Debe ser una dirección Ethereum válida (0x...)');
+      setSummaryError('Dirección de wallet inválida. Debe ser una dirección Stellar válida (comienza con "G").');
       return;
     }
 
@@ -177,28 +181,41 @@ const SendPage = () => {
         throw new Error('Dirección de wallet inválida');
       }
       
+      const destination = walletAddress.toUpperCase();
+
       console.log('🚀 Enviando MXNB a wallet en Stellar:', { 
-        to: walletAddress, 
+        to: destination, 
         amount: amountNum,
         network: 'Stellar',
         asset: 'MXNB'
       });
       
-      // IMPLEMENTACIÓN STELLAR (Nueva)
-      // Enviar MXNB usando Stellar SDK
-      // Obtener secret key del usuario (en producción, esto vendría del backend de forma segura)
-      // Por ahora, asumimos que el usuario tiene su secret key almacenada de forma segura
-      const userSecretKey = user?.secretKey; // TODO: Obtener de forma segura
-      
-      if (!userSecretKey) {
-        throw new Error('Secret key del usuario no disponible. Por favor, inicia sesión.');
+      // Enviar a backend para firmar en Stellar
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      if (!backendUrl) {
+        throw new Error('VITE_BACKEND_URL no está configurado.');
       }
-      
-      const hash = await stellarService.sendUSDC(
-        walletAddress,
-        amountNum,
-        userSecretKey
-      );
+
+      const response = await fetch(`${backendUrl}/api/stellar/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          destination,
+          amount: amountNum,
+          userId: user?.id,
+          email: user?.email
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message || 'Error enviando transacción.');
+      }
+
+      const hash = result.hash;
       
       console.log('✅ Transacción enviada en Stellar:', hash);
       
@@ -238,11 +255,11 @@ const SendPage = () => {
           id: hash,
           amount: amountNum,
           type: 'expense',
-          description: `Transferencia MXNB a ${walletAddress.substring(0, 6)}...${walletAddress.slice(-4)}`,
+          description: `Transferencia MXNB a ${destination.substring(0, 6)}...${destination.slice(-4)}`,
           categoryId: '',
           date: new Date(),
           txHash: hash,
-          recipient: walletAddress,
+          recipient: destination,
           isMXNB: true,
           tokenSymbol: 'MXNB',
           network: 'Stellar'
@@ -333,10 +350,12 @@ const SendPage = () => {
                   setInputMethod('manual');
                   setShowScanner(false);
                 }}
-                variant={inputMethod === 'manual' ? 'default' : 'outline'}
-                className={`flex-1 ${inputMethod === 'manual' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white'}`}
+                variant="outline"
+                className={`flex-1 border-gray-500 bg-white text-black hover:bg-gray-100 ${
+                  inputMethod === 'manual' ? 'ring-2 ring-blue-500' : 'opacity-80'
+                }`}
               >
-                <Wallet className="h-4 w-4 mr-2" />
+                <Wallet className="h-4 w-4 mr-2 text-black" />
                 Manual
               </Button>
               <Button
@@ -344,10 +363,12 @@ const SendPage = () => {
                   setInputMethod('qr');
                   setShowScanner(true);
                 }}
-                variant={inputMethod === 'qr' ? 'default' : 'outline'}
-                className={`flex-1 ${inputMethod === 'qr' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white'}`}
+                variant="outline"
+                className={`flex-1 border-gray-500 bg-white text-black hover:bg-gray-100 ${
+                  inputMethod === 'qr' ? 'ring-2 ring-blue-500' : 'opacity-80'
+                }`}
               >
-                <QrCode className="h-4 w-4 mr-2" />
+                <QrCode className="h-4 w-4 mr-2 text-black" />
                 Escanear QR
               </Button>
             </div>
@@ -355,20 +376,20 @@ const SendPage = () => {
             {/* Input Manual */}
             {inputMethod === 'manual' && (
               <div className="space-y-2">
-                <label className="text-sm text-gray-300">Dirección de wallet (0x...)</label>
+                <label className="text-sm text-gray-300">Dirección Stellar (comienza con "G")</label>
                 <input
                   type="text"
                   value={walletAddress}
                   onChange={(e) => {
-                    setWalletAddress(e.target.value.trim());
+                    setWalletAddress(e.target.value.trim().toUpperCase());
                     setSummaryError('');
                   }}
-                  placeholder="0x..."
+                  placeholder="G..."
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-blue-500"
                 />
                 {walletAddress && !isValidAddress(walletAddress) && (
                   <p className="text-xs text-red-400">
-                    Dirección inválida. Debe comenzar con 0x y tener 42 caracteres.
+                    Dirección inválida. Debe comenzar con "G" y tener 56 caracteres.
                   </p>
                 )}
                 {walletAddress && isValidAddress(walletAddress) && (
@@ -481,21 +502,23 @@ const SendPage = () => {
 
               {/* Quick amount buttons */}
               <div className="grid grid-cols-4 gap-2">
-                {['10', '25', '50', '100'].map((quickAmount) => (
-                  <Button
-                    key={quickAmount}
-                    onClick={() => setAmount(quickAmount)}
-                    disabled={hasInsufficientFunds(parseFloat(quickAmount))}
-                    variant="outline"
-                    className={`text-sm border-gray-600 text-gray-200 ${
-                      hasInsufficientFunds(parseFloat(quickAmount)) 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    ${quickAmount}
-                  </Button>
-                ))}
+                {['10', '25', '50', '100'].map((quickAmount) => {
+                  const disabled = hasInsufficientFunds(parseFloat(quickAmount));
+                  const isSelected = amount === quickAmount;
+                  return (
+                    <Button
+                      key={quickAmount}
+                      onClick={() => setAmount(quickAmount)}
+                      disabled={disabled}
+                      variant="outline"
+                      className={`text-sm border border-gray-500 bg-white text-black hover:bg-gray-100 ${
+                        isSelected ? 'ring-2 ring-blue-500' : ''
+                      } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      ${quickAmount}
+                    </Button>
+                  );
+                })}
               </div>
 
               {summaryError && (
@@ -533,10 +556,10 @@ const SendPage = () => {
               <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold">M</span>
+                    <span className="text-xs font-bold">XLM</span>
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-white">MXNB</span>
+                    <span className="text-sm font-semibold text-white">XLM</span>
                     <p className="text-xs text-gray-300">Stellar Network</p>
                   </div>
                 </div>
@@ -578,7 +601,7 @@ const SendPage = () => {
                 <span className="text-sm text-gray-400 block mb-2">Cantidad a enviar</span>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-white">
-                    {amountNum.toFixed(2)} <span className="text-lg text-gray-400">MXNB</span>
+                    {amountNum.toFixed(2)} <span className="text-lg text-gray-400">XLM</span>
                   </span>
                   <div className="text-right">
                     <span className="text-xs text-gray-400 block">≈ ${(amountNum).toFixed(2)} MXN</span>
@@ -591,7 +614,7 @@ const SendPage = () => {
                 <span className="text-sm text-gray-400 block mb-2">Balance después</span>
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-bold text-green-400">
-                    ${newBalance.toFixed(2)} <span className="text-sm text-gray-400">MXNB</span>
+                    ${newBalance.toFixed(2)} <span className="text-sm text-gray-400">XLM</span>
                   </span>
                   <span className="text-xs text-gray-400">
                     Balance actual: ${available.toFixed(2)}

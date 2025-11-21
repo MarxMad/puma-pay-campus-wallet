@@ -19,7 +19,6 @@ import { Separator } from "@/components/ui/separator";
 import { BottomNav } from "@/components/BottomNav";
 import { coursesService } from "@/services/coursesService";
 import type { Course } from "@/types/courses";
-import { toast } from "@/hooks/use-toast";
 
 const levelFilters: Array<{
   id: "todos" | Course["level"];
@@ -81,13 +80,6 @@ const CoursesPage = () => {
     [courses]
   );
 
-  const handlePurchase = (course: Course) => {
-    toast({
-      title: "Compra pendiente",
-      description: `Pronto podrás comprar "${course.title}" con MXNB desde esta pantalla.`,
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gray-950 pb-20 text-white">
       <header className="sticky top-0 z-40 bg-gray-950/80 backdrop-blur-xl border-b border-white/10">
@@ -126,14 +118,14 @@ const CoursesPage = () => {
           <div className="relative z-10">
             <div className="flex items-center space-x-2 text-amber-300 font-medium text-sm">
               <Sparkles className="h-4 w-4" />
-              <span>Aprende y paga con MXNB</span>
+              <span>Aprende gratis desde tu móvil</span>
             </div>
             <h2 className="text-2xl font-bold mt-3 mb-2">
               Conviértete en experto desde el campus
             </h2>
             <p className="text-gray-300 text-sm">
-              Cursos seleccionados para estudiantes emprendedores, builders y
-              líderes de comunidad.
+              Contenido estilo Platzi con módulos cortos, recursos descargables
+              y cuestionarios gamificados.
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
               {featuredCourses.slice(0, 3).map((course) => (
@@ -183,7 +175,6 @@ const CoursesPage = () => {
                 <CourseCard
                   key={course.id}
                   course={course}
-                  onPurchase={handlePurchase}
                 />
               ))}
             {!isLoading && featuredCourses.length === 0 && (
@@ -250,7 +241,6 @@ const CoursesPage = () => {
                   <CourseRowCard
                     key={course.id}
                     course={course}
-                    onPurchase={handlePurchase}
                   />
                 ))}
               </div>
@@ -305,10 +295,10 @@ const CoursesPage = () => {
                       </div>
                     </div>
                     <Button
-                      onClick={() => handlePurchase(course)}
+                      onClick={() => navigate(`/courses/${course.id}`)}
                       className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold w-full md:w-auto flex-shrink-0 whitespace-nowrap"
                     >
-                      Comprar · {course.priceMXNB} MXNB
+                      Ver curso
                     </Button>
                   </div>
                 </Card>
@@ -325,10 +315,8 @@ const CoursesPage = () => {
 
 const CourseCard = ({
   course,
-  onPurchase,
 }: {
   course: Course;
-  onPurchase: (course: Course) => void;
 }) => {
   const navigate = useNavigate();
   
@@ -375,16 +363,9 @@ const CourseCard = ({
       <div className="flex gap-2">
         <Button
           onClick={() => navigate(`/courses/${course.id}`)}
-          variant="outline"
-          className="flex-1 border-gray-700 text-gray-200 hover:bg-gray-800"
-        >
-          Ver Curso
-        </Button>
-        <Button
-          onClick={() => onPurchase(course)}
           className="flex-1 bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
         >
-          {course.priceMXNB} MXNB
+          Continuar
         </Button>
       </div>
     </div>
@@ -394,11 +375,11 @@ const CourseCard = ({
 
 const CourseRowCard = ({
   course,
-  onPurchase,
 }: {
   course: Course;
-  onPurchase: (course: Course) => void;
-}) => (
+}) => {
+  const navigate = useNavigate();
+  return (
   <Card className="bg-gray-900 border border-gray-800 hover:border-amber-500/40 transition-colors duration-300 text-white w-full">
     <div className="p-4 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
       <div className="relative h-32 w-full md:w-40 flex-shrink-0 rounded-xl overflow-hidden">
@@ -448,22 +429,17 @@ const CourseRowCard = ({
         </div>
       </div>
       <div className="flex flex-col items-stretch gap-3 md:w-48 flex-shrink-0">
-        <div className="text-left md:text-left">
-          <span className="text-sm text-gray-400">Precio</span>
-          <div className="text-xl font-semibold text-amber-300 break-words">
-            {course.priceMXNB} MXNB
-          </div>
-        </div>
         <Button
-          onClick={() => onPurchase(course)}
+          onClick={() => navigate(`/courses/${course.id}`)}
           className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold w-full"
         >
-          Comprar con MXNB
+          Ver curso
         </Button>
       </div>
     </div>
   </Card>
-);
+  );
+};
 
 export default CoursesPage;
 

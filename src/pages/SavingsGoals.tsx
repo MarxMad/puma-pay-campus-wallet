@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useBalance } from '@/hooks/useBalance';
+import { BottomNav } from '@/components/BottomNav';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -35,8 +35,12 @@ import {
   TrendingUp,
   Shield,
   Award,
+  PiggyBank,
+  Bell,
+  ArrowLeft,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 const goalFormSchema = z.object({
   targetAmount: z
@@ -50,6 +54,7 @@ type GoalFormValues = z.infer<typeof goalFormSchema>;
 
 export const SavingsGoals: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const {
     goals,
     isLoading,
@@ -171,182 +176,235 @@ export const SavingsGoals: React.FC = () => {
     }).format(date);
   };
 
+  const stats = useMemo(() => {
+    const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
+    const totalProgress = goals.reduce((sum, g) => {
+      const progress = getProgress(g.id);
+      return sum + (progress?.currentBalance || 0);
+    }, 0);
+    const achieved = goals.filter((g) => g.achieved).length;
+    return {
+      totalTarget,
+      totalProgress,
+      achieved,
+      active: goals.length - achieved,
+    };
+  }, [goals, getProgress]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 pb-20 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      <div className="min-h-screen bg-gray-900 pb-24 flex items-center justify-center text-white">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-20">
-      <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Target className="h-8 w-8" />
-            Metas de Ahorro
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Establece metas de ahorro y demuestra tu progreso con ZK proofs
-          </p>
+    <div className="min-h-screen bg-gray-900 pb-28 text-white">
+      {/* Top nav */}
+      <div className="flex items-center justify-between p-4 text-white bg-black/40 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/30">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/home')}
+          className="text-gray-300 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center space-x-2">
+          <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-inner">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain" />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-400">
+              PumaPay
+            </p>
+            <h1 className="text-lg font-bold">Metas de ahorro</h1>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Balance actual</p>
-          <p className="text-2xl font-bold">
-            {formatCurrency(balance.balance || 0)}
-          </p>
-        </div>
+        <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+          <Bell className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Formulario para crear meta */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Crear Nueva Meta
-          </CardTitle>
-          <CardDescription>
-            Establece una meta de ahorro y trabaja para alcanzarla
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleCreateGoal)}
-              className="space-y-4"
-            >
-              <FormField
-                control={form.control}
-                name="targetAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto Objetivo (MXN)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="500"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(parseFloat(e.target.value) || 0)
-                        }
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      El monto que deseas ahorrar
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="deadline"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha Límite (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Fecha límite para alcanzar la meta
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear Meta
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <div className="p-4 space-y-6">
+        {/* Hero */}
+        <Card className="bg-gray-800/70 border-white/10 text-white shadow-2xl">
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-orange-100">Balance disponible</p>
+                <h2 className="text-3xl font-bold mt-1">
+                  ${(balance.available || 0).toFixed(2)}
+                  <span className="text-base text-orange-100 ml-2">USDC</span>
+                </h2>
+              </div>
+              <PiggyBank className="h-10 w-10 text-orange-100" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="bg-gray-900/60 rounded-xl p-3 border border-white/5">
+                <p className="text-xs text-gray-300 uppercase">Metas activas</p>
+                <p className="text-2xl font-bold">{stats.active}</p>
+              </div>
+              <div className="bg-gray-900/60 rounded-xl p-3 border border-white/5">
+                <p className="text-xs text-gray-300 uppercase">Completadas</p>
+                <p className="text-2xl font-bold">{stats.achieved}</p>
+              </div>
+              <div className="bg-gray-900/60 rounded-xl p-3 border border-white/5">
+                <p className="text-xs text-gray-300 uppercase">Ahorrado</p>
+                <p className="text-xl font-bold">{formatCurrency(stats.totalProgress)}</p>
+              </div>
+              <div className="bg-gray-900/60 rounded-xl p-3 border border-white/5">
+                <p className="text-xs text-gray-300 uppercase">Meta total</p>
+                <p className="text-xl font-bold">{formatCurrency(stats.totalTarget)}</p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
 
-      {/* Lista de metas */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Mis Metas</h2>
+        {/* Formulario */}
+        <Card className="bg-gray-800/60 border-white/10 text-white shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Plus className="h-5 w-5" />
+              Crear nueva meta
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Establece objetivos claros y monitorea tu progreso.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateGoal)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="targetAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200">Monto objetivo (USDC)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="500"
+                          className="bg-gray-900/70 border-gray-700 text-white"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-gray-500">
+                        Define cuánto deseas ahorrar para esta meta.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="deadline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200">Fecha límite (opcional)</FormLabel>
+                      <FormControl>
+                        <Input type="date" className="bg-gray-900/70 border-gray-700 text-white" {...field} />
+                      </FormControl>
+                      <FormDescription className="text-gray-500">
+                        Añade una fecha para mantenerte motivado.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  disabled={isCreating}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crear meta
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
 
-        {error && (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-destructive">
-                Error: {error.message}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Lista de metas */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold">Mis metas</h2>
 
-        {goals.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No tienes metas de ahorro aún.</p>
-              <p className="text-sm mt-2">
-                Crea tu primera meta usando el formulario de arriba.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          goals.map((goal) => {
+          {error && (
+            <Card className="border-red-500 bg-red-500/10 text-white">
+              <CardContent className="pt-6">
+                <p>Error: {error.message}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {goals.length === 0 ? (
+            <Card className="bg-gray-800/60 border-white/5">
+              <CardContent className="pt-6 text-center text-gray-400">
+                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No tienes metas guardadas.</p>
+                <p className="text-sm mt-2">
+                  Crea tu primera meta usando el formulario superior.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            goals.map((goal) => {
             const progress = getProgress(goal.id);
             if (!progress) return null;
 
             return (
-              <Card
-                key={goal.id}
-                className={
-                  goal.achieved
-                    ? 'border-green-500 bg-green-50 dark:bg-green-950'
-                    : ''
-                }
-              >
+                <Card
+                  key={goal.id}
+                  className={`bg-gray-800/60 border-white/10 text-white shadow-lg ${
+                    goal.achieved ? 'ring-1 ring-green-400/40' : ''
+                  }`}
+                >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="flex items-center gap-2">
-                        {goal.achieved ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <Target className="h-5 w-5" />
-                        )}
-                        Meta de Ahorro
-                        {goal.achieved && (
-                          <span className="text-sm font-normal text-green-600">
-                            ✓ Alcanzada
-                          </span>
-                        )}
-                      </CardTitle>
-                      <CardDescription className="mt-2">
-                        Objetivo: {formatCurrency(goal.targetAmount)}
-                        {goal.deadline && (
-                          <span className="ml-4 flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {formatDate(new Date(goal.deadline))}
-                          </span>
-                        )}
-                      </CardDescription>
+                        <CardTitle className="flex items-center gap-2 text-white">
+                          {goal.achieved ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Target className="h-5 w-5" />
+                          )}
+                          Meta de ahorro
+                          {goal.achieved && (
+                            <span className="text-sm font-normal text-green-400">
+                              ✓ Alcanzada
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="mt-2 text-gray-400">
+                          Objetivo: {formatCurrency(goal.targetAmount)}
+                          {goal.deadline && (
+                            <span className="ml-4 flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {formatDate(new Date(goal.deadline))}
+                            </span>
+                          )}
+                        </CardDescription>
                     </div>
                     {!goal.achieved && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteGoal(goal.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteGoal(goal.id)}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                     )}
                   </div>
                 </CardHeader>
@@ -354,37 +412,88 @@ export const SavingsGoals: React.FC = () => {
                   {/* Progreso */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">
-                        Progreso: {formatCurrency(progress.currentBalance)} /{' '}
-                        {formatCurrency(goal.targetAmount)}
-                      </span>
-                      <span className="text-sm font-bold">
-                        {progress.progress.toFixed(1)}%
-                      </span>
+                        <span className="text-sm font-medium text-gray-200">
+                          Progreso: {formatCurrency(progress.currentBalance)} /{' '}
+                          {formatCurrency(goal.targetAmount)}
+                        </span>
+                        <span className="text-sm font-bold">
+                          {progress.progress.toFixed(1)}%
+                        </span>
                     </div>
                     <Progress value={progress.progress} className="h-2" />
                     {progress.daysRemaining && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {progress.daysRemaining} días restantes
-                      </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {progress.daysRemaining} días restantes
+                        </p>
                     )}
                   </div>
 
                   {/* Estado y acciones */}
                   {goal.achieved ? (
-                    <div className="flex items-center gap-2 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
-                      <Award className="h-5 w-5 text-green-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-green-900 dark:text-green-100">
-                          ¡Meta alcanzada!
-                        </p>
-                        {goal.proofId && (
-                          <p className="text-sm text-green-700 dark:text-green-200">
-                            Proof ID: {goal.proofId.substring(0, 16)}...
+                      <div className="flex items-center gap-2 p-4 bg-green-500/10 rounded-lg">
+                        <Award className="h-5 w-5 text-green-500" />
+                        <div className="flex-1">
+                          <p className="font-medium text-green-100">
+                            ¡Meta alcanzada!
                           </p>
+                          {goal.proofId && (
+                            <p className="text-sm text-green-200">
+                              Proof ID: {goal.proofId.substring(0, 16)}...
+                            </p>
+                          )}
+                        </div>
+                        {!goal.proofId && (
+                          <Button
+                            onClick={() => handleGenerateProof(goal.id)}
+                            disabled={generatingProofId === goal.id}
+                            size="sm"
+                          >
+                            {generatingProofId === goal.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Generando...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Generar Proof
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {goal.proofId && (
+                          <Button
+                            onClick={() => handleClaimReward(goal.id)}
+                            disabled={claimingRewardId === goal.id}
+                            size="sm"
+                            variant="outline"
+                            className="border-green-400 text-green-200"
+                          >
+                            {claimingRewardId === goal.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Reclamando...
+                              </>
+                            ) : (
+                              <>
+                                <Award className="h-4 w-4 mr-2" />
+                                Reclamar recompensa
+                              </>
+                            )}
+                          </Button>
                         )}
                       </div>
-                      {!goal.proofId && (
+                  ) : progress.canGenerateProof ? (
+                      <div className="flex items-center gap-2 p-4 bg-blue-500/10 rounded-lg">
+                        <Shield className="h-5 w-5 text-blue-400" />
+                        <div className="flex-1">
+                          <p className="font-medium text-blue-100">
+                            ¡Puedes generar un proof ZK!
+                          </p>
+                          <p className="text-sm text-blue-200">
+                            Tu balance es suficiente para alcanzar la meta.
+                          </p>
+                        </div>
                         <Button
                           onClick={() => handleGenerateProof(goal.id)}
                           disabled={generatingProofId === goal.id}
@@ -398,85 +507,34 @@ export const SavingsGoals: React.FC = () => {
                           ) : (
                             <>
                               <Sparkles className="h-4 w-4 mr-2" />
-                              Generar Proof
+                              Generar proof
                             </>
                           )}
                         </Button>
-                      )}
-                      {goal.proofId && (
-                        <Button
-                          onClick={() => handleClaimReward(goal.id)}
-                          disabled={claimingRewardId === goal.id}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {claimingRewardId === goal.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Reclamando...
-                            </>
-                          ) : (
-                            <>
-                              <Award className="h-4 w-4 mr-2" />
-                              Reclamar Recompensa
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  ) : progress.canGenerateProof ? (
-                    <div className="flex items-center gap-2 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <Shield className="h-5 w-5 text-blue-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-blue-900 dark:text-blue-100">
-                          ¡Puedes generar un proof ZK!
-                        </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-200">
-                          Tu balance es suficiente para alcanzar la meta
-                        </p>
                       </div>
-                      <Button
-                        onClick={() => handleGenerateProof(goal.id)}
-                        disabled={generatingProofId === goal.id}
-                        size="sm"
-                      >
-                        {generatingProofId === goal.id ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Generando...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Generar Proof
-                          </>
-                        )}
-                      </Button>
-                    </div>
                   ) : (
-                    <div className="flex items-center gap-2 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-gray-600" />
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          Continúa ahorrando
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Te faltan{' '}
-                          {formatCurrency(
-                            goal.targetAmount - progress.currentBalance
-                          )}{' '}
-                          para alcanzar tu meta
-                        </p>
+                      <div className="flex items-center gap-2 p-4 bg-white/5 rounded-lg">
+                        <TrendingUp className="h-5 w-5 text-orange-300" />
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            Continúa ahorrando
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Te faltan{' '}
+                            {formatCurrency(goal.targetAmount - progress.currentBalance)}{' '}
+                            para alcanzar tu meta.
+                          </p>
+                        </div>
                       </div>
-                    </div>
                   )}
                 </CardContent>
               </Card>
             );
-          })
-        )}
+            })
+          )}
+        </div>
       </div>
-      </div>
+      <BottomNav />
     </div>
   );
 };

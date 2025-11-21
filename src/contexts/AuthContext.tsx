@@ -45,6 +45,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const createMissingAuthHandler = (method: string) => {
+  return () => {
+    throw new Error(`useAuth debe usarse dentro de un AuthProvider (método: ${method})`);
+  };
+};
+
+const missingAuthContext: AuthContextType = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  login: createMissingAuthHandler('login'),
+  loginWithPortal: createMissingAuthHandler('loginWithPortal'),
+  logout: createMissingAuthHandler('logout'),
+  createAccount: async () => {
+    throw new Error('useAuth debe usarse dentro de un AuthProvider (createAccount)');
+  },
+  updateUser: () => {
+    throw new Error('useAuth debe usarse dentro de un AuthProvider (updateUser)');
+  }
+};
+
 // Clave para localStorage
 const AUTH_STORAGE_KEY = 'pumapay_auth';
 
@@ -353,7 +374,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth debe usarse dentro de un AuthProvider');
+    if (import.meta.env.DEV) {
+      console.warn('useAuth se llamó fuera de AuthProvider. Usando contexto vacío.');
+    }
+    return missingAuthContext;
   }
   return context;
 }; 

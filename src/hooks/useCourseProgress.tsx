@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { courseGamificationService, type CourseProgress, type UserPoints, type Badge } from '@/services/courseGamificationService';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -57,10 +57,10 @@ export const useCourseProgress = (): UseCourseProgressReturn => {
   });
 
   // Obtener progreso de un curso específico
-  const getCourseProgress = async (courseId: string): Promise<CourseProgress | null> => {
+  const getCourseProgress = useCallback(async (courseId: string): Promise<CourseProgress | null> => {
     if (!user) return null;
     return await courseGamificationService.getCourseProgress(courseId, userId);
-  };
+  }, [user, userId]);
 
   // Obtener badges del usuario
   const getUserBadges = async (): Promise<Badge[]> => {
@@ -72,11 +72,7 @@ export const useCourseProgress = (): UseCourseProgressReturn => {
     userPoints,
     isLoading,
     error: error as Error | null,
-    getCourseProgress: (courseId: string) => {
-      // Sincrónico para acceso inmediato
-      // En producción, esto podría requerir una query separada
-      return null; // Se implementará con query separada si es necesario
-    },
+    getCourseProgress,
     recordCompletion: async (
       courseId: string,
       quizScore: number,

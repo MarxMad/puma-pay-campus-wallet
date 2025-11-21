@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 // import { junoService } from '@/services/junoService';
 // import { ethersBalanceService } from '@/services/ethersBalance';
 import { useAuth } from '@/contexts/AuthContext';
+import { stellarService } from '@/services/stellarService';
 
 const BALANCE_STORAGE_KEY = 'pumapay_mxnb_balance';
 
 export interface BalanceState {
   balance: number;
   available: number;
+  assetSymbol: string;
   isLoading: boolean;
   lastUpdated: Date;
 }
@@ -31,6 +33,7 @@ export const forceResetAllData = () => {
   const zeroBalance = {
     balance: 0,
     available: 0,
+    assetSymbol: 'USDC',
     isLoading: false,
     lastUpdated: new Date()
   };
@@ -57,6 +60,7 @@ export const useBalance = () => {
   const [balanceState, setBalanceState] = useState<BalanceState>({
     balance: 0,
     available: 0,
+    assetSymbol: 'USDC',
     isLoading: true,
     lastUpdated: new Date()
   });
@@ -95,6 +99,7 @@ export const useBalance = () => {
       const zeroState = {
         balance: 0,
         available: 0,
+        assetSymbol: 'USDC',
         isLoading: false,
         lastUpdated: new Date()
       };
@@ -110,6 +115,7 @@ export const useBalance = () => {
       const zeroState = {
         balance: 0,
         available: 0,
+        assetSymbol: 'USDC',
         isLoading: false,
         lastUpdated: new Date()
       };
@@ -131,6 +137,7 @@ export const useBalance = () => {
     const newState = {
       balance: correctBalance,
       available: correctBalance,
+      assetSymbol: 'USDC',
       isLoading: false,
       lastUpdated: new Date()
     };
@@ -240,8 +247,14 @@ export const useBalance = () => {
   
   // Funciones vacías para compatibilidad
   const getRealBalanceFromBlockchain = useCallback(async (walletAddress: string): Promise<number> => {
-    console.warn('⚠️ getRealBalanceFromBlockchain está deshabilitado. Usa Stellar en su lugar.');
-    return 0;
+    if (!walletAddress) return 0;
+    try {
+      const { usdc, native } = await stellarService.getBalances(walletAddress);
+      return usdc > 0 ? usdc : native;
+    } catch (error) {
+      console.error('❌ Error obteniendo balance desde Stellar:', error);
+      return 0;
+    }
   }, []);
 
   const getRealBalanceFromJuno = useCallback(async (): Promise<number> => {
@@ -272,56 +285,31 @@ export const useBalance = () => {
     setBalanceState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      // ⚠️ COMENTADO - Procesos de balance de Bitso, Juno, Portal, Ethereum
-      /*
-      const walletAddress = user?.address;
-      
-      // 1. Intentar obtener balance desde blockchain usando ethers.js (FUENTE PRINCIPAL)
-      let blockchainBalance = 0;
-      if (walletAddress) {
-        blockchainBalance = await getRealBalanceFromBlockchain(walletAddress);
-      }
+      let balance = 0;
+      let assetSymbol = 'USDC';
 
-      // 2. Obtener balance desde Juno API (BACKUP 1)
-      let junoBalance = 0;
-      try {
-        junoBalance = await getRealBalanceFromJuno();
-      } catch (error) {
-        console.warn('⚠️ Error en Juno, continuando con otras fuentes:', error);
+      if (user?.address) {
+        const { usdc, native } = await stellarService.getBalances(user.address);
+        if (usdc > 0 || native > 0) {
+          balance = usdc > 0 ? usdc : native;
+          assetSymbol = usdc > 0 ? 'USDC' : 'XLM';
+        } else {
+          balance = recalculateBalance();
+        }
+      } else {
+        balance = recalculateBalance();
       }
-      
-      // 3. Obtener balance desde Portal SDK (BACKUP 2)
-      let portalBalance = 0;
-      try {
-        await portalService.onReady();
-        portalBalance = await portalService.getMXNBBalance();
-      } catch (error) {
-        console.warn('⚠️ Error obteniendo balance desde Portal:', error);
-      }
-      
-      // Usar el balance más alto entre todas las fuentes
-      // Prioridad: blockchain > juno > portal
-      const balance = Math.max(
-        blockchainBalance || 0,
-        typeof junoBalance === 'number' ? junoBalance : 0,
-        typeof portalBalance === 'number' ? portalBalance : 0
-      );
-      */
-      
-      // Ahora solo recalculamos desde transacciones locales
-      const balance = recalculateBalance();
       
       const newState = {
         balance,
         available: balance,
+        assetSymbol,
         isLoading: false,
         lastUpdated: new Date()
       };
       
       setBalanceState(newState);
       localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
-      // Log solo en desarrollo
-      // console.log('✅ Balance actualizado desde transacciones locales');
     } catch (error) {
       console.error('❌ Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
@@ -342,6 +330,7 @@ export const useBalance = () => {
       setBalanceState({
         balance: 0,
         available: 0,
+        assetSymbol: 'USDC',
         isLoading: false,
         lastUpdated: new Date()
       });
@@ -363,6 +352,7 @@ export const useBalance = () => {
         if (cachedState.balance !== undefined) {
           setBalanceState({
             ...cachedState,
+            assetSymbol: cachedState.assetSymbol || 'USDC',
             lastUpdated: new Date(cachedState.lastUpdated || Date.now()),
             isLoading: false
           });

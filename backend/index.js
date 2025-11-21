@@ -3,17 +3,50 @@ const axios = require('axios');
 const cors = require('cors');
 require('dotenv').config();
 const crypto = require('crypto');
+const CryptoJS = require('crypto-js');
 const { v4: uuidv4 } = require('uuid');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const fs = require('fs').promises;
 const path = require('path');
 const bitsoWebhook = require('./bitso-webhook');
+const { createClient } = require('@supabase/supabase-js');
+const {
+  Horizon,
+  Networks,
+  Keypair,
+  TransactionBuilder,
+  Operation,
+  Asset,
+  StrKey,
+} = require('@stellar/stellar-sdk');
 
 const execAsync = promisify(exec);
 
+const decryptSecretKey = (encryptedSecretKey) => {
+  if (!encryptedSecretKey) return null;
+  const bytes = CryptoJS.AES.decrypt(encryptedSecretKey, ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+
 // Portal API Configuration
 const PORTAL_API_BASE_URL = 'https://api.portalhq.io/api/v1';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+  : null;
+
+const STELLAR_NETWORK = process.env.STELLAR_NETWORK || 'testnet';
+const STELLAR_HORIZON_URL = process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
+const STELLAR_ASSET_CODE = process.env.STELLAR_ASSET_CODE || null;
+const STELLAR_ASSET_ISSUER = process.env.STELLAR_ASSET_ISSUER || null;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'pumapay-stellar-secret-key-2024';
+const STELLAR_NETWORK_PASSPHRASE = STELLAR_NETWORK === 'mainnet'
+  ? Networks.PUBLIC
+  : Networks.TESTNET;
+const stellarServer = new Horizon.Server(STELLAR_HORIZON_URL);
 
 /**
  * Construir header de autenticación para Juno API
@@ -790,6 +823,136 @@ app.post('/api/withdrawal', async (req, res) => {
         error: { message: 'Error de conexión con el servicio de withdrawal.' }
       });
     }
+  }
+});
+
+/**
+ * Enviar XLM/MXNB en Stellar firmando en backend
+ * Endpoint: POST /api/stellar/send
+ */
+app.post('/api/stellar/send', async (req, res) => {
+  console.log('📥 Endpoint /api/stellar/send llamado');
+  const { destination, amount, userId, email } = req.body || {};
+
+  if (!destination || !amount || (!userId && !email)) {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'destination, amount y userId o email son requeridos.' }
+    });
+  }
+
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      success: false,
+      error: { message: 'Supabase no está configurado en el backend.' }
+    });
+  }
+
+  if (!StrKey.isValidEd25519PublicKey(destination)) {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'Dirección Stellar inválida. Debe comenzar con "G".' }
+    });
+  }
+
+  const amountNum = Number(amount);
+  if (!Number.isFinite(amountNum) || amountNum <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'El monto debe ser un número positivo.' }
+    });
+  }
+
+  try {
+    let query = supabaseAdmin
+      .from('usuarios')
+      .select('id,email,clabe,wallet_address')
+      .limit(1);
+
+    query = userId ? query.eq('id', userId) : query.eq('email', email);
+    const { data: userRow, error: userError } = await query.single();
+
+    if (userError || !userRow) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Usuario no encontrado en Supabase.' }
+      });
+    }
+
+    if (!userRow.clabe) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'El usuario no tiene secret key almacenada.' }
+      });
+    }
+
+    let secretKey;
+    try {
+      secretKey = decryptSecretKey(userRow.clabe);
+    } catch (error) {
+      console.error('❌ Error desencriptando secret key:', error);
+      return res.status(500).json({
+        success: false,
+        error: { message: 'No se pudo desencriptar la secret key del usuario.' }
+      });
+    }
+
+    if (!secretKey) {
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Secret key desencriptada inválida.' }
+      });
+    }
+
+    const sourceKeypair = Keypair.fromSecret(secretKey);
+    const sourcePublicKey = sourceKeypair.publicKey();
+
+    if (userRow.wallet_address && userRow.wallet_address !== sourcePublicKey) {
+      console.warn('⚠️ La dirección desencriptada no coincide con la almacenada en Supabase.');
+    }
+
+    const account = await stellarServer.loadAccount(sourcePublicKey);
+    const fee = await stellarServer.fetchBaseFee();
+
+    const amountStr = amountNum.toFixed(7).replace(/0+$/, '').replace(/\.$/, '');
+    const asset = STELLAR_ASSET_CODE && STELLAR_ASSET_ISSUER
+      ? new Asset(STELLAR_ASSET_CODE, STELLAR_ASSET_ISSUER)
+      : Asset.native();
+
+    const transaction = new TransactionBuilder(account, {
+      fee: fee.toString(),
+      networkPassphrase: STELLAR_NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        Operation.payment({
+          destination,
+          asset,
+          amount: amountStr,
+        })
+      )
+      .setTimeout(30)
+      .build();
+
+    transaction.sign(sourceKeypair);
+    const result = await stellarServer.submitTransaction(transaction);
+
+    console.log('✅ Transacción Stellar enviada:', result.hash);
+    res.json({
+      success: true,
+      hash: result.hash,
+      ledger: result.ledger,
+      envelope_xdr: result.envelope_xdr,
+      result_xdr: result.result_xdr,
+    });
+  } catch (error) {
+    console.error('❌ Error enviando XLM en backend:', error.response?.data || error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.response?.data?.extras?.result_codes || error.message || 'Error enviando transacción en Stellar',
+        details: error.response?.data || null,
+      },
+    });
   }
 });
 

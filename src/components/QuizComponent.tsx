@@ -183,10 +183,10 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-gray-900 border border-gray-800 text-white">
         <CardContent className="pt-6 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-          <p className="mt-4 text-muted-foreground">Cargando cuestionario...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-white" />
+          <p className="mt-4 text-gray-400">Cargando cuestionario...</p>
         </CardContent>
       </Card>
     );
@@ -194,9 +194,9 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
 
   if (!quiz) {
     return (
-      <Card>
-        <CardContent className="pt-6 text-center text-muted-foreground">
-          <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <Card className="bg-gray-900 border border-gray-800 text-white">
+        <CardContent className="pt-6 text-center text-gray-400">
+          <XCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
           <p>No se pudo cargar el cuestionario.</p>
         </CardContent>
       </Card>
@@ -206,13 +206,13 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   if (result) {
     // Mostrar resultados
     return (
-      <Card className={result.passed ? 'border-green-500' : 'border-red-500'}>
+      <Card className={`bg-gray-900 border ${result.passed ? 'border-green-500/60' : 'border-red-500/60'} text-white`}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {result.passed ? (
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <CheckCircle2 className="h-6 w-6 text-green-400" />
             ) : (
-              <XCircle className="h-6 w-6 text-red-600" />
+              <XCircle className="h-6 w-6 text-red-500" />
             )}
             Resultados del Cuestionario
           </CardTitle>
@@ -227,14 +227,14 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
             <p className="text-2xl font-bold">
               {result.score}% ({result.correctAnswers}/{result.totalQuestions})
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-400">
               Respuestas correctas
             </p>
           </div>
 
           {result.passed && result.badgeLevel && (
-            <div className="flex items-center gap-2 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-              <Award className="h-6 w-6 text-yellow-600" />
+            <div className="flex items-center gap-2 p-4 bg-yellow-500/10 rounded-lg">
+              <Award className="h-6 w-6 text-yellow-400" />
               <div>
                 <p className="font-medium">
                   Badge obtenido:{' '}
@@ -249,9 +249,9 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
           )}
 
           {isGeneratingProof && (
-            <div className="flex items-center gap-2 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-              <p className="text-sm">Generando proof ZK...</p>
+            <div className="flex items-center gap-2 p-4 bg-blue-500/10 rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+              <p className="text-sm text-blue-100">Generando proof ZK...</p>
             </div>
           )}
         </CardContent>
@@ -263,13 +263,13 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   return (
-    <Card>
+    <Card className="bg-gray-900 border border-gray-800 text-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{quiz.title}</CardTitle>
           {timeRemaining !== null && (
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <Clock className="h-4 w-4 text-gray-400" />
               <span className="font-mono">{formatTime(timeRemaining)}</span>
             </div>
           )}
@@ -277,7 +277,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
         <CardDescription>
           Pregunta {currentQuestionIndex + 1} de {quiz.questions.length}
         </CardDescription>
-        <Progress value={progress} className="mt-2" />
+        <Progress value={progress} className="mt-2 bg-gray-800" />
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -289,13 +289,17 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
               <Button
                 key={index}
                 variant={selectedAnswer === index ? 'default' : 'outline'}
-                className="w-full justify-start text-left h-auto py-3"
+                className={`w-full justify-start text-left h-auto py-3 ${
+                  selectedAnswer === index
+                    ? 'bg-amber-500 text-gray-900'
+                    : 'border-gray-700 text-gray-100 hover:bg-gray-800'
+                }`}
                 onClick={() => handleAnswerSelect(index)}
               >
                 <span className="mr-2 font-bold">{String.fromCharCode(65 + index)}.</span>
                 {option}
               </Button>
-            ))}
+              ))}
           </div>
         </div>
       </CardContent>
@@ -304,12 +308,14 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
           variant="outline"
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
+          className="border-gray-700 text-gray-100 hover:bg-gray-800 disabled:opacity-40"
         >
           Anterior
         </Button>
         <Button
           onClick={handleNext}
           disabled={selectedAnswer === null || isSubmitting}
+          className="bg-amber-500 hover:bg-amber-600 text-gray-900"
         >
           {currentQuestionIndex === quiz.questions.length - 1
             ? 'Finalizar'

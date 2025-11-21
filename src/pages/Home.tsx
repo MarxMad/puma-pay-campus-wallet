@@ -105,6 +105,7 @@ const HomePage = () => {
   // Hook de balance para obtener balance real del usuario desde blockchain
   const { 
     available, 
+    assetSymbol,
     isLoading: balanceLoading, 
     refreshBalance,
     getRealBalanceFromBlockchain
@@ -360,7 +361,7 @@ const HomePage = () => {
             )}
             */}
             <div className="mt-4">
-              <span className="text-gray-300 text-sm">Balance USDC</span>
+              <span className="text-gray-300 text-sm">Balance {assetSymbol || 'USDC'}</span>
               <div className="text-3xl font-bold mt-1">
                 {typeof available === 'number' && !isNaN(available)
                   ? `$${available.toFixed(2)}`
@@ -433,7 +434,7 @@ const HomePage = () => {
                 {showBalance ? (
                   <>
                     ${available.toFixed(2)}
-                    <span className="text-lg text-gray-400 ml-2">USDC</span>
+                    <span className="text-lg text-gray-400 ml-2">{assetSymbol || 'USDC'}</span>
                   </>
                 ) : (
                   '••••••'

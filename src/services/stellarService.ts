@@ -5,6 +5,14 @@
 
 // Importación dinámica para evitar errores si el SDK no está disponible
 let StellarSDK: any = null;
+const loadStellarSDK = async () => {
+  if (StellarSDK) {
+    return StellarSDK;
+  }
+  const sdkModule = await import('@stellar/stellar-sdk');
+  StellarSDK = sdkModule?.default ? sdkModule.default : sdkModule;
+  return StellarSDK;
+};
 
 // Helper para desencriptar la secret key desde el campo 'clabe' de Supabase
 // La secret key se guarda encriptada en el campo 'clabe' de Supabase
@@ -31,6 +39,19 @@ class StellarService {
   private networkPassphrase: string;
   private isInitialized: boolean = false;
 
+  private async fetchAccountFromHorizon(address: string) {
+    if (!this.isValidStellarAddress(address)) {
+      throw new Error('Dirección Stellar inválida');
+    }
+    const url = `${STELLAR_HORIZON_URL}/accounts/${address}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Horizon respondió ${response.status}: ${text}`);
+    }
+    return response.json();
+  }
+
   constructor() {
     this.networkPassphrase = STELLAR_NETWORK === 'mainnet'
       ? 'Public Global Stellar Network ; September 2015'
@@ -40,12 +61,10 @@ class StellarService {
 
   private async initializeSDK() {
     try {
-      if (!StellarSDK) {
-        StellarSDK = await import('@stellar/stellar-sdk');
-      }
+      const sdk = await loadStellarSDK();
       
-      if (StellarSDK && StellarSDK.Server) {
-        this.server = new StellarSDK.Server(STELLAR_HORIZON_URL);
+      if (sdk && sdk.Server) {
+        this.server = new sdk.Server(STELLAR_HORIZON_URL);
         this.isInitialized = true;
         // Log solo en desarrollo
         if (import.meta.env.DEV) {
@@ -144,36 +163,50 @@ class StellarService {
   }
 
   /**
-   * Obtiene el balance de USDC de una cuenta Stellar
-   * @param address - Dirección Stellar (G...)
-   * @returns Balance en USDC
+   * Obtiene los balances disponibles en la cuenta (USDC y XLM nativo)
    */
-  async getBalance(address: string): Promise<number> {
+  async getBalances(address: string): Promise<{ usdc: number; native: number }> {
     try {
-      await this.ensureInitialized();
-
-      if (!this.isValidStellarAddress(address)) {
-        throw new Error('Dirección Stellar inválida');
+      let accountData: any;
+      try {
+        await this.ensureInitialized();
+        accountData = await this.server.loadAccount(address);
+      } catch (sdkError) {
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ No se pudo usar Stellar SDK, consultando Horizon directamente...', sdkError);
+        }
+        accountData = await this.fetchAccountFromHorizon(address);
       }
 
-      const account = await this.server.loadAccount(address);
-      
-      // Buscar balance de USDC
-      const usdcBalance = account.balances.find(
-        (balance: any) => 
+      const balances = accountData?.balances || [];
+      let usdcBalance = 0;
+      let nativeBalance = 0;
+
+      for (const balance of balances) {
+        if (
           balance.asset_code === USDC_ASSET_CODE &&
           balance.asset_issuer === USDC_ISSUER
-      );
-
-      if (!usdcBalance) {
-        return 0;
+        ) {
+          usdcBalance = parseFloat(balance.balance);
+        } else if (balance.asset_type === 'native') {
+          nativeBalance = parseFloat(balance.balance);
+        }
       }
 
-      return parseFloat(usdcBalance.balance);
+      return { usdc: usdcBalance, native: nativeBalance };
     } catch (error: any) {
-      console.error('❌ Error obteniendo balance Stellar:', error);
-      return 0;
+      console.error('❌ Error obteniendo balances Stellar:', error);
+      return { usdc: 0, native: 0 };
     }
+  }
+
+  /**
+   * Obtiene el balance principal de la cuenta.
+   * Prioriza USDC; si no existe, regresa XLM nativo.
+   */
+  async getBalance(address: string): Promise<number> {
+    const { usdc, native } = await this.getBalances(address);
+    return usdc > 0 ? usdc : native;
   }
 
   /**
@@ -188,7 +221,7 @@ class StellarService {
       // Intentar cargar el SDK si no está disponible
       if (!StellarSDK) {
         try {
-          StellarSDK = await import('@stellar/stellar-sdk');
+          await loadStellarSDK();
         } catch (importError) {
           console.error('❌ Error importando Stellar SDK:', importError);
           throw new Error('Stellar SDK no está disponible. Por favor, ejecuta: npm install @stellar/stellar-sdk');
