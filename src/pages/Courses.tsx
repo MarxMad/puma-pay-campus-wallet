@@ -92,9 +92,16 @@ const CoursesPage = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center space-x-2">
-            <GraduationCap className="h-5 w-5 text-blue-400" />
-            <h1 className="text-lg font-semibold">Cursos PumaPay</h1>
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                PumaPay
+              </h1>
+              <p className="text-xs text-gray-400 hidden sm:block">Cursos</p>
+            </div>
           </div>
           <div className="w-8" aria-hidden />
         </div>
@@ -197,17 +204,19 @@ const CoursesPage = () => {
             className="space-y-4"
             onValueChange={setSelectedCategory}
           >
-            <TabsList className="bg-gray-900 border border-gray-800 overflow-x-auto max-w-full">
-              {categories.map((category) => (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  className="capitalize"
-                >
-                  {category === "todos" ? "Todas" : category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+              <TabsList className="bg-gray-900 border border-gray-800 inline-flex min-w-full sm:min-w-0 sm:w-auto">
+                {categories.map((category) => (
+                  <TabsTrigger
+                    key={category}
+                    value={category}
+                    className="capitalize whitespace-nowrap flex-shrink-0"
+                  >
+                    {category === "todos" ? "Todas" : category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
             <TabsContent value={selectedCategory} className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {levelFilters.map((level) => (
@@ -219,8 +228,8 @@ const CoursesPage = () => {
                     size="sm"
                     className={
                       level.id === selectedLevel
-                        ? "bg-blue-500 hover:bg-blue-600 border-none"
-                        : "bg-gray-900 border border-gray-800 text-gray-300"
+                        ? "bg-blue-500 hover:bg-blue-600 border-none whitespace-nowrap"
+                        : "bg-gray-900 border border-gray-800 text-gray-300 whitespace-nowrap"
                     }
                     onClick={() => setSelectedLevel(level.id)}
                   >

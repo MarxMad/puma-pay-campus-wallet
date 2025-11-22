@@ -115,7 +115,17 @@ export const CourseDetail: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Detalle del Curso</h1>
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                PumaPay
+              </h1>
+              <p className="text-xs text-gray-400 hidden sm:block">Detalle del Curso</p>
+            </div>
+          </div>
           <div className="w-8" aria-hidden />
         </div>
       </header>

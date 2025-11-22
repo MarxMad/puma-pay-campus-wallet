@@ -131,12 +131,12 @@ const Signup = () => {
 
         {/* Aviso informativo */}
         <div className="mb-4 p-3 bg-blue-900/40 border border-blue-700 rounded text-blue-200 text-sm text-center">
-          Al crear tu cuenta, también se generará automáticamente tu wallet segura de PumaPay.<br />
-          <span className="block mt-2 text-blue-300 font-semibold">Además, se creará una cuenta CLABE única a tu nombre para que puedas recibir depósitos SPEI y fondear tu wallet PumaPay.</span>
+          Al crear tu cuenta, también se generará automáticamente tu wallet segura en Stellar.<br />
+          <span className="block mt-2 text-blue-300 font-semibold">Tu wallet PumaPay estará lista para recibir y enviar XLM en la red Stellar.</span>
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-orange-400/20 p-2">
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-blue-400/20 p-2">
             <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
               <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
             </div>
@@ -322,7 +322,7 @@ const Signup = () => {
             disabled={isLoading || !isFormValid}
             className={`w-full py-3 rounded-xl mt-6 transition-all duration-200 ${
               isFormValid 
-                ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white' 
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
           >
@@ -330,7 +330,7 @@ const Signup = () => {
               <div className="flex flex-col items-center space-y-2 w-full">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 {signupStep && (
-                  <span className="text-xs text-orange-200 mt-2 animate-pulse">{signupStep}</span>
+                  <span className="text-xs text-blue-200 mt-2 animate-pulse">{signupStep}</span>
                 )}
                 {!signupStep && <span>Creando cuenta...</span>}
               </div>
@@ -355,7 +355,7 @@ const Signup = () => {
             <button 
               type="button"
               onClick={() => navigate('/welcome')}
-              className="text-orange-400 hover:text-orange-300 transition-colors"
+              className="text-blue-400 hover:text-blue-300 transition-colors"
             >
               Inicia sesión
             </button>

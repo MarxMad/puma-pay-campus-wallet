@@ -104,23 +104,32 @@ const Notifications = () => {
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white">
+      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-        <div className="flex items-center space-x-2">
-          <Bell className="h-5 w-5" />
-          <h1 className="text-lg font-semibold">Notificaciones</h1>
-          {unreadCount > 0 && (
-            <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-              {unreadCount}
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              PumaPay
+            </h1>
+            <div className="flex items-center space-x-2">
+              <p className="text-xs text-gray-400 hidden sm:block">Notificaciones</p>
+              {unreadCount > 0 && (
+                <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                  {unreadCount}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         <Button variant="ghost" size="sm">
           <MoreVertical className="h-5 w-5" />
         </Button>
-          </div>
+      </div>
           
       <div className="p-4 space-y-4">
         {/* Mark all as read button */}

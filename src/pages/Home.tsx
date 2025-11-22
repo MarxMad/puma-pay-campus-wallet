@@ -267,10 +267,8 @@ const HomePage = () => {
           <User className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
         <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg p-1.5 border border-blue-400/30">
-            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-lg flex items-center justify-center">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 sm:h-7 sm:w-7 object-contain" />
-            </div>
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">

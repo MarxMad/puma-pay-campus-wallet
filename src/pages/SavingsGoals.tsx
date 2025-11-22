@@ -326,8 +326,8 @@ export const SavingsGoals: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center space-x-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/30 rounded-full flex items-center justify-center shadow-inner">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain" />
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-400">

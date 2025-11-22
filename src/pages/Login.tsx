@@ -65,7 +65,7 @@ const Login = () => {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-orange-400/20 p-2">
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-blue-400/20 p-2">
             <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
               <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
             </div>
@@ -117,7 +117,7 @@ const Login = () => {
             </label>
             <button 
               type="button"
-              className="text-sm text-orange-400 hover:text-orange-300"
+              className="text-sm text-blue-400 hover:text-blue-300"
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -126,7 +126,7 @@ const Login = () => {
           <Button 
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 rounded-xl mt-6 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-xl mt-6 disabled:opacity-50"
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">

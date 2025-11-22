@@ -311,10 +311,8 @@ const SendPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-lg p-1">
-            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain brightness-110 rounded-full" />
-            </div>
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
           </div>
         <div className="text-center">
             <h1 className="text-lg font-semibold text-white">Enviar XLM</h1>
