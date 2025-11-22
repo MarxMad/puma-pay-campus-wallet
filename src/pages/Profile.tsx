@@ -130,7 +130,7 @@ const Profile = () => {
 
         {/* Estadísticas rápidas */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500/30 to-blue-600/30 border-blue-500/40 p-4 text-white">
+          <Card className="bg-gradient-to-br from-blue-600/50 to-blue-700/50 border-blue-500/50 p-4 text-white">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
                 <Target className="h-6 w-6 text-white" />
@@ -141,17 +141,17 @@ const Profile = () => {
               </div>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-yellow-500/30 to-yellow-600/30 border-yellow-500/40 p-4 text-white">
+          <Card className="bg-gradient-to-br from-yellow-600/50 to-yellow-700/50 border-yellow-500/50 p-4 text-white">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center">
                 <GraduationCap className="h-6 w-6 text-white" />
-    </div>
-    <div>
+              </div>
+              <div>
                 <p className="text-xs text-white font-medium">Cursos completados</p>
                 <p className="text-2xl font-bold text-white">{completedCourses.length}</p>
-    </div>
-          </div>
-        </Card>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Puntos del usuario */}
