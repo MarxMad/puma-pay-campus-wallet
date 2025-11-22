@@ -219,10 +219,10 @@ const HomePage = () => {
       icon: Target,
       label: 'Metas',
       action: () => navigate('/savings-goals'),
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
+      color: 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
     },
-    { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600', action: () => navigate('/send') },
-    { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600', action: () => navigate('/receive') },
+    { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600', action: () => navigate('/send') },
+    { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700', action: () => navigate('/receive') },
   ];
 
   // Calcular gastos por día de la semana
@@ -255,27 +255,38 @@ const HomePage = () => {
   const weeklySpending = calculateWeeklySpending();
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-20">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10 shadow-xl shadow-black/30">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
-          <User className="h-5 w-5" />
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-slate-900 pb-20">
+      {/* Top Navigation - Estilo Bancario */}
+      <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 text-white bg-gradient-to-r from-slate-800/95 via-gray-800/95 to-slate-800/95 backdrop-blur-xl border-b border-white/10 shadow-lg">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/profile')}
+          className="rounded-full hover:bg-white/10 transition-colors"
+        >
+          <User className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
-        <div className="flex items-center space-x-2">
-          <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-lg p-1.5">
-            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center shadow-inner border border-gray-600/50">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-8 w-8 object-contain brightness-110 rounded-full" />
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg p-1.5 border border-blue-400/30">
+            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-lg flex items-center justify-center">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 sm:h-7 sm:w-7 object-contain" />
             </div>
           </div>
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-white">
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
               PumaPay
             </h1>
-            <p className="text-xs text-gray-400">Campus Wallet</p>
+            <p className="text-xs text-gray-400 hidden sm:block">Campus Wallet</p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/notifications')}>
-          <Bell className="h-5 w-5" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/notifications')}
+          className="rounded-full hover:bg-white/10 transition-colors relative"
+        >
+          <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
         </Button>
       </div>
 
@@ -288,8 +299,8 @@ const HomePage = () => {
           </div>
           <div className="relative z-10">
             {/* Logo principal */}
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-2xl flex items-center justify-center shadow-lg p-2">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/30 rounded-2xl flex items-center justify-center shadow-lg p-2">
                 <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center shadow-inner border border-gray-600/50">
                   <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain brightness-110 rounded-xl" />
                 </div>
@@ -301,9 +312,41 @@ const HomePage = () => {
                 <p className="text-xs text-gray-400">Tu wallet estudiantil</p>
               </div>
             </div>
+            
+            {/* Balance Principal */}
+            <div className="mb-6 pb-6 border-b border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-300 text-sm font-medium">Balance disponible</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowBalance(!showBalance)}
+                  className="h-6 w-6 text-gray-400 hover:text-white"
+                >
+                  {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {balanceLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+                  <span className="text-gray-400 text-sm">Cargando balance...</span>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-4xl sm:text-5xl font-bold text-white mb-1">
+                    {showBalance ? `$${available.toFixed(2)}` : '••••••'}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span className="text-gray-400 text-sm">{assetSymbol || 'USDC'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="mb-2">
               <span className="text-gray-300 text-sm">Dirección de wallet</span>
-              <div className="flex items-center space-x-2 font-mono text-green-400 text-xs break-all mt-1">
+              <div className="flex items-center space-x-2 font-mono text-blue-400 text-xs break-all mt-1">
                 <span>{user?.address}</span>
                 {user?.address && (
                   <Button
@@ -360,373 +403,228 @@ const HomePage = () => {
               </div>
             )}
             */}
-            <div className="mt-4">
-              <span className="text-gray-300 text-sm">Balance {assetSymbol || 'USDC'}</span>
-              <div className="text-3xl font-bold mt-1">
-                {typeof available === 'number' && !isNaN(available)
-                  ? `$${available.toFixed(2)}`
-                  : 'Cargando...'}
-              </div>
-            </div>
           </div>
         </Card>
       </div>
 
-          {/* Balance Card */}
-      <div className="p-4 overflow-hidden">
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden shadow-2xl shadow-black/40">
-          {/* Logo decorativo en el fondo del balance */}
-          <div className="absolute bottom-4 right-4 opacity-5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-40 w-40 object-contain" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-300 text-sm">Saldo disponible</span>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Balance actualizado desde blockchain"></div>
-                  <span className="text-xs text-green-400 font-medium">Blockchain</span>
+      {/* Botón de actualizar balance */}
+      <div className="px-4 sm:px-6 mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={async () => {
+            setIsRefreshing(true);
+            await refreshBalance();
+            setLastBalanceUpdate(new Date());
+            setIsRefreshing(false);
+          }}
+          disabled={isRefreshing || balanceLoading}
+          className="w-full sm:w-auto text-gray-300 hover:text-white hover:bg-white/10 rounded-full"
+          title="Actualizar balance desde blockchain"
+        >
+          {isRefreshing || balanceLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin mr-2"></div>
+              Actualizando...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualizar balance
+            </>
+          )}
+        </Button>
+      </div>
+          
+      {/* Estadísticas rápidas - Estilo Bancario */}
+      <div className="px-4 sm:px-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/20 p-5 sm:p-6 relative overflow-hidden group hover:border-blue-500/40 transition-all duration-300 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <TrendingDown className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Gastos del mes</p>
+                  <p className="text-white font-bold text-xl sm:text-2xl">${totalExpenses.toFixed(2)}</p>
                 </div>
               </div>
-              {lastBalanceUpdate && (
-                <span className="text-xs text-gray-500 mt-1 block">
-                  Actualizado: {lastBalanceUpdate.toLocaleTimeString('es-MX')}
-                </span>
-              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={async () => {
-                  setIsRefreshing(true);
-                  await refreshBalance();
-                  setLastBalanceUpdate(new Date());
-                  setIsRefreshing(false);
-                }}
-                disabled={isRefreshing || balanceLoading}
-                className="text-gray-300 hover:text-white"
-                title="Actualizar balance desde blockchain"
-              >
-                {isRefreshing || balanceLoading ? (
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowBalance(!showBalance)}
-                className="text-gray-300 hover:text-white"
-              >
-                {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          {balanceLoading || isRefreshing ? (
-            <SkeletonBalance />
-          ) : (
-            <div className="space-y-2">
-              <div className="text-4xl font-bold transform transition-all duration-300 ease-out hover:brightness-110 hover:text-shadow-glow">
-                {showBalance ? (
-                  <>
-                    ${available.toFixed(2)}
-                    <span className="text-lg text-gray-400 ml-2">{assetSymbol || 'USDC'}</span>
-                  </>
-                ) : (
-                  '••••••'
-                )}
+            <div className="absolute -top-8 -right-8 w-24 h-24 bg-blue-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-yellow-500/20 p-5 sm:p-6 relative overflow-hidden group hover:border-yellow-500/40 transition-all duration-300 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Ingresos del mes</p>
+                  <p className="text-white font-bold text-xl sm:text-2xl">${totalIncome.toFixed(2)}</p>
+                </div>
               </div>
-              {showBalance && available === 0 && (
-                <p className="text-sm text-gray-400">
-                  Tu wallet está lista. Recibe USDC para empezar a usar PumaPay.
-                </p>
-              )}
             </div>
-          )}
-          
-          {/* Weekly Chart - TEMPORALMENTE COMENTADO */}
-          {/* 
-          <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <BarChart3 className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-gray-300 font-medium">Gastos de la semana</span>
-              <div className="flex-1"></div>
-              {weeklySpending.some(d => d.amount > 0) && (
-                <span className="text-xs text-gray-400">
-                  Total: ${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}
-                </span>
-              )}
+            <div className="absolute -top-8 -right-8 w-24 h-24 bg-yellow-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Gráfico de gastos semanales - Estilo Bancario */}
+      {weeklySpending.some(d => d.amount > 0) && (
+        <div className="px-4 sm:px-6 mb-6">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/20 p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white text-base sm:text-lg font-semibold">Gastos de la semana</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm">Resumen semanal</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-gray-400 text-xs">Total</p>
+                <p className="text-white font-bold text-lg sm:text-xl">
+                  ${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}
+                </p>
+              </div>
             </div>
             
-            <div className="h-24 flex items-end justify-between space-x-3 px-2">
+            <div className="h-32 sm:h-40 flex items-end justify-between gap-2 sm:gap-3">
               {weeklySpending.map((day, i) => {
                 const maxAmount = Math.max(...weeklySpending.map(d => d.amount), 100);
-                const heightPercentage = day.amount > 0 ? Math.max((day.amount / maxAmount) * 100, 6) : 6;
+                const heightPercentage = day.amount > 0 ? Math.max((day.amount / maxAmount) * 100, 8) : 8;
                 const isHovered = hoveredDay === i;
                 const isToday = day.day === ['D', 'L', 'M', 'M', 'J', 'V', 'S'][new Date().getDay()];
                 
                 return (
                   <div 
                     key={i} 
-                    className="flex flex-col items-center space-y-2 flex-1 relative cursor-pointer"
+                    className="flex flex-col items-center space-y-2 flex-1 relative cursor-pointer group"
                     onMouseEnter={() => setHoveredDay(i)}
                     onMouseLeave={() => setHoveredDay(null)}
                   >
-                    <div className="w-full bg-gray-700/30 rounded-lg relative overflow-hidden" style={{ height: '70px' }}>
+                    <div className="w-full bg-gray-700/30 rounded-lg relative overflow-hidden" style={{ height: '100%' }}>
                       {day.amount > 0 ? (
                         <div 
                           className={`w-full absolute bottom-0 rounded-lg transition-all duration-500 ease-out transform ${
-                            isHovered ? 'scale-110' : 'scale-100'
+                            isHovered ? 'scale-105' : 'scale-100'
                           } ${
                             isToday 
                               ? 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400' 
-                              : 'bg-gradient-to-t from-red-600 via-red-500 to-red-400'
+                              : 'bg-gradient-to-t from-yellow-600 via-yellow-500 to-yellow-400'
                           }`}
                           style={{ 
                             height: `${heightPercentage}%`,
-                            animationDelay: `${i * 100}ms`,
-                            boxShadow: isHovered ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none'
+                            boxShadow: isHovered ? (isToday ? '0 0 20px rgba(59, 130, 246, 0.6)' : '0 0 20px rgba(234, 179, 8, 0.6)') : 'none'
                           }}
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          {isToday && (
-                            <div className="absolute inset-0 bg-blue-400/20 rounded-lg animate-pulse"></div>
-                          )}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
                         </div>
                       ) : (
                         <div className="w-full h-2 bg-gray-600/50 rounded-lg absolute bottom-0 opacity-50"></div>
                       )}
-                      {isToday && (
-                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    </div>
+                    <div className="text-center w-full">
+                      <span className={`text-xs sm:text-sm font-semibold block transition-all duration-200 ${
+                        isToday 
+                          ? 'text-blue-400' 
+                          : isHovered 
+                            ? 'text-yellow-400' 
+                            : 'text-gray-400'
+                      }`}>
+                        {day.day}
+                      </span>
+                      {isHovered && day.amount > 0 && (
+                        <span className="text-xs text-white font-bold mt-1 block">
+                          ${day.amount.toFixed(0)}
+                        </span>
                       )}
                     </div>
-                    <span className={`text-xs transition-all duration-200 ${
-                      isToday 
-                        ? 'text-blue-400 font-bold' 
-                        : isHovered 
-                          ? 'text-orange-400 font-semibold' 
-                          : 'text-gray-400'
-                    }`}>
-                      {day.day}
-                    </span>
                   </div>
                 );
               })}
             </div>
             
-            {weeklySpending.some(d => d.amount > 0) ? (
-              <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                  <span>Hoy</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                  <span>Otros días</span>
-                </div>
-                <div>
-                  Promedio: ${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día
-                </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span>Hoy</span>
               </div>
-            ) : (
-              <div className="mt-3 text-center">
-                <p className="text-xs text-gray-500">No hay gastos esta semana</p>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span>Otros días</span>
               </div>
-            )}
-          </div>
-          */}
-          
-          {/* Estadísticas rápidas */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-orange-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-orange-500/20">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                  <TrendingDown className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-300 text-xs font-medium">Gastos del mes</p>
-                  <p className="text-white font-bold text-lg truncate">${totalExpenses.toFixed(2)}</p>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-green-500/30 p-4 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-lg shadow-green-500/20">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-gray-300 text-xs font-medium">Ingresos del mes</p>
-                  <p className="text-white font-bold text-lg truncate">${totalIncome.toFixed(2)}</p>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-green-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-            </Card>
-          </div>
-
-          {/* Gráfico de gastos semanales */}
-          {weeklySpending.some(d => d.amount > 0) && (
-            <div className="mb-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <BarChart3 className="h-5 w-5 text-blue-400" />
-                <span className="text-sm text-gray-300 font-medium">Gastos de la semana</span>
-                <div className="flex-1"></div>
-                <span className="text-xs text-gray-400 font-semibold">
-                  Total: ${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}
-                </span>
-              </div>
-              
-              <div className="h-28 flex items-end justify-between space-x-2 px-1">
-                {weeklySpending.map((day, i) => {
-                  const maxAmount = Math.max(...weeklySpending.map(d => d.amount), 100);
-                  const heightPercentage = day.amount > 0 ? Math.max((day.amount / maxAmount) * 100, 8) : 8;
-                  const isHovered = hoveredDay === i;
-                  const isToday = day.day === ['D', 'L', 'M', 'M', 'J', 'V', 'S'][new Date().getDay()];
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="flex flex-col items-center space-y-2 flex-1 relative cursor-pointer group"
-                      onMouseEnter={() => setHoveredDay(i)}
-                      onMouseLeave={() => setHoveredDay(null)}
-                    >
-                      <div className="w-full bg-gray-700/30 rounded-lg relative overflow-hidden" style={{ height: '80px' }}>
-                        {day.amount > 0 ? (
-                          <div 
-                            className={`w-full absolute bottom-0 rounded-lg transition-all duration-500 ease-out transform ${
-                              isHovered ? 'scale-110' : 'scale-100'
-                            } ${
-                              isToday 
-                                ? 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400' 
-                                : 'bg-gradient-to-t from-orange-600 via-orange-500 to-orange-400'
-                            }`}
-                            style={{ 
-                              height: `${heightPercentage}%`,
-                              animationDelay: `${i * 100}ms`,
-                              boxShadow: isHovered ? (isToday ? '0 0 20px rgba(59, 130, 246, 0.6)' : '0 0 20px rgba(249, 115, 22, 0.6)') : 'none'
-                            }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
-                            {isToday && (
-                              <div className="absolute inset-0 bg-blue-400/20 rounded-lg animate-pulse"></div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="w-full h-2 bg-gray-600/50 rounded-lg absolute bottom-0 opacity-50"></div>
-                        )}
-                        {isToday && (
-                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                        )}
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-xs font-semibold block transition-all duration-200 ${
-                          isToday 
-                            ? 'text-blue-400' 
-                            : isHovered 
-                              ? 'text-orange-400' 
-                              : 'text-gray-400'
-                        }`}>
-                          {day.day}
-                        </span>
-                        {isHovered && day.amount > 0 && (
-                          <span className="text-xs text-white font-bold mt-1 block">
-                            ${day.amount.toFixed(0)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                  <span>Hoy</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                  <span>Otros días</span>
-                </div>
-                <div className="text-gray-300 font-medium">
-                  Promedio: ${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día
-                </div>
+              <div className="text-gray-300 font-medium">
+                Promedio: ${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día
               </div>
             </div>
-          )}
+          </Card>
+        </div>
+      )}
 
-          {/* Acciones rápidas: Enviar y Recibir */}
-          <div className="flex justify-center items-center gap-6 my-8">
-            {quickActions.map((action, index) => (
-              <Button 
-                key={index}
-                onClick={action.action}
-                className={`${action.color} text-white p-6 rounded-2xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden min-w-[120px]`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-700 ease-out"></div>
-                <action.icon className="h-8 w-8 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
-                <span className="text-base font-medium relative z-10 group-hover:text-shadow-glow">{action.label}</span>
-                <div className="absolute top-1 right-1 w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/40 transition-colors duration-300"></div>
-              </Button>
-            ))}
-          </div>
-
-          </div>
-          {/* Background decoration con logo */}
-          <div className="absolute top-4 right-4 opacity-5">
-            <div className="w-20 h-20 border-2 border-gray-600/30 rounded-full flex items-center justify-center bg-gray-800/20">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-12 w-12 object-contain brightness-75" />
-            </div>
-          </div>
-        </Card>
+      {/* Acciones rápidas - Estilo Bancario */}
+      <div className="px-4 sm:px-6 mb-6">
+        <h3 className="text-white text-lg sm:text-xl font-semibold mb-4">Acciones rápidas</h3>
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          {quickActions.map((action, index) => (
+            <Button 
+              key={index}
+              onClick={action.action}
+              className={`${action.color} text-white p-4 sm:p-6 rounded-2xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-700 ease-out"></div>
+              <action.icon className="h-6 w-6 sm:h-8 sm:w-8 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
+              <span className="text-xs sm:text-sm font-medium relative z-10">{action.label}</span>
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* Logros y Badges */}
-      <div className="px-4 mb-6">
+      {/* Logros y Badges - Estilo Bancario */}
+      <div className="px-4 sm:px-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
-            <Trophy className="h-5 w-5 text-yellow-400" />
+          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
+            <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
             <span>Logros</span>
           </h3>
-          <Badge className="bg-yellow-500/20 border-yellow-400/50 text-yellow-300">
+          <Badge className="bg-yellow-500/20 border-yellow-500/50 text-yellow-400 text-xs sm:text-sm">
             {realTransactions.length} transacciones
           </Badge>
         </div>
-        <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-yellow-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+        <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-yellow-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-lg">
             <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Star className="h-6 w-6 text-white fill-white" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Star className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
               </div>
-              <p className="text-white font-semibold text-sm">Primer pago</p>
-              <p className="text-yellow-300 text-xs mt-1">
+              <p className="text-white font-semibold text-sm sm:text-base mb-1">Primer pago</p>
+              <p className="text-yellow-400 text-xs sm:text-sm">
                 {realTransactions.length > 0 ? '✓ Completado' : 'En progreso'}
               </p>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-blue-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
             <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Zap className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <p className="text-white font-semibold text-sm">Usuario activo</p>
-              <p className="text-blue-300 text-xs mt-1">
+              <p className="text-white font-semibold text-sm sm:text-base mb-1">Usuario activo</p>
+              <p className="text-blue-300 text-xs sm:text-sm">
                 {realTransactions.length >= 5 ? '✓ Completado' : `${realTransactions.length}/5`}
               </p>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg border border-green-500/30 p-4 min-w-[140px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
             <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Banknote className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                <Banknote className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
               </div>
-              <p className="text-white font-semibold text-sm">Ahorrador</p>
-              <p className="text-green-300 text-xs mt-1">
+              <p className="text-white font-semibold text-sm sm:text-base mb-1">Ahorrador</p>
+              <p className="text-blue-300 text-xs sm:text-sm">
                 {available >= 500 ? '✓ Completado' : 'En progreso'}
               </p>
             </div>
@@ -734,81 +632,81 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Promociones del Campus */}
-      <div className="px-4 mb-6">
+      {/* Promociones del Campus - Estilo Bancario */}
+      <div className="px-4 sm:px-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 text-orange-400" />
+          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" />
             <span>Promociones del Campus</span>
           </h3>
-          <div className="flex items-center space-x-1 text-orange-400">
-            <span className="text-sm font-medium">Descuentos exclusivos</span>
+          <div className="flex items-center space-x-1 text-yellow-400">
+            <span className="text-xs sm:text-sm font-medium">Descuentos exclusivos</span>
           </div>
         </div>
         
-        <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           {/* Cafetería Las Islas */}
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-orange-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/50"></div>
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-blue-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-sm">🍽️</span>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-base sm:text-lg">🍽️</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Cafetería Las Islas</h4>
-                    <p className="text-xs text-white/90 font-medium">Comida</p>
+                    <h4 className="font-semibold text-sm sm:text-base text-white">Cafetería Las Islas</h4>
+                    <p className="text-xs sm:text-sm text-white/90 font-medium">Comida</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-orange-600 rounded-full px-2 py-1 shadow-md">
-                    <span className="text-xs font-bold text-white">-20%</span>
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                    <span className="text-xs sm:text-sm font-bold text-white">-20%</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Chilaquiles con pollo</span>
-                  <span className="font-bold text-orange-200 drop-shadow-lg">75 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Chilaquiles con pollo</span>
+                  <span className="font-bold text-blue-200 text-sm sm:text-base">75 USDC</span>
                 </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Café americano</span>
-                  <span className="font-bold text-orange-200 drop-shadow-lg">25 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Café americano</span>
+                  <span className="font-bold text-blue-200 text-sm sm:text-base">25 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-orange-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
           {/* Café y Cuernito */}
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-yellow-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/50"></div>
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-yellow-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-sm">☕</span>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-base sm:text-lg">☕</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Café y Cuernito</h4>
-                    <p className="text-xs text-white/90 font-medium">Café</p>
+                    <h4 className="font-semibold text-sm sm:text-base text-white">Café y Cuernito</h4>
+                    <p className="text-xs sm:text-sm text-white/90 font-medium">Café</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-yellow-600 rounded-full px-2 py-1 shadow-md">
-                    <span className="text-xs font-bold text-white">-15%</span>
+                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                    <span className="text-xs sm:text-sm font-bold text-white">-15%</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Café especial</span>
-                  <span className="font-bold text-yellow-200 drop-shadow-lg">80 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Café especial</span>
+                  <span className="font-bold text-yellow-200 text-sm sm:text-base">80 USDC</span>
                 </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Jugo de naranja</span>
-                  <span className="font-bold text-yellow-200 drop-shadow-lg">25 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Jugo de naranja</span>
+                  <span className="font-bold text-yellow-200 text-sm sm:text-base">25 USDC</span>
                 </div>
               </div>
             </div>
@@ -816,33 +714,33 @@ const HomePage = () => {
           </Card>
 
           {/* Librería Central */}
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-blue-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/50"></div>
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-blue-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-sm">📚</span>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-base sm:text-lg">📚</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Librería Central</h4>
-                    <p className="text-xs text-white/90 font-medium">Libros</p>
+                    <h4 className="font-semibold text-sm sm:text-base text-white">Librería Central</h4>
+                    <p className="text-xs sm:text-sm text-white/90 font-medium">Libros</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-blue-600 rounded-full px-2 py-1 shadow-md">
-                    <span className="text-xs font-bold text-white">-10%</span>
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                    <span className="text-xs sm:text-sm font-bold text-white">-10%</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Álgebra Lineal</span>
-                  <span className="font-bold text-blue-200 drop-shadow-lg">120 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Álgebra Lineal</span>
+                  <span className="font-bold text-blue-200 text-sm sm:text-base">120 USDC</span>
                 </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Cálculo Diferencial</span>
-                  <span className="font-bold text-blue-200 drop-shadow-lg">95 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Cálculo Diferencial</span>
+                  <span className="font-bold text-blue-200 text-sm sm:text-base">95 USDC</span>
                 </div>
               </div>
             </div>
@@ -850,60 +748,60 @@ const HomePage = () => {
           </Card>
 
           {/* Gimnasio */}
-          <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border-green-500/30 p-4 min-w-[280px] flex-shrink-0 relative overflow-hidden group hover:scale-105 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gray-900/50"></div>
+          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-yellow-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-sm">🏃‍♂️</span>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-base sm:text-lg">🏃‍♂️</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-white drop-shadow-md">Gimnasio Central</h4>
-                    <p className="text-xs text-white/90 font-medium">Deportes</p>
+                    <h4 className="font-semibold text-sm sm:text-base text-white">Gimnasio Central</h4>
+                    <p className="text-xs sm:text-sm text-white/90 font-medium">Deportes</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-green-600 rounded-full px-2 py-1 shadow-md">
-                    <span className="text-xs font-bold text-white">-25%</span>
+                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                    <span className="text-xs sm:text-sm font-bold text-white">-25%</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Membresía mensual</span>
-                  <span className="font-bold text-green-200 drop-shadow-lg">200 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Membresía mensual</span>
+                  <span className="font-bold text-yellow-200 text-sm sm:text-base">200 USDC</span>
                 </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-2 py-1.5">
-                  <span className="text-sm text-white font-medium">Clase de natación</span>
-                  <span className="font-bold text-green-200 drop-shadow-lg">50 USDC</span>
+                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
+                  <span className="text-xs sm:text-sm text-white font-medium">Clase de natación</span>
+                  <span className="font-bold text-yellow-200 text-sm sm:text-base">50 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-green-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
         </div>
       </div>
 
-      {/* Campus Map Feature */}
-      <div className="px-4 mb-6">
+      {/* Campus Map Feature - Estilo Bancario */}
+      <div className="px-4 sm:px-6 mb-6">
         <Card 
-          className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white relative overflow-hidden group hover:bg-gray-800/70 transition-all duration-500 shadow-2xl cursor-pointer"
+          className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border border-blue-500/30 p-5 sm:p-6 text-white relative overflow-hidden group hover:border-blue-500/50 hover:scale-[1.02] transition-all duration-500 shadow-2xl cursor-pointer"
           onClick={() => navigate('/campus-map')}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-7 w-7 text-white" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                <MapPin className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
               </div>
-              <div>
-                <h3 className="text-xl font-bold mb-1">🗺️ Descubre el Campus</h3>
-                <p className="text-gray-300 text-sm">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold mb-1">🗺️ Descubre el Campus</h3>
+                <p className="text-gray-300 text-sm sm:text-base mb-2">
                   Encuentra lugares que aceptan PumaPay
                 </p>
-                <div className="flex items-center space-x-4 mt-2 text-xs">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="flex items-center space-x-1">
-                    <Sparkles className="h-3 w-3 text-yellow-400" />
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
                     <span className="text-yellow-400 font-semibold">Descuentos exclusivos</span>
                   </div>
                   <div className="flex items-center space-x-1">
@@ -913,38 +811,37 @@ const HomePage = () => {
               </div>
             </div>
             
-            <div className="text-right">
-              <div className="bg-green-500/20 border border-green-500/40 rounded-full px-3 py-1 mb-2">
-                <span className="text-green-400 text-xs font-bold">¡NUEVO!</span>
+            <div className="text-left sm:text-right flex-shrink-0">
+              <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-full px-3 py-1 mb-2 inline-block sm:block">
+                <span className="text-yellow-400 text-xs font-bold">¡NUEVO!</span>
               </div>
               <div className="flex items-center space-x-1 text-gray-300">
-                <span className="text-sm">Ver mapa</span>
+                <span className="text-sm sm:text-base">Ver mapa</span>
                 <ArrowUp className="h-4 w-4 rotate-45" />
               </div>
             </div>
           </div>
           
           {/* Popular places preview */}
-          <div className="mt-4 flex items-center space-x-2">
-            <span className="text-xs text-gray-400">Populares:</span>
-            <div className="flex items-center space-x-1">
-              <span className="text-lg">🍕</span>
-              <span className="text-xs text-white">Cafetería</span>
+          <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="text-xs sm:text-sm text-gray-400">Populares:</span>
+            <div className="flex items-center space-x-1 bg-white/5 rounded-lg px-2 py-1">
+              <span className="text-base sm:text-lg">🍕</span>
+              <span className="text-xs sm:text-sm text-white">Cafetería</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <span className="text-lg">🏃‍♂️</span>
-              <span className="text-xs text-white">Gimnasio</span>
+            <div className="flex items-center space-x-1 bg-white/5 rounded-lg px-2 py-1">
+              <span className="text-base sm:text-lg">🏃‍♂️</span>
+              <span className="text-xs sm:text-sm text-white">Gimnasio</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <span className="text-lg">📚</span>
-              <span className="text-xs text-white">Librería</span>
+            <div className="flex items-center space-x-1 bg-white/5 rounded-lg px-2 py-1">
+              <span className="text-base sm:text-lg">📚</span>
+              <span className="text-xs sm:text-sm text-white">Librería</span>
             </div>
           </div>
           
           {/* Animated background effects */}
-          <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-gray-600/20 to-gray-700/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-          <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-gray-600/20 to-gray-700/20 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-          <div className="absolute top-1/2 right-12 w-6 h-6 bg-gray-500/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          <div className="absolute -top-6 -right-6 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
+          <div className="absolute -bottom-4 -left-4 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
         </Card>
       </div>
 
@@ -1085,18 +982,18 @@ const HomePage = () => {
       )}
       */}
 
-      {/* Recent Transactions */}
-      <div className="px-4">
+      {/* Recent Transactions - Estilo Bancario */}
+      <div className="px-4 sm:px-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg font-semibold flex items-center space-x-2">
-            <Activity className="h-5 w-5 text-blue-400" />
+          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
+            <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
             <span>Transacciones recientes</span>
           </h3>
           {realTransactions.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-orange-400 hover:text-orange-300"
+              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
               onClick={() => navigate('/statistics')}
             >
               Ver todas
@@ -1104,7 +1001,7 @@ const HomePage = () => {
           )}
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-3 sm:space-y-4">
           {realTransactions.length > 0 ? (
             (realTransactions as TransactionWithToken[]).slice(0, 5).map((tx, idx) => {
               // Icono según token
@@ -1114,8 +1011,8 @@ const HomePage = () => {
               // Monto seguro
               const amount = (typeof tx.amount === 'number' && !isNaN(tx.amount)) ? tx.amount : 0;
               // Color
-              const amountColor = !tx.isUSDC ? 'text-blue-400' : (tx.type === 'expense' ? 'text-red-400' : 'text-green-400');
-              const bgColor = !tx.isUSDC ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-red-500/20' : 'bg-green-500/20');
+              const amountColor = !tx.isUSDC ? 'text-blue-400' : (tx.type === 'expense' ? 'text-blue-400' : 'text-yellow-400');
+              const bgColor = !tx.isUSDC ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-blue-500/20' : 'bg-yellow-500/20');
               // Símbolo
               const symbol = tx.tokenSymbol || tx.currency || 'USDC';
               // Fecha
@@ -1136,16 +1033,16 @@ const HomePage = () => {
                 }
               }
               return (
-                <Card key={idx} className={`${bgColor} border-gray-700/50 p-4 hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden`}>
+                <Card key={idx} className={`bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border ${bgColor.replace('bg-', 'border-').replace('/20', '/30')} p-4 sm:p-5 hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden shadow-lg`}>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
                   <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300`}>
-                        <span className="text-white text-xl">{icon}</span>
+                    <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 ${bgColor} rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300 flex-shrink-0`}>
+                        <span className="text-white text-xl sm:text-2xl">{icon}</span>
                       </div>
-                      <div>
-                        <p className="text-white font-semibold text-sm">{tx.description || 'Transacción'}</p>
-                        <p className="text-gray-300 text-xs flex items-center space-x-2 mt-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm sm:text-base truncate">{tx.description || 'Transacción'}</p>
+                        <p className="text-gray-300 text-xs sm:text-sm flex items-center space-x-2 mt-1">
                           <span>{tx.type === 'expense' ? 'Gasto' : 'Depósito'}</span>
                           <span>•</span>
                           <span>{dateStr}</span>
@@ -1157,8 +1054,8 @@ const HomePage = () => {
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-xl font-bold ${amountColor} group-hover:scale-110 transition-transform duration-300`}>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <div className={`text-lg sm:text-xl font-bold ${amountColor} group-hover:scale-110 transition-transform duration-300`}>
                         {tx.type === 'expense' ? '-' : '+'}${amount.toFixed(2)}
                       </div>
                       <div className="text-xs text-gray-400 mt-1">{symbol}</div>
@@ -1168,37 +1065,37 @@ const HomePage = () => {
               );
             })
           ) : (
-            <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 p-8 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-green-500/5"></div>
+            <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-gray-700/50 p-6 sm:p-8 md:p-10 text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-yellow-500/5"></div>
               <div className="absolute top-4 right-4 opacity-5">
-                <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 object-contain" />
+                <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 sm:h-40 sm:w-40 object-contain" />
               </div>
               <div className="relative z-10">
                 {/* Logo grande en el centro */}
-                <div className="mb-6 flex justify-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-orange-500/30 rounded-3xl flex items-center justify-center shadow-2xl p-3">
+                <div className="mb-6 sm:mb-8 flex justify-center">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-gradient-to-br from-slate-800 to-gray-900 border-2 border-blue-500/30 rounded-3xl flex items-center justify-center shadow-2xl p-2 sm:p-3">
                     <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center shadow-inner border border-gray-600/50">
-                      <img src="/PumaPay.png" alt="PumaPay" className="h-16 w-16 object-contain brightness-110 rounded-2xl" />
+                      <img src="/PumaPay.png" alt="PumaPay" className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain brightness-110 rounded-2xl" />
                     </div>
                   </div>
                 </div>
-                <p className="text-white font-semibold text-lg mb-2">¡Bienvenido a PumaPay Campus!</p>
-                <p className="text-gray-400 text-sm mb-6">Inicia enviando o recibiendo tu primer pago</p>
-                <div className="flex space-x-3 justify-center">
+                <p className="text-white font-semibold text-base sm:text-lg md:text-xl mb-2">¡Bienvenido a PumaPay Campus!</p>
+                <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">Inicia enviando o recibiendo tu primer pago</p>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <Button 
                     onClick={() => navigate('/send')} 
-                    size="sm" 
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                    size="default"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg text-sm sm:text-base"
                   >
-                    <Send className="h-4 w-4 mr-2" />
+                    <Send className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Enviar dinero
                   </Button>
                   <Button 
                     onClick={() => navigate('/receive')} 
-                    size="sm" 
-                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg"
+                    size="default"
+                    className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-lg text-sm sm:text-base"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Recibir dinero
                   </Button>
                 </div>
@@ -1300,4 +1197,5 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
 

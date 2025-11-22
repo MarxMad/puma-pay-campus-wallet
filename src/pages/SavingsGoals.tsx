@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useBalance } from '@/hooks/useBalance';
 import { BottomNav } from '@/components/BottomNav';
@@ -47,6 +47,7 @@ import { ZKProofBadge, ZKProofInfo } from '@/components/ZKProofBadge';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { defindexService } from '@/services/defindexService';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const STELLAR_EXPLORER_BASE =
@@ -90,6 +91,42 @@ export const SavingsGoals: React.FC = () => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [txType, setTxType] = useState<'create' | 'deposit' | 'proof' | null>(null);
   const [copied, setCopied] = useState(false);
+  const [defindexAPY, setDefindexAPY] = useState<number | null>(null);
+  const [defindexBalance, setDefindexBalance] = useState<bigint | null>(null);
+  const [defindexEarnings, setDefindexEarnings] = useState<number | null>(null);
+
+  // Cargar APY y balance de DeFindex (con actualización periódica para mostrar rendimiento en tiempo real)
+  useEffect(() => {
+    const loadDefindexData = async () => {
+      try {
+        // Cargar APY
+        const apyResult = await defindexService.getAPY();
+        if (apyResult.apy > 0) {
+          setDefindexAPY(apyResult.apy);
+        }
+
+        // Cargar balance y earnings si hay usuario
+        if (user?.walletAddress || user?.address) {
+          const balanceResult = await defindexService.getBalance(user?.walletAddress || user?.address || '');
+          if (balanceResult.balance > 0n) {
+            setDefindexBalance(balanceResult.balance);
+          }
+          if (balanceResult.earnings !== undefined) {
+            setDefindexEarnings(balanceResult.earnings);
+          }
+        }
+      } catch (error) {
+        console.warn('Error cargando datos de DeFindex:', error);
+      }
+    };
+
+    loadDefindexData();
+    
+    // Actualizar cada 5 segundos para mostrar el rendimiento en tiempo real
+    const interval = setInterval(loadDefindexData, 5000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
@@ -106,12 +143,19 @@ export const SavingsGoals: React.FC = () => {
         ? new Date(values.deadline)
         : undefined;
 
+      console.log('🎯 handleCreateGoal - Llamando createGoal...');
       const result = await createGoal(values.targetAmount, deadline);
+      console.log('📥 handleCreateGoal - Resultado recibido:', result);
+      console.log('🔍 handleCreateGoal - ¿Tiene txHash?', !!(result as any)?.txHash);
+      
       // Si hay txHash, mostrarlo en el dialog
       if ((result as any)?.txHash) {
+        console.log('✅ handleCreateGoal - Configurando txHash:', (result as any).txHash);
         setTxHash((result as any).txHash);
         setTxType('create');
+        console.log('✅ handleCreateGoal - txHash y txType configurados');
       } else {
+        console.warn('⚠️ handleCreateGoal - No hay txHash en el resultado');
         toast({
           title: 'Meta creada',
           description: 'Tu meta de ahorro ha sido creada exitosamente.',
@@ -119,6 +163,7 @@ export const SavingsGoals: React.FC = () => {
       }
       form.reset();
     } catch (err: any) {
+      console.error('❌ handleCreateGoal - Error:', err);
       toast({
         title: 'Error',
         description: err.message || 'No se pudo crear la meta',
@@ -281,7 +326,7 @@ export const SavingsGoals: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center space-x-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-orange-500/30 rounded-full flex items-center justify-center shadow-inner">
+          <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/30 rounded-full flex items-center justify-center shadow-inner">
             <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain" />
           </div>
           <div>
@@ -302,13 +347,33 @@ export const SavingsGoals: React.FC = () => {
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-orange-100">Balance disponible</p>
+                <p className="text-sm text-blue-100">Balance disponible</p>
                 <h2 className="text-3xl font-bold mt-1">
                   ${(balance.available || 0).toFixed(2)}
-                  <span className="text-base text-orange-100 ml-2">USDC</span>
+                  <span className="text-base text-blue-100 ml-2">USDC</span>
                 </h2>
+                {defindexAPY && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <TrendingUp className="h-4 w-4 text-yellow-400" />
+                    <p className="text-sm text-yellow-400">
+                      Generando {defindexAPY.toFixed(2)}% APY con DeFindex
+                    </p>
+                  </div>
+                )}
+                {defindexBalance && defindexBalance > 0n && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-gray-400">
+                      En DeFindex: ${(Number(defindexBalance) / 10000000).toFixed(2)} XLM
+                    </p>
+                    {defindexEarnings !== null && defindexEarnings > 0 && (
+                      <p className="text-xs text-yellow-400 font-medium">
+                        + ${defindexEarnings.toFixed(4)} en rendimientos generados
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-              <PiggyBank className="h-10 w-10 text-orange-100" />
+              <PiggyBank className="h-10 w-10 text-blue-100" />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               <div className="bg-gray-900/60 rounded-xl p-3 border border-white/5">
@@ -389,7 +454,7 @@ export const SavingsGoals: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={isCreating}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   {isCreating ? (
                     <>
@@ -416,7 +481,7 @@ export const SavingsGoals: React.FC = () => {
           </div>
 
           {error && (
-            <Card className="border-red-500 bg-red-500/10 text-white">
+            <Card className="border-blue-500 bg-blue-500/10 text-white">
               <CardContent className="pt-6">
                 <p>Error: {error.message}</p>
               </CardContent>
@@ -442,7 +507,7 @@ export const SavingsGoals: React.FC = () => {
                 <Card
                   key={goal.id}
                   className={`bg-gray-800/60 border-white/10 text-white shadow-lg ${
-                    goal.achieved ? 'ring-1 ring-green-400/40' : ''
+                    goal.achieved ? 'ring-1 ring-yellow-400/40' : ''
                   }`}
                 >
                 <CardHeader>
@@ -450,7 +515,7 @@ export const SavingsGoals: React.FC = () => {
                     <div className="flex-1">
                         <CardTitle className="flex items-center gap-2 text-white">
                           {goal.achieved ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            <CheckCircle2 className="h-5 w-5 text-yellow-500" />
                           ) : (
                             <Target className="h-5 w-5" />
                           )}
@@ -459,7 +524,7 @@ export const SavingsGoals: React.FC = () => {
                             <ZKProofBadge variant="success" size="sm" />
                           )}
                           {goal.achieved && (
-                            <span className="text-sm font-normal text-green-400">
+                            <span className="text-sm font-normal text-yellow-400">
                               ✓ Alcanzada
                             </span>
                           )}
@@ -521,7 +586,7 @@ export const SavingsGoals: React.FC = () => {
                               onClick={() => handleDeposit(goal.id)}
                               disabled={depositingGoalId === goal.id}
                               size="sm"
-                              className="bg-orange-500 hover:bg-orange-600"
+                              className="bg-blue-500 hover:bg-blue-600"
                             >
                               {depositingGoalId === goal.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -546,7 +611,7 @@ export const SavingsGoals: React.FC = () => {
                             onClick={() => setShowDepositModal(goal.id)}
                             size="sm"
                             variant="outline"
-                            className="w-full border-orange-400/30 text-orange-200 hover:bg-orange-500/10"
+                            className="w-full border-blue-400/30 text-blue-200 hover:bg-blue-500/10"
                           >
                             <Plus className="h-4 w-4 mr-2" />
                             Depositar en esta cajita
@@ -558,24 +623,24 @@ export const SavingsGoals: React.FC = () => {
 
                   {/* Estado y acciones */}
                   {goal.achieved ? (
-                      <div className="flex items-center gap-2 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                        <Award className="h-5 w-5 text-green-500" />
+                      <div className="flex items-center gap-2 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                        <Award className="h-5 w-5 text-yellow-500" />
                         <div className="flex-1">
-                          <p className="font-medium text-green-100">
+                          <p className="font-medium text-yellow-100">
                             ¡Meta alcanzada!
                           </p>
                           {goal.proofId && (
                             <div className="mt-2 space-y-1">
                               <div className="flex items-center gap-2">
-                                <Shield className="h-3 w-3 text-green-400" />
-                                <p className="text-xs text-green-200">
+                                <Shield className="h-3 w-3 text-yellow-400" />
+                                <p className="text-xs text-yellow-200">
                                   Verificado con ZK Proof
                                 </p>
                               </div>
-                              <p className="text-xs text-green-300/70 font-mono">
+                              <p className="text-xs text-yellow-300/70 font-mono">
                                 Proof ID: {goal.proofId.substring(0, 16)}...
                               </p>
-                              <p className="text-xs text-green-300/60 italic">
+                              <p className="text-xs text-yellow-300/60 italic">
                                 Tu balance real permanece privado
                               </p>
                             </div>
@@ -606,7 +671,7 @@ export const SavingsGoals: React.FC = () => {
                             disabled={claimingRewardId === goal.id}
                             size="sm"
                             variant="outline"
-                            className="border-green-400 text-green-200"
+                            className="border-yellow-400 text-yellow-200"
                           >
                             {claimingRewardId === goal.id ? (
                               <>
@@ -664,7 +729,7 @@ export const SavingsGoals: React.FC = () => {
                       </div>
                   ) : (
                       <div className="flex items-center gap-2 p-4 bg-white/5 rounded-lg">
-                        <TrendingUp className="h-5 w-5 text-orange-300" />
+                        <TrendingUp className="h-5 w-5 text-blue-300" />
                         <div className="flex-1">
                           <p className="font-medium">
                             Continúa ahorrando
@@ -687,11 +752,16 @@ export const SavingsGoals: React.FC = () => {
 
       {/* Dialog de confirmación de transacción */}
       {txHash && (
-        <Dialog open={!!txHash} onOpenChange={(open) => !open && setTxHash(null)}>
-          <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
-            <div className="flex flex-col items-center space-y-4 py-4">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-12 h-12 text-green-400" />
+        <Dialog open={!!txHash} onOpenChange={() => setTxHash(null)}>
+          <DialogContent className="bg-gradient-to-br from-blue-600 to-cyan-600 border-none text-white max-w-md">
+            <div className="text-center py-4">
+              <div className="mb-4 flex justify-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
+                  <div className="relative bg-blue-500 rounded-full p-4">
+                    <CheckCircle className="w-8 h-8 text-white" />
+                  </div>
+                </div>
               </div>
               
               <DialogTitle className="text-2xl font-bold mb-2">
@@ -701,16 +771,24 @@ export const SavingsGoals: React.FC = () => {
                 {!txType && '¡Transacción Exitosa!'}
               </DialogTitle>
               
-              <DialogDescription className="text-green-100 mb-4 text-center">
-                {txType === 'create' && 'Tu meta de ahorro ha sido creada correctamente en Stellar.'}
-                {txType === 'deposit' && 'El depósito ha sido procesado correctamente en Stellar.'}
-                {txType === 'proof' && 'Tu proof ZK ha sido verificado on-chain en Stellar.'}
-                {!txType && 'La transacción ha sido procesada correctamente en Stellar.'}
+              <DialogDescription className="text-blue-100 mb-4">
+                {txType === 'create' && (
+                  <>Tu meta de ahorro ha sido creada correctamente en <strong>Stellar</strong>.</>
+                )}
+                {txType === 'deposit' && (
+                  <>El depósito ha sido procesado correctamente en <strong>Stellar</strong>.</>
+                )}
+                {txType === 'proof' && (
+                  <>Tu proof ZK ha sido verificado on-chain en <strong>Stellar</strong>.</>
+                )}
+                {!txType && (
+                  <>La transacción ha sido procesada correctamente en <strong>Stellar</strong>.</>
+                )}
               </DialogDescription>
 
-              <div className="bg-white/10 rounded-lg p-3 mb-4 w-full backdrop-blur-sm">
+              <div className="bg-white/20 rounded-lg p-3 mb-4 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-green-200">Hash de transacción:</span>
+                  <span className="text-xs text-blue-200">Hash de transacción:</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -733,7 +811,7 @@ export const SavingsGoals: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => window.open(`${STELLAR_EXPLORER_BASE}${txHash}`, '_blank')}
-                  className="mt-2 text-xs text-green-100 hover:text-white w-full justify-start"
+                  className="mt-2 text-xs text-blue-100 hover:text-white w-full justify-start"
                 >
                   Ver en Stellar Expert <ExternalLink className="h-3 w-3 ml-1 inline" />
                 </Button>

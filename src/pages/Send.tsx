@@ -75,7 +75,7 @@ const SendPage = () => {
         setAmount(amount);
         toast({
           title: 'QR escaneado',
-          description: `Dirección y monto (${amount} MXNB) detectados`,
+          description: `Dirección y monto (${amount} XLM) detectados`,
         });
       } else {
         toast({
@@ -188,11 +188,11 @@ const SendPage = () => {
       
       const destination = walletAddress.toUpperCase();
 
-      console.log('🚀 Enviando MXNB a wallet en Stellar:', { 
+      console.log('🚀 Enviando XLM a wallet en Stellar:', { 
         to: destination, 
         amount: amountNum,
         network: 'Stellar',
-        asset: 'MXNB'
+        asset: 'XLM'
       });
       
       // Enviar a backend para firmar en Stellar
@@ -260,13 +260,13 @@ const SendPage = () => {
           id: hash,
           amount: amountNum,
           type: 'expense',
-          description: `Transferencia MXNB a ${destination.substring(0, 6)}...${destination.slice(-4)}`,
+          description: `Transferencia XLM a ${destination.substring(0, 6)}...${destination.slice(-4)}`,
           categoryId: '',
           date: new Date(),
           txHash: hash,
           recipient: destination,
-          isMXNB: true,
-          tokenSymbol: 'MXNB',
+          isXLM: true,
+          tokenSymbol: 'XLM',
           network: 'Stellar'
         }
       }));
@@ -317,7 +317,7 @@ const SendPage = () => {
             </div>
           </div>
         <div className="text-center">
-            <h1 className="text-lg font-semibold text-white">Enviar MXNB</h1>
+            <h1 className="text-lg font-semibold text-white">Enviar XLM</h1>
           <p className="text-xs text-gray-400">Red: Stellar</p>
           </div>
         </div>
@@ -330,7 +330,7 @@ const SendPage = () => {
           <div className="text-center">
             <span className="text-gray-300 text-sm">Saldo disponible</span>
             <div className="text-3xl font-bold mt-2">
-              ${available.toFixed(2)} <span className="text-lg text-gray-400">MXNB</span>
+              ${available.toFixed(2)} <span className="text-lg text-gray-400">XLM</span>
             </div>
           </div>
         </Card>
@@ -423,7 +423,7 @@ const SendPage = () => {
                     </Button>
                     {scannedAmount && (
                       <p className="text-xs text-amber-400 mt-2">
-                        Monto detectado: {scannedAmount} MXNB
+                        Monto detectado: {scannedAmount} XLM
                       </p>
                     )}
                   </div>
@@ -480,7 +480,7 @@ const SendPage = () => {
                   {walletAddress}
                 </p>
                 <p className="text-green-400 text-xs mt-2">
-                  Red: <span className="font-semibold">Stellar</span> | Asset: <span className="font-semibold">MXNB</span>
+                  Red: <span className="font-semibold">Stellar</span> | Asset: <span className="font-semibold">XLM</span>
                 </p>
               </div>
             )}
@@ -502,7 +502,7 @@ const SendPage = () => {
                   min="0"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">MXNB (Stellar)</p>
+                <p className="text-xs text-gray-400 mt-1">XLM (Stellar)</p>
               </div>
 
               {/* Quick amount buttons */}
@@ -549,7 +549,7 @@ const SendPage = () => {
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center space-x-2">
                 <AlertCircle className="h-6 w-6 text-orange-500" />
-                <span>Confirmar Transacción MXNB</span>
+                <span>Confirmar Transacción XLM</span>
               </DialogTitle>
               <DialogDescription className="text-gray-400 pt-2">
                 Revisa los detalles antes de enviar. Esta transacción se realizará en <strong>Stellar</strong>.
@@ -608,9 +608,6 @@ const SendPage = () => {
                   <span className="text-2xl font-bold text-white">
                     {amountNum.toFixed(2)} <span className="text-lg text-gray-400">XLM</span>
                   </span>
-                  <div className="text-right">
-                    <span className="text-xs text-gray-400 block">≈ ${(amountNum).toFixed(2)} MXN</span>
-                  </div>
                 </div>
               </div>
 
@@ -684,7 +681,7 @@ const SendPage = () => {
                 
                 <DialogTitle className="text-2xl font-bold mb-2">¡Transacción Exitosa!</DialogTitle>
                 <DialogDescription className="text-green-100 mb-4">
-                  Tu transferencia de <strong>{amountNum.toFixed(2)} MXNB</strong> ha sido enviada correctamente en <strong>Stellar</strong>.
+                  Tu transferencia de <strong>{amountNum.toFixed(2)} XLM</strong> ha sido enviada correctamente en <strong>Stellar</strong>.
                 </DialogDescription>
 
                 <div className="bg-white/20 rounded-lg p-3 mb-4 backdrop-blur-sm">

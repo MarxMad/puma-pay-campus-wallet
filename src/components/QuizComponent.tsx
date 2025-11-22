@@ -183,10 +183,10 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="bg-gray-900 border border-gray-800 text-white">
-        <CardContent className="pt-6 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-white" />
-          <p className="mt-4 text-gray-400">Cargando cuestionario...</p>
+      <Card className="bg-gradient-to-br from-slate-900 to-gray-900 border-2 border-orange-500/40 text-white">
+        <CardContent className="pt-8 pb-8 text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto text-orange-400" />
+          <p className="mt-4 text-white font-semibold text-lg">Cargando cuestionario...</p>
         </CardContent>
       </Card>
     );
@@ -194,10 +194,10 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
 
   if (!quiz) {
     return (
-      <Card className="bg-gray-900 border border-gray-800 text-white">
-        <CardContent className="pt-6 text-center text-gray-400">
-          <XCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
-          <p>No se pudo cargar el cuestionario.</p>
+      <Card className="bg-gradient-to-br from-slate-900 to-gray-900 border-2 border-red-500/50 text-white">
+        <CardContent className="pt-8 pb-8 text-center">
+          <XCircle className="h-16 w-16 mx-auto mb-4 text-red-400" />
+          <p className="text-white font-semibold text-lg">No se pudo cargar el cuestionario.</p>
         </CardContent>
       </Card>
     );
@@ -206,37 +206,37 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   if (result) {
     // Mostrar resultados
     return (
-      <Card className={`bg-gray-900 border ${result.passed ? 'border-green-500/60' : 'border-red-500/60'} text-white`}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className={`bg-gradient-to-br from-slate-900 to-gray-900 border-2 ${result.passed ? 'border-green-500/80' : 'border-red-500/80'} text-white shadow-2xl`}>
+        <CardHeader className={`${result.passed ? 'bg-green-500/20' : 'bg-red-500/20'} border-b ${result.passed ? 'border-green-500/50' : 'border-red-500/50'}`}>
+          <CardTitle className="flex items-center gap-3 text-2xl font-bold text-white">
             {result.passed ? (
-              <CheckCircle2 className="h-6 w-6 text-green-400" />
+              <CheckCircle2 className="h-8 w-8 text-green-400" />
             ) : (
-              <XCircle className="h-6 w-6 text-red-500" />
+              <XCircle className="h-8 w-8 text-red-400" />
             )}
             Resultados del Cuestionario
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base text-gray-200 mt-2">
             {result.passed
-              ? '¡Felicidades! Has completado el curso.'
-              : 'No alcanzaste la puntuación mínima. Intenta de nuevo.'}
+              ? '¡Felicidades! Has completado el curso exitosamente. 🎉'
+              : 'No alcanzaste la puntuación mínima. Intenta de nuevo. 💪'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-2xl font-bold">
-              {result.score}% ({result.correctAnswers}/{result.totalQuestions})
+        <CardContent className="space-y-5 p-6">
+          <div className="bg-gray-800/80 border-2 border-white/20 rounded-xl p-5">
+            <p className="text-4xl font-bold text-white mb-2">
+              {result.score}% 
             </p>
-            <p className="text-sm text-gray-400">
-              Respuestas correctas
+            <p className="text-lg text-gray-200 font-semibold">
+              {result.correctAnswers} de {result.totalQuestions} respuestas correctas
             </p>
           </div>
 
           {result.passed && result.badgeLevel && (
-            <div className="flex items-center gap-2 p-4 bg-yellow-500/10 rounded-lg">
-              <Award className="h-6 w-6 text-yellow-400" />
+            <div className="flex items-center gap-3 p-5 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 border-2 border-yellow-500/50 rounded-xl">
+              <Award className="h-8 w-8 text-yellow-400" />
               <div>
-                <p className="font-medium">
+                <p className="font-bold text-lg text-white">
                   Badge obtenido:{' '}
                   {result.badgeLevel === 3
                     ? '🥇 Gold'
@@ -249,9 +249,9 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
           )}
 
           {isGeneratingProof && (
-            <div className="flex items-center gap-2 p-4 bg-blue-500/10 rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-              <p className="text-sm text-blue-100">Generando proof ZK...</p>
+            <div className="flex items-center gap-3 p-5 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border-2 border-blue-500/50 rounded-xl">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-300" />
+              <p className="text-base font-semibold text-white">Generando proof ZK...</p>
             </div>
           )}
         </CardContent>
@@ -263,63 +263,63 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   return (
-    <Card className="bg-gray-900 border border-gray-800 text-white">
-      <CardHeader>
+    <Card className="bg-gradient-to-br from-slate-900 to-gray-900 border-2 border-orange-500/40 text-white shadow-2xl">
+      <CardHeader className="bg-gradient-to-r from-gray-800/80 to-gray-900/80 border-b border-orange-500/30">
         <div className="flex items-center justify-between">
-          <CardTitle>{quiz.title}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">{quiz.title}</CardTitle>
           {timeRemaining !== null && (
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <span className="font-mono">{formatTime(timeRemaining)}</span>
+            <div className="flex items-center gap-2 text-base font-bold bg-red-500/20 border border-red-500/50 rounded-lg px-4 py-2">
+              <Clock className="h-5 w-5 text-red-400" />
+              <span className="font-mono text-red-300">{formatTime(timeRemaining)}</span>
             </div>
           )}
         </div>
-        <CardDescription>
+        <CardDescription className="text-gray-200 text-base mt-2">
           Pregunta {currentQuestionIndex + 1} de {quiz.questions.length}
         </CardDescription>
-        <Progress value={progress} className="mt-2 bg-gray-800" />
+        <Progress value={progress} className="mt-3 bg-gray-700 h-3" />
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 p-6">
         <div>
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-xl font-bold mb-6 text-white bg-gray-800/50 p-4 rounded-lg border border-orange-500/30">
             {currentQuestion.question}
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {currentQuestion.options.map((option, index) => (
               <Button
                 key={index}
                 variant={selectedAnswer === index ? 'default' : 'outline'}
-                className={`w-full justify-start text-left h-auto py-3 ${
+                className={`w-full justify-start text-left h-auto py-4 text-base font-semibold transition-all ${
                   selectedAnswer === index
-                    ? 'bg-amber-500 text-gray-900'
-                    : 'border-gray-700 text-gray-100 hover:bg-gray-800'
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-400 shadow-lg shadow-orange-500/50'
+                    : 'bg-gray-800/80 border-2 border-gray-600 text-white hover:bg-gray-700 hover:border-orange-500/50'
                 }`}
                 onClick={() => handleAnswerSelect(index)}
               >
-                <span className="mr-2 font-bold">{String.fromCharCode(65 + index)}.</span>
-                {option}
+                <span className="mr-3 font-bold text-lg bg-white/20 px-2 py-1 rounded">{String.fromCharCode(65 + index)}</span>
+                <span className="flex-1">{option}</span>
               </Button>
               ))}
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between bg-gradient-to-r from-gray-800/80 to-gray-900/80 border-t border-orange-500/30 p-4">
         <Button
           variant="outline"
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="border-gray-700 text-gray-100 hover:bg-gray-800 disabled:opacity-40"
+          className="border-2 border-gray-600 bg-gray-800 text-white hover:bg-gray-700 hover:border-orange-500/50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold px-6"
         >
-          Anterior
+          ← Anterior
         </Button>
         <Button
           onClick={handleNext}
           disabled={selectedAnswer === null || isSubmitting}
-          className="bg-amber-500 hover:bg-amber-600 text-gray-900"
+          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold shadow-lg px-8 disabled:opacity-50"
         >
           {currentQuestionIndex === quiz.questions.length - 1
-            ? 'Finalizar'
-            : 'Siguiente'}
+            ? '✓ Finalizar'
+            : 'Siguiente →'}
         </Button>
       </CardFooter>
     </Card>

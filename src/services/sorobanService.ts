@@ -344,9 +344,16 @@ export class SorobanService {
         };
       }
 
+      // El backend retorna savedAmount directamente para deposit_to_goal
+      const savedAmount = data.savedAmount 
+        ? parseInt(data.savedAmount.toString())
+        : (data.result ? parseInt(data.result.toString()) : 0);
+
+      console.log('📊 savedAmount recibido del backend:', { savedAmount, data });
+
       return {
         success: true,
-        savedAmount: parseInt(data.result?.saved_amount || data.savedAmount || '0'),
+        savedAmount: savedAmount,
         txHash: data.txHash,
       };
     } catch (error: any) {

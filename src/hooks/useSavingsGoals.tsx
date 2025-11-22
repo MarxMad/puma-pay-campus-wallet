@@ -93,8 +93,11 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
         user?.email
       );
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ Depósito exitoso en hook. savedAmount:', data.savedAmount);
+      // Invalidar y refrescar las queries para actualizar la UI
       queryClient.invalidateQueries({ queryKey: ['savingsGoals'] });
+      queryClient.refetchQueries({ queryKey: ['savingsGoals'] });
     },
   });
 

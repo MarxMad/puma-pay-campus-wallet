@@ -1404,7 +1404,18 @@ app.post('/api/soroban/invoke-contract', async (req, res) => {
             if (retval.switch() === xdr.ScValType.scvBytes) {
               decodedResult = '0x' + Buffer.from(retval.bytes()).toString('hex');
             } else if (retval.switch() === xdr.ScValType.scvI128) {
-              decodedResult = retval.i128().toString();
+              const i128Parts = retval.i128();
+              // i128 se compone de hi (Int64) y lo (Uint64)
+              const hi = BigInt(i128Parts.hi().toString());
+              const lo = BigInt(i128Parts.lo().toString());
+              // Combinar hi y lo para obtener el valor completo
+              const fullValue = (hi << 64n) | lo;
+              decodedResult = fullValue.toString();
+              console.log('💰 Resultado i128 decodificado:', decodedResult, 'hi:', hi.toString(), 'lo:', lo.toString());
+            } else if (retval.switch() === xdr.ScValType.scvI64) {
+              decodedResult = retval.i64().toString();
+            } else if (retval.switch() === xdr.ScValType.scvU64) {
+              decodedResult = retval.u64().toString();
             }
           } catch (decodeError) {
             console.warn('⚠️ Error decodificando resultado:', decodeError.message);
@@ -1417,11 +1428,18 @@ app.post('/api/soroban/invoke-contract', async (req, res) => {
         // Continuar sin el resultado detallado, pero retornar el hash de la transacción
       }
 
+      // Para deposit_to_goal, el resultado es un i128 que representa el nuevo savedAmount
+      let savedAmount = null;
+      if (functionName === 'deposit_to_goal' && decodedResult) {
+        savedAmount = decodedResult;
+      }
+
       return res.json({
         success: true,
         txHash: sendResult.hash,
         proofId: decodedResult,
-        result: getResult.resultValue ? getResult.resultValue.toString() : null
+        result: getResult?.resultValue ? getResult.resultValue.toString() : null,
+        savedAmount: savedAmount || (decodedResult && functionName === 'deposit_to_goal' ? decodedResult : null)
       });
     }
 
@@ -1431,6 +1449,620 @@ app.post('/api/soroban/invoke-contract', async (req, res) => {
       success: false,
       error: { 
         message: error.message || 'Error invocando contrato',
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
+// ================================
+// ENDPOINTS DE DEFINDEX
+// ================================
+
+// DeFindex API Configuration
+// La API de DeFindex usa la misma URL base para testnet y mainnet
+// La red se especifica mediante headers y parámetros, no en la URL
+const DEFINDEX_API_URL = 'https://api.defindex.io';
+const DEFINDEX_API_KEY = process.env.DEFINDEX_API_KEY || 'sk_ab28864ac62b63b6b41ffd6650293bbed5f4bd25ff1a3bc0d2e452e1e80dd5a7';
+const DEFINDEX_VAULT_ADDRESS = 'CAOAAJZKK4PT6WO2PFEXMFIGWDTAMS5Z7GDG36SGSC646V3B3HBYBHIE'; // Vault de Pumati
+// Manager/Admin del vault (según la configuración del vault en DeFindex)
+const DEFINDEX_VAULT_MANAGER = process.env.DEFINDEX_VAULT_MANAGER || 'GBJLTICO5JWX23WBL7UUG2PJ2FYKEIKPGKGYFIO47TZPWK55X';
+
+console.log('🌐 DeFindex Configuration:', {
+  network: STELLAR_NETWORK,
+  apiUrl: DEFINDEX_API_URL,
+  vaultAddress: DEFINDEX_VAULT_ADDRESS,
+  manager: DEFINDEX_VAULT_MANAGER,
+  note: 'La red se especifica mediante headers (X-Network) y parámetros (network)'
+});
+
+/**
+ * Helper para hacer requests a la API de DeFindex
+ */
+async function defindexRequest(method, endpoint, vaultAddress, params = null, callerAddress = null) {
+  // Construir URL base según el endpoint
+  // El endpoint '/send' no requiere vaultAddress según la documentación
+  let url;
+  if (endpoint === 'send') {
+    url = `${DEFINDEX_API_URL}/${endpoint}`;
+  } else {
+    url = `${DEFINDEX_API_URL}/vault/${vaultAddress}/${endpoint}`;
+  }
+
+  // Según la documentación, 'network' debe ser un query parameter para todos los endpoints
+  // NO debe ir en el body ni en headers
+  const queryParams = new URLSearchParams();
+  queryParams.append('network', STELLAR_NETWORK);
+  
+  // Si hay otros parámetros para query (GET requests), agregarlos
+  if (params && method === 'GET') {
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key]);
+    });
+  }
+  
+  // Agregar query parameters a la URL
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const config = {
+    method,
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${DEFINDEX_API_KEY}`
+    }
+  };
+
+  // Si se proporciona callerAddress, agregarlo como header (según documentación)
+  if (callerAddress) {
+    config.headers['X-Caller-Address'] = callerAddress;
+  }
+
+  // Para POST, enviar params en el body (sin network, que ya está en query)
+  if (params && method === 'POST') {
+    config.data = params; // NO incluir network aquí, ya está en query params
+  }
+
+  console.log('🌐 DeFindex request config:', {
+    url: config.url,
+    method: config.method,
+    network: STELLAR_NETWORK,
+    headers: Object.keys(config.headers),
+    hasData: !!config.data,
+    queryParams: queryParams.toString()
+  });
+
+  const response = await axios(config);
+  return response.data;
+}
+
+/**
+ * Deposita fondos en el vault de DeFindex
+ * POST /api/defindex/deposit
+ */
+app.post('/api/defindex/deposit', async (req, res) => {
+  console.log('📥 Endpoint /api/defindex/deposit llamado');
+  console.log('📋 Body recibido:', { amount: req.body.amount, userAddress: req.body.userAddress, vaultAddress: req.body.vaultAddress, userId: req.body.userId, email: req.body.email });
+  try {
+    const { amount, userAddress, vaultAddress, userId, email } = req.body;
+
+    if (!amount || !userAddress || !vaultAddress) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Faltan parámetros requeridos: amount, userAddress, vaultAddress' }
+      });
+    }
+
+    // Obtener la secret key del usuario
+    let userSecretKey = null;
+    if (userId || email) {
+      try {
+        console.log('🔍 Buscando usuario en Supabase:', { userId, email, hasSupabase: !!supabaseAdmin });
+        
+        if (!supabaseAdmin) {
+          console.error('❌ Supabase no está configurado');
+          return res.status(500).json({
+            success: false,
+            error: { message: 'Supabase no está configurado en el servidor' }
+          });
+        }
+        
+        const query = userId 
+          ? supabaseAdmin.from('usuarios').select('clabe').eq('id', userId).single()
+          : supabaseAdmin.from('usuarios').select('clabe').eq('email', email).single();
+        
+        const { data: userData, error: userError } = await query;
+        
+        console.log('📊 Resultado de Supabase:', { 
+          hasData: !!userData, 
+          hasClabe: !!userData?.clabe, 
+          error: userError?.message || null,
+          errorCode: userError?.code || null,
+          errorDetails: userError?.details || null
+        });
+        
+        if (userError) {
+          console.error('❌ Error de Supabase:', {
+            message: userError.message,
+            code: userError.code,
+            details: userError.details,
+            hint: userError.hint
+          });
+        }
+        
+        if (userError || !userData || !userData.clabe) {
+          console.warn('⚠️ Usuario no encontrado o sin clabe:', {
+            error: userError?.message,
+            hasData: !!userData,
+            hasClabe: !!userData?.clabe,
+            userDataKeys: userData ? Object.keys(userData) : null
+          });
+        } else {
+          userSecretKey = decryptSecretKey(userData.clabe);
+          console.log('✅ Secret key obtenida correctamente');
+        }
+      } catch (error) {
+        console.error('❌ Error obteniendo secret key del usuario:', error);
+        console.error('Stack:', error.stack);
+      }
+    } else {
+      console.warn('⚠️ No se proporcionó userId ni email');
+    }
+
+    if (!userSecretKey) {
+      console.error('❌ No se pudo obtener la secret key. userId:', userId, 'email:', email);
+      return res.status(400).json({
+        success: false,
+        error: { message: 'No se pudo obtener la secret key del usuario. Proporciona userId o email.' }
+      });
+    }
+
+    console.log('🔍 Continuando con validación de dirección y depósito...');
+    console.log('📋 Parámetros recibidos:', { userAddress, amount, vaultAddress });
+
+    // Validar que userAddress sea una dirección Stellar válida usando StrKey
+    if (!userAddress || !StrKey.isValidEd25519PublicKey(userAddress)) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: 'userAddress debe ser una dirección Stellar válida',
+          received: userAddress,
+          isValid: StrKey.isValidEd25519PublicKey(userAddress) || false
+        }
+      });
+    }
+
+    // Verificar si la cuenta existe en la red Stellar (solo para logging, no bloqueamos si falla)
+    try {
+      const account = await stellarServer.loadAccount(userAddress);
+      console.log('✅ Cuenta Stellar existe en la red. Balance:', account.balances[0]?.balance || 'N/A');
+    } catch (error) {
+      console.warn('⚠️ No se pudo verificar la cuenta en Stellar (puede ser un problema temporal):', error.message);
+      // No bloqueamos aquí, continuamos con el depósito ya que el usuario confirma que la cuenta existe
+    }
+
+    // Paso 1: Solicitar transacción sin firmar de DeFindex
+    console.log('🔄 Solicitando transacción sin firmar de DeFindex...', {
+      vaultAddress,
+      amount,
+      from: userAddress
+    });
+    
+    let unsignedTx;
+    try {
+      // Validar formato de dirección Stellar
+      if (!StrKey.isValidEd25519PublicKey(userAddress)) {
+        return res.status(400).json({
+          success: false,
+          error: { 
+            message: 'userAddress no es una dirección Stellar válida',
+            received: userAddress
+          }
+        });
+      }
+      
+      // Convertir amount a stroops (1 XLM = 10,000,000 stroops)
+      // Asumimos que amount viene en XLM, necesitamos convertirlo a stroops
+      const amountNum = Number(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: { 
+            message: 'amount debe ser un número positivo',
+            received: amount
+          }
+        });
+      }
+      
+      const amountInStroops = Math.floor(amountNum * 10000000);
+      
+      // La API de DeFindex espera según la documentación oficial:
+      // - amounts: Array de cantidades para cada asset del vault (7 decimales para XLM)
+      // - caller: Dirección de la wallet del usuario (requerido)
+      // - invest: Auto-invertir en estrategias (recomendado: true)
+      // - slippageBps: Tolerancia de slippage en basis points (opcional, default: 0)
+      // NOTA: Según la documentación, solo se necesita 'caller', no 'from'
+      // DeFindex requiere el caller tanto en el body como en el header X-Caller-Address
+      const depositParams = {
+        amounts: [amountInStroops], // Array de números en stroops (7 decimales para XLM)
+        caller: userAddress, // Dirección de la wallet del usuario (requerido según documentación)
+        invest: true, // Auto-invertir en estrategias (recomendado según documentación)
+        slippageBps: 50 // 0.5% de tolerancia de slippage (opcional, pero recomendado)
+      };
+      
+      console.log('💡 Información del vault:');
+      console.log('   - Vault Address:', vaultAddress);
+      console.log('   - Manager Address:', DEFINDEX_VAULT_MANAGER);
+      console.log('   - User Address:', userAddress);
+      console.log('   - Network:', STELLAR_NETWORK);
+      console.log('   - Amount (stroops):', amountInStroops);
+      console.log('   - 💡 NOTA: El mentor confirmó que cualquiera puede depositar (sin whitelist)');
+      console.log('   - 💡 El vault está en testnet según Stellar Expert');
+      
+      console.log('📤 Parámetros para DeFindex deposit:', JSON.stringify(depositParams, null, 2));
+      console.log('🔍 Validación de dirección:', {
+        userAddress,
+        isValid: StrKey.isValidEd25519PublicKey(userAddress),
+        startsWithG: userAddress.startsWith('G'),
+        length: userAddress.length
+      });
+      console.log('🔍 Tipos de datos en depositParams:', {
+        amounts: Array.isArray(depositParams.amounts) ? depositParams.amounts.map(a => ({ value: a, type: typeof a })) : 'NO ES ARRAY',
+        caller: { value: depositParams.caller, type: typeof depositParams.caller },
+        invest: { value: depositParams.invest, type: typeof depositParams.invest },
+        slippageBps: { value: depositParams.slippageBps, type: typeof depositParams.slippageBps }
+      });
+      
+      // Pasar callerAddress como parámetro adicional para el header
+      console.log('📡 Enviando request a DeFindex:', {
+        url: `${DEFINDEX_API_URL}/vault/${vaultAddress}/deposit`,
+        method: 'POST',
+        params: depositParams,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEFINDEX_API_KEY.substring(0, 10)}...`,
+          'X-Caller-Address': userAddress
+        }
+      });
+      
+      const depositResponse = await defindexRequest('POST', 'deposit', vaultAddress, depositParams, userAddress);
+      
+      console.log('📥 Respuesta de DeFindex:', {
+        hasResponse: !!depositResponse,
+        hasXdr: !!depositResponse?.xdr,
+        responseKeys: depositResponse ? Object.keys(depositResponse) : null
+      });
+      
+      if (!depositResponse || !depositResponse.xdr) {
+        console.error('❌ Respuesta de DeFindex sin xdr:', depositResponse);
+        return res.status(500).json({
+          success: false,
+          error: { 
+            message: 'La API de DeFindex no retornó una transacción válida',
+            response: depositResponse
+          }
+        });
+      }
+      
+      unsignedTx = depositResponse.xdr;
+      
+      console.log('✅ Transacción sin firmar recibida de DeFindex');
+    } catch (defindexError) {
+      console.error('❌ Error solicitando transacción de DeFindex:', defindexError);
+      console.error('Response data:', JSON.stringify(defindexError.response?.data, null, 2));
+      console.error('Response status:', defindexError.response?.status);
+      console.error('Response headers:', defindexError.response?.headers);
+      
+      // Extraer mensajes de error de la respuesta
+      let errorMessages = [];
+      let errorMessage = 'Error solicitando transacción de DeFindex';
+      let errorCode = null;
+      let suggestions = [];
+      
+      if (defindexError.response?.data) {
+        const errorData = defindexError.response.data;
+        console.log('🔍 Estructura del error de DeFindex:', {
+          hasMessage: !!errorData.message,
+          messageType: typeof errorData.message,
+          isArray: Array.isArray(errorData.message),
+          hasError: !!errorData.error,
+          errorType: typeof errorData.error,
+          fullData: errorData
+        });
+        
+        if (Array.isArray(errorData.message)) {
+          errorMessages = errorData.message;
+          errorMessage = errorMessages.join(', ');
+        } else if (errorData.message) {
+          errorMessage = String(errorData.message);
+        } else if (errorData.error) {
+          errorMessage = String(errorData.error);
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+        
+        errorCode = errorData.statusCode || defindexError.response?.status;
+        
+        // Proporcionar sugerencias específicas según el tipo de error
+        if (errorMessage.includes('Rate limit') || errorMessage.includes('rate limit') || errorMessage.includes('Rate limit exceeded') || defindexError.response?.status === 429) {
+          suggestions = [
+            'La API de DeFindex ha alcanzado su límite de solicitudes por minuto',
+            'Espera unos momentos (30-60 segundos) antes de intentar nuevamente',
+            'Evita hacer múltiples solicitudes en rápida sucesión',
+            'Si el problema persiste, contacta al administrador del vault o verifica los límites de tu API key'
+          ];
+          errorMessage = `Límite de tasa excedido en DeFindex. ${errorMessage}`;
+        } else if (errorMessage.includes('Account not found') || errorMessage.includes('account not found')) {
+          suggestions = [
+            'La cuenta Stellar puede necesitar ser registrada o inicializada en DeFindex',
+            'Verifica que la cuenta tenga fondos suficientes en la red Stellar',
+            'Asegúrate de que la cuenta haya realizado al menos una transacción en Stellar',
+            'Contacta al administrador del vault si el problema persiste'
+          ];
+          errorMessage = `Cuenta no encontrada en DeFindex: ${userAddress}. ${errorMessage}`;
+        } else if (errorMessage.includes('Not Found') && defindexError.response?.status === 404) {
+          suggestions = [
+            'Verifica que el vault address sea correcto',
+            'Confirma que estás usando la red correcta (testnet/mainnet)',
+            'La cuenta puede necesitar ser registrada en DeFindex primero'
+          ];
+        }
+      } else if (defindexError.message) {
+        errorMessage = defindexError.message;
+      }
+      
+      console.error('📤 Mensaje de error final a enviar al frontend:', errorMessage);
+      if (suggestions.length > 0) {
+        console.log('💡 Sugerencias:', suggestions);
+      }
+      
+      return res.status(defindexError.response?.status || 500).json({
+        success: false,
+        error: {
+          message: errorMessage,
+          code: errorCode,
+          details: defindexError.response?.data || null,
+          statusCode: defindexError.response?.status || 500,
+          suggestions: suggestions.length > 0 ? suggestions : undefined
+        }
+      });
+    }
+
+    // Paso 2: Firmar la transacción
+    console.log('✍️ Firmando transacción...');
+    const transaction = TransactionBuilder.fromXDR(unsignedTx, STELLAR_NETWORK_PASSPHRASE);
+    const sourceKeypair = Keypair.fromSecret(userSecretKey);
+    transaction.sign(sourceKeypair);
+    const signedTx = transaction.toXDR();
+
+    // Paso 3: Enviar transacción firmada a DeFindex
+    // Según la documentación, /send requiere:
+    // - Query parameter: network
+    // - Body: { xdr: string, launchtube: boolean }
+    console.log('📤 Enviando transacción firmada a DeFindex...');
+    const response = await defindexRequest('POST', 'send', null, {
+      xdr: signedTx,
+      launchtube: false // Según documentación, opcional, default false
+    });
+
+    // Extraer el hash de la transacción de la respuesta
+    let txHash = null;
+    if (response.hash) {
+      txHash = response.hash;
+    } else if (response.transaction_hash) {
+      txHash = response.transaction_hash;
+    } else {
+      // Intentar obtener el hash desde Horizon
+      try {
+        const txResult = await stellarServer.submitTransaction(transaction);
+        txHash = txResult.hash;
+      } catch (error) {
+        console.warn('⚠️ No se pudo obtener el hash de la transacción:', error);
+      }
+    }
+
+    return res.json({
+      success: true,
+      txHash,
+      response
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/defindex/deposit:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.response?.data?.message || error.message || 'Error depositando en DeFindex',
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
+/**
+ * Retira fondos del vault de DeFindex
+ * POST /api/defindex/withdraw
+ */
+app.post('/api/defindex/withdraw', async (req, res) => {
+  console.log('📥 Endpoint /api/defindex/withdraw llamado');
+  try {
+    const { amount, userAddress, vaultAddress, userId, email } = req.body;
+
+    if (!amount || !userAddress || !vaultAddress) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Faltan parámetros requeridos: amount, userAddress, vaultAddress' }
+      });
+    }
+
+    // Obtener la secret key del usuario
+    let userSecretKey = null;
+    if (userId || email) {
+      try {
+        const query = userId 
+          ? supabaseAdmin.from('usuarios').select('clabe').eq('id', userId).single()
+          : supabaseAdmin.from('usuarios').select('clabe').eq('email', email).single();
+        
+        const { data: userData, error: userError } = await query;
+        
+        if (userError || !userData || !userData.clabe) {
+          console.warn('⚠️ Usuario no encontrado o sin clabe:', userError);
+        } else {
+          userSecretKey = decryptSecretKey(userData.clabe);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error obteniendo secret key del usuario:', error);
+      }
+    }
+
+    if (!userSecretKey) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'No se pudo obtener la secret key del usuario. Proporciona userId o email.' }
+      });
+    }
+
+    // Convertir amount a stroops
+    const amountNum = Number(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: { 
+          message: 'amount debe ser un número positivo',
+          received: amount
+        }
+      });
+    }
+    
+    const amountInStroops = Math.floor(amountNum * 10000000);
+    
+    // Paso 1: Solicitar transacción sin firmar de DeFindex
+    console.log('🔄 Solicitando transacción sin firmar de DeFindex...');
+    const { xdr: unsignedTx } = await defindexRequest('POST', 'withdraw', vaultAddress, {
+      amounts: [amountInStroops], // Enviar como número
+      from: userAddress
+    });
+
+    // Paso 2: Firmar la transacción
+    console.log('✍️ Firmando transacción...');
+    const transaction = TransactionBuilder.fromXDR(unsignedTx, STELLAR_NETWORK_PASSPHRASE);
+    const sourceKeypair = Keypair.fromSecret(userSecretKey);
+    transaction.sign(sourceKeypair);
+    const signedTx = transaction.toXDR();
+
+    // Paso 3: Enviar transacción firmada a DeFindex
+    // Según la documentación, /send requiere:
+    // - Query parameter: network
+    // - Body: { xdr: string, launchtube: boolean }
+    console.log('📤 Enviando transacción firmada a DeFindex...');
+    const response = await defindexRequest('POST', 'send', null, {
+      xdr: signedTx,
+      launchtube: false // Según documentación, opcional, default false
+    });
+
+    // Extraer el hash de la transacción
+    let txHash = null;
+    if (response.hash) {
+      txHash = response.hash;
+    } else if (response.transaction_hash) {
+      txHash = response.transaction_hash;
+    } else {
+      try {
+        const txResult = await stellarServer.submitTransaction(transaction);
+        txHash = txResult.hash;
+      } catch (error) {
+        console.warn('⚠️ No se pudo obtener el hash de la transacción:', error);
+      }
+    }
+
+    return res.json({
+      success: true,
+      txHash,
+      response
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/defindex/withdraw:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.response?.data?.message || error.message || 'Error retirando de DeFindex',
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
+/**
+ * Obtiene el balance del usuario en el vault
+ * GET /api/defindex/balance
+ */
+app.get('/api/defindex/balance', async (req, res) => {
+  console.log('📥 Endpoint /api/defindex/balance llamado');
+  try {
+    const { userAddress, vaultAddress } = req.query;
+
+    if (!userAddress || !vaultAddress) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Faltan parámetros requeridos: userAddress, vaultAddress' }
+      });
+    }
+
+    const response = await defindexRequest('GET', 'balance', vaultAddress, {
+      from: userAddress
+    });
+
+    const balance = response.underlyingBalance?.[0] || '0';
+
+    return res.json({
+      success: true,
+      balance: balance.toString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/defindex/balance:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.response?.data?.message || error.message || 'Error obteniendo balance de DeFindex',
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
+/**
+ * Obtiene el APY actual del vault
+ * GET /api/defindex/apy
+ */
+app.get('/api/defindex/apy', async (req, res) => {
+  console.log('📥 Endpoint /api/defindex/apy llamado');
+  try {
+    const { vaultAddress } = req.query;
+
+    if (!vaultAddress) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Falta parámetro requerido: vaultAddress' }
+      });
+    }
+
+    const response = await defindexRequest('GET', 'apy', vaultAddress);
+
+    return res.json({
+      success: true,
+      apy: response.apy || 0
+    });
+
+  } catch (error) {
+    console.error('❌ Error en /api/defindex/apy:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: error.response?.data?.message || error.message || 'Error obteniendo APY de DeFindex',
         details: error.response?.data || null
       }
     });

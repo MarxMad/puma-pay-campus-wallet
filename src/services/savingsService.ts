@@ -7,6 +7,7 @@
 
 import { zkProofService, type ProofInput, type ProofResult } from './zkProofService';
 import { sorobanService, type SavingsGoal as ContractGoal } from './sorobanService';
+import { defindexService } from './defindexService';
 
 export interface SavingsGoal {
   id: string;
@@ -109,19 +110,70 @@ export class SavingsService {
 
         if (result.success) {
           console.log('✅ Meta creada on-chain, obteniendo detalles...');
-          // Obtener la meta recién creada del contrato
-          const contractGoal = await sorobanService.getSavingsGoal(
-            userAddress,
-            this.savingsGoalsContractAddress
-          );
+          // Guardar el txHash para retornarlo incluso si getSavingsGoal falla
+          const txHash = result.txHash;
+          console.log('🔑 txHash recibido:', txHash);
+          
+          if (!txHash) {
+            console.error('❌ No hay txHash en el resultado, esto no debería pasar');
+          }
+          
+          // Crear una meta básica con el txHash primero (para asegurar que siempre se retorne)
+          const basicGoal: SavingsGoal = {
+            id: `goal-${Date.now()}`,
+            targetAmount,
+            savedAmount: 0,
+            deadline,
+            achieved: false,
+            createdAt: new Date(),
+          };
+          
+          // Intentar obtener la meta recién creada del contrato
+          // Si falla (por ejemplo, por error de parsing), aún retornamos el txHash
+          // Usar Promise.race con timeout para no bloquear el retorno del txHash
+          try {
+            console.log('🔄 Intentando obtener meta del contrato...');
+            const getGoalPromise = sorobanService.getSavingsGoal(
+              userAddress,
+              this.savingsGoalsContractAddress
+            );
+            
+            // Timeout de 5 segundos para no bloquear el retorno del txHash
+            const timeoutPromise = new Promise<null>((resolve) => {
+              setTimeout(() => {
+                console.warn('⏱️ Timeout obteniendo meta del contrato, retornando meta básica con txHash');
+                resolve(null);
+              }, 5000);
+            });
+            
+            const contractGoal = await Promise.race([getGoalPromise, timeoutPromise]);
+            console.log('📥 Resultado de getSavingsGoal:', contractGoal ? 'Meta encontrada' : 'Meta no encontrada o timeout');
 
-          if (contractGoal) {
-            const goal = this.mapContractGoalToLocal(contractGoal, userAddress);
-            // También guardar localmente como backup
-            this.saveGoalLocal(goal);
-            // Retornar goal con txHash si está disponible
-            console.log('✅ Meta creada con txHash:', result.txHash);
-            return { ...goal, txHash: result.txHash } as SavingsGoal & { txHash?: string };
+            if (contractGoal) {
+              const goal = this.mapContractGoalToLocal(contractGoal, userAddress);
+              // También guardar localmente como backup
+              this.saveGoalLocal(goal);
+              // Retornar goal con txHash
+              console.log('✅ Meta creada con txHash (desde contrato):', txHash);
+              const goalWithTxHash = { ...goal, txHash } as SavingsGoal & { txHash?: string };
+              console.log('📤 Retornando goal con txHash:', goalWithTxHash.txHash);
+              return goalWithTxHash;
+            } else {
+              // Si contractGoal es null, retornar la meta básica con txHash
+              console.log('⚠️ No se encontró la meta en el contrato, retornando meta básica con txHash');
+              this.saveGoalLocal(basicGoal);
+              const basicGoalWithTxHash = { ...basicGoal, txHash } as SavingsGoal & { txHash?: string };
+              console.log('📤 Retornando meta básica con txHash:', basicGoalWithTxHash.txHash);
+              return basicGoalWithTxHash;
+            }
+          } catch (getGoalError) {
+            console.warn('⚠️ No se pudo obtener la meta del contrato después de crearla:', getGoalError);
+            // Aún así, retornar una meta básica con el txHash para mostrar la confirmación
+            this.saveGoalLocal(basicGoal);
+            console.log('✅ Retornando meta básica con txHash (catch):', txHash);
+            const basicGoalWithTxHash = { ...basicGoal, txHash } as SavingsGoal & { txHash?: string };
+            console.log('📤 Retornando meta básica con txHash:', basicGoalWithTxHash.txHash);
+            return basicGoalWithTxHash;
           }
         } else {
           console.error('❌ Error creando meta on-chain:', result.error);
@@ -156,35 +208,48 @@ export class SavingsService {
    * Obtiene todas las metas de ahorro del usuario
    */
   async getSavingsGoals(userAddress?: string): Promise<SavingsGoal[]> {
-    // Primero intentar obtener del contrato
+    // Obtener metas locales primero
+    const localGoals = this.getGoalsLocal();
+    
+    // Intentar obtener la meta del contrato (el contrato solo soporta una meta por usuario)
     if (this.savingsGoalsContractAddress && userAddress) {
       try {
+        console.log('🔄 Obteniendo meta del contrato para:', userAddress);
         const contractGoal = await sorobanService.getSavingsGoal(
           userAddress,
           this.savingsGoalsContractAddress
         );
 
         if (contractGoal) {
+          console.log('✅ Meta encontrada en el contrato:', contractGoal);
           const goal = this.mapContractGoalToLocal(contractGoal, userAddress);
+          
           // Sincronizar con almacenamiento local
-          const localGoals = this.getGoalsLocal();
+          // La meta del contrato tiene prioridad sobre las locales
           const existingIndex = localGoals.findIndex(g => g.id === goal.id);
           if (existingIndex >= 0) {
+            // Actualizar la meta existente con los datos del contrato
             localGoals[existingIndex] = goal;
           } else {
+            // Agregar la meta del contrato
             localGoals.push(goal);
           }
+          
           this.saveGoalsLocal(localGoals);
-          return [goal];
+          console.log('📊 Metas sincronizadas. Total:', localGoals.length);
+          return localGoals;
+        } else {
+          console.log('⚠️ No se encontró meta en el contrato para:', userAddress);
         }
       } catch (error) {
-        console.warn('No se pudo obtener meta del contrato:', error);
+        console.warn('⚠️ No se pudo obtener meta del contrato:', error);
         // Continuar con almacenamiento local
       }
     }
 
-    // Fallback a almacenamiento local
-    return this.getGoalsLocal();
+    // Retornar metas locales (pueden incluir la del contrato si se sincronizó)
+    console.log('📊 Retornando metas locales. Total:', localGoals.length);
+    return localGoals;
   }
 
   /**
@@ -254,10 +319,47 @@ export class SavingsService {
       throw new Error('No se puede depositar en una meta ya lograda');
     }
 
-    // Si hay contrato configurado, depositar on-chain
+    // Si hay contrato configurado, depositar primero en DeFindex y luego actualizar el contrato
     if (this.savingsGoalsContractAddress && userAddress) {
       try {
-        const result = await sorobanService.depositToGoal(
+        console.log('💰 Iniciando depósito en DeFindex (vault de Pumati)...', { amount, userAddress, userId, email });
+        
+        // PASO 1: Depositar directamente en DeFindex (vault de Pumati)
+        let defindexTxHash: string | undefined;
+        if (userId || email) {
+          try {
+            const defindexResult = await defindexService.deposit(
+              amount,
+              userAddress,
+              userId,
+              email
+            );
+
+            if (defindexResult.success) {
+              defindexTxHash = defindexResult.txHash;
+              console.log('✅ Depósito en DeFindex exitoso. txHash:', defindexTxHash);
+            } else {
+              console.error('❌ Error depositando en DeFindex:', defindexResult.error);
+              if (defindexResult.suggestions && defindexResult.suggestions.length > 0) {
+                console.log('💡 Sugerencias:', defindexResult.suggestions);
+              }
+              // Crear un error más descriptivo con sugerencias
+              const errorMessage = defindexResult.error || 'Error depositando en DeFindex';
+              const error = new Error(errorMessage);
+              (error as any).suggestions = defindexResult.suggestions;
+              throw error;
+            }
+          } catch (defindexError: any) {
+            console.error('❌ Excepción depositando en DeFindex:', defindexError);
+            throw new Error(defindexError.message || 'Error depositando en DeFindex');
+          }
+        } else {
+          throw new Error('No se puede depositar en DeFindex: falta userId o email');
+        }
+
+        // PASO 2: Actualizar el savedAmount en el contrato savings-goals
+        console.log('📝 Actualizando savedAmount en el contrato savings-goals...');
+        const contractResult = await sorobanService.depositToGoal(
           userAddress,
           amount,
           this.savingsGoalsContractAddress,
@@ -265,17 +367,66 @@ export class SavingsService {
           email
         );
 
-        if (result.success) {
-          // Actualizar meta local con nuevo savedAmount
-          goal.savedAmount = result.savedAmount;
+        console.log('📥 Resultado de depositToGoal:', contractResult);
+
+        if (contractResult.success) {
+          // Intentar obtener la meta actualizada del contrato para sincronizar
+          let finalSavedAmount = contractResult.savedAmount || (goal.savedAmount + amount);
+          
+          try {
+            console.log('🔄 Sincronizando meta del contrato...');
+            // Esperar un poco para que la transacción se confirme
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const updatedGoal = await sorobanService.getSavingsGoal(
+              userAddress,
+              this.savingsGoalsContractAddress
+            );
+            if (updatedGoal) {
+              const syncedGoal = this.mapContractGoalToLocal(updatedGoal, userAddress);
+              finalSavedAmount = syncedGoal.savedAmount; // Usar el valor del contrato
+              console.log('✅ Meta sincronizada con contrato. savedAmount:', finalSavedAmount);
+            } else {
+              console.warn('⚠️ No se encontró meta en el contrato después del depósito');
+            }
+          } catch (syncError) {
+            console.warn('⚠️ No se pudo sincronizar meta del contrato:', syncError);
+            // Usar el valor calculado o el del backend
+            if (!contractResult.savedAmount || contractResult.savedAmount === 0) {
+              finalSavedAmount = goal.savedAmount + amount;
+              console.log('📊 Usando savedAmount calculado:', finalSavedAmount);
+            }
+          }
+          
+          // Actualizar meta local con el savedAmount final
+          goal.savedAmount = finalSavedAmount;
           await this.updateGoalLocal(goal);
-          return { success: true, savedAmount: result.savedAmount, txHash: result.txHash };
+          console.log('✅ Depósito completo. savedAmount actualizado a:', goal.savedAmount);
+          console.log('   - DeFindex txHash:', defindexTxHash);
+          console.log('   - Contrato txHash:', contractResult.txHash);
+
+          // Retornar el savedAmount actualizado (usar el txHash de DeFindex como principal)
+          return { 
+            success: true, 
+            savedAmount: goal.savedAmount, 
+            txHash: defindexTxHash || contractResult.txHash 
+          };
         } else {
-          throw new Error(result.error || 'Error depositando');
+          console.error('❌ Error actualizando contrato savings-goals:', contractResult.error);
+          // Aunque el contrato falle, el depósito en DeFindex fue exitoso
+          // Actualizar localmente
+          goal.savedAmount = goal.savedAmount + amount;
+          await this.updateGoalLocal(goal);
+          console.warn('⚠️ Depósito en DeFindex exitoso, pero falló actualización del contrato. Actualizado localmente.');
+          return { 
+            success: true, 
+            savedAmount: goal.savedAmount, 
+            txHash: defindexTxHash 
+          };
         }
-      } catch (error) {
-        console.error('Error depositando on-chain:', error);
-        // Continuar con almacenamiento local
+      } catch (error: any) {
+        console.error('❌ Excepción en el flujo de depósito:', error);
+        throw error; // Propagar el error para que el frontend lo maneje
       }
     }
 
@@ -448,7 +599,7 @@ export class SavingsService {
     if (existingIndex >= 0) {
       goals[existingIndex] = goal;
     } else {
-      goals.push(goal);
+    goals.push(goal);
     }
     this.saveGoalsLocal(goals);
   }
