@@ -19,6 +19,9 @@ const {
   Operation,
   Asset,
   StrKey,
+  Contract,
+  xdr,
+  SorobanRpc,
 } = require('@stellar/stellar-sdk');
 
 const execAsync = promisify(exec);
@@ -47,6 +50,12 @@ const STELLAR_NETWORK_PASSPHRASE = STELLAR_NETWORK === 'mainnet'
   ? Networks.PUBLIC
   : Networks.TESTNET;
 const stellarServer = new Horizon.Server(STELLAR_HORIZON_URL);
+
+// Soroban RPC Configuration
+const SOROBAN_RPC_URL = process.env.SOROBAN_RPC_URL || (STELLAR_NETWORK === 'testnet' 
+  ? 'https://soroban-testnet.stellar.org'
+  : 'https://soroban-rpc.mainnet.stellar.org');
+const sorobanRpc = new SorobanRpc.Server(SOROBAN_RPC_URL);
 
 /**
  * Construir header de autenticación para Juno API
@@ -1008,6 +1017,426 @@ app.get('/api/info', (req, res) => {
   });
 });
 
+// ================================
+// ENDPOINTS DE SOROBAN (CONTRATOS)
+// ================================
+
+/**
+ * Función helper para convertir valores JS a XDR de Soroban
+ */
+function jsValueToXdr(value, type = 'string') {
+  try {
+    if (value === null || value === undefined) {
+      return xdr.ScVal.scvVoid();
+    }
+
+    switch (type) {
+      case 'address':
+        // Address Stellar (G...)
+        return xdr.ScVal.scvAddress(xdr.ScAddress.scAddressTypeAccount(xdr.PublicKey.publicKeyTypeEd25519(StrKey.decodeEd25519PublicKey(value))));
+      case 'i128':
+        // Número entero (i128)
+        const num = BigInt(value);
+        const hi = Number(num >> 64n);
+        const lo = Number(num & 0xffffffffffffffffn);
+        return xdr.ScVal.scvI128(new xdr.Int128Parts({ 
+          hi: xdr.Int64.fromString(hi.toString()), 
+          lo: xdr.Uint64.fromString(lo.toString()) 
+        }));
+      case 'i64':
+        // Número entero (i64)
+        return xdr.ScVal.scvI64(xdr.Int64.fromString(value.toString()));
+      case 'bytes':
+        // Bytes (hex string con 0x)
+        const hex = value.startsWith('0x') ? value.slice(2) : value;
+        return xdr.ScVal.scvBytes(Buffer.from(hex, 'hex'));
+      case 'string':
+        // String
+        return xdr.ScVal.scvString(value.toString());
+      default:
+        return xdr.ScVal.scvString(value.toString());
+    }
+  } catch (error) {
+    console.error('Error convirtiendo valor a XDR:', error, value, type);
+    throw new Error(`Error convirtiendo valor a XDR: ${error.message}`);
+  }
+}
+
+/**
+ * Invocar contrato Soroban
+ * Endpoint: POST /api/soroban/invoke-contract
+ */
+app.post('/api/soroban/invoke-contract', async (req, res) => {
+  console.log('📥 Endpoint /api/soroban/invoke-contract llamado');
+  try {
+    const { contractAddress, function: functionName, args, network, userId, email } = req.body;
+
+    if (!contractAddress || !functionName) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'contractAddress y function son requeridos' }
+      });
+    }
+
+    // Para funciones que requieren autenticación, necesitamos la secret key del usuario
+    let userSecretKey = null;
+    if (userId || email) {
+      if (!supabaseAdmin) {
+        return res.status(500).json({
+          success: false,
+          error: { message: 'Supabase no está configurado en el backend.' }
+        });
+      }
+
+      let query = supabaseAdmin
+        .from('usuarios')
+        .select('id,email,clabe,wallet_address')
+        .limit(1);
+
+      query = userId ? query.eq('id', userId) : query.eq('email', email);
+      const { data: userRow, error: userError } = await query.single();
+
+      if (userError || !userRow || !userRow.clabe) {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Usuario no encontrado o sin secret key almacenada.' }
+        });
+      }
+
+      try {
+        userSecretKey = decryptSecretKey(userRow.clabe);
+      } catch (error) {
+        console.error('❌ Error desencriptando secret key:', error);
+        return res.status(500).json({
+          success: false,
+          error: { message: 'No se pudo desencriptar la secret key del usuario.' }
+        });
+      }
+    }
+
+    // Crear contrato instance
+    const contract = new Contract(contractAddress);
+
+    // Convertir argumentos a XDR
+    // Para set_savings_goal: [user: Address, target_amount: i128, deadline_ts: Option<i64>]
+    // Para get_savings_goal: [user: Address]
+    const xdrArgs = (args || []).map((arg, index) => {
+      // Si es null o undefined, retornar Void (para Option types)
+      if (arg === null || arg === undefined) {
+        return xdr.ScVal.scvVoid();
+      }
+      
+      // Intentar detectar el tipo automáticamente
+      if (typeof arg === 'string' && arg.startsWith('G')) {
+        // Es una dirección Stellar
+        return jsValueToXdr(arg, 'address');
+      } else if (typeof arg === 'string' && /^0x[a-fA-F0-9]+$/i.test(arg)) {
+        // Es bytes hex
+        return jsValueToXdr(arg, 'bytes');
+      } else if (typeof arg === 'number' || (!isNaN(Number(arg)) && arg !== '')) {
+        // Es un número (i128 o i64 dependiendo del contexto)
+        // Para set_savings_goal: index 1 es i128, index 2 es i64
+        if (functionName === 'set_savings_goal' && index === 1) {
+          return jsValueToXdr(arg, 'i128');
+        } else if (functionName === 'set_savings_goal' && index === 2) {
+          return jsValueToXdr(arg, 'i64');
+        }
+        // Por defecto, usar i128
+        return jsValueToXdr(arg, 'i128');
+      } else {
+        // String normal
+        return jsValueToXdr(arg, 'string');
+      }
+    });
+
+    // Determinar si es una llamada de solo lectura o una transacción
+    const readOnlyFunctions = ['get_savings_goal'];
+    const isReadOnly = readOnlyFunctions.includes(functionName);
+
+    if (isReadOnly) {
+      // Llamada de solo lectura (simulate)
+      // simulateTransaction necesita XDR string, no objeto
+      // Construir una transacción temporal para simulación usando una cuenta dummy
+      const dummyKeypair = Keypair.random();
+      
+      // Crear una cuenta dummy simple para la simulación
+      // No necesitamos cargar la cuenta real del servidor para simulaciones
+      const dummyAccount = {
+        accountId: () => dummyKeypair.publicKey(),
+        sequenceNumber: () => '0',
+        incrementSequenceNumber: () => {},
+      };
+
+      const simulationTx = new TransactionBuilder(dummyAccount, {
+        fee: '100',
+        networkPassphrase: STELLAR_NETWORK_PASSPHRASE,
+      })
+        .addOperation(contract.call(functionName, ...xdrArgs))
+        .setTimeout(30)
+        .build();
+
+      // simulateTransaction puede aceptar el objeto Transaction directamente
+      // El SDK lo convertirá a XDR internamente
+      const result = await sorobanRpc.simulateTransaction(simulationTx);
+
+      if (result.errorResult) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Error en simulación del contrato',
+            code: 'CONTRACT_ERROR',
+            details: result.errorResult
+          }
+        });
+      }
+
+      // Decodificar resultado
+      let decodedResult = null;
+      if (result.result && result.result.retval) {
+        const retval = result.result.retval;
+        // Intentar decodificar según el tipo esperado
+        if (retval.switch() === xdr.ScValType.scvMap) {
+          // Es un struct (Goal)
+          const map = retval.map();
+          decodedResult = {};
+          if (map) {
+            map.forEach(entry => {
+              const key = entry.key().toString();
+              const val = entry.val();
+              if (val.switch() === xdr.ScValType.scvI128) {
+                decodedResult[key] = val.i128().toString();
+              } else if (val.switch() === xdr.ScValType.scvBool) {
+                decodedResult[key] = val.b();
+              } else if (val.switch() === xdr.ScValType.scvBytes) {
+                decodedResult[key] = '0x' + Buffer.from(val.bytes()).toString('hex');
+              } else if (val.switch() === xdr.ScValType.scvI64) {
+                decodedResult[key] = val.i64().toString();
+              } else if (val.switch() === xdr.ScValType.scvVoid) {
+                decodedResult[key] = null;
+              }
+            });
+          }
+        } else if (retval.switch() === xdr.ScValType.scvVoid) {
+          decodedResult = null;
+        } else if (retval.switch() === xdr.ScValType.scvBytes) {
+          decodedResult = '0x' + Buffer.from(retval.bytes()).toString('hex');
+        }
+      }
+
+      return res.json({
+        success: true,
+        goal: decodedResult,
+        result: result.result
+      });
+    } else {
+      // Transacción que requiere firma
+      if (!userSecretKey) {
+        return res.status(400).json({
+          success: false,
+          error: { 
+            message: 'Esta función requiere autenticación. Proporciona userId o email.',
+            code: 'AUTH_REQUIRED'
+          }
+        });
+      }
+
+      const sourceKeypair = Keypair.fromSecret(userSecretKey);
+      const sourceAccount = await stellarServer.loadAccount(sourceKeypair.publicKey());
+
+      // Construir transacción
+      const transaction = new TransactionBuilder(sourceAccount, {
+        fee: '100',
+        networkPassphrase: STELLAR_NETWORK_PASSPHRASE,
+      })
+        .addOperation(contract.call(functionName, ...xdrArgs))
+        .setTimeout(30)
+        .build();
+
+      // Simular primero
+      // simulateTransaction puede aceptar el objeto Transaction directamente
+      // El SDK lo convertirá a XDR internamente
+      let simulation;
+      try {
+        // En SDK v12, simulateTransaction puede tener problemas con el parsing
+        // Intentar usar el método directamente y capturar errores de parsing
+        simulation = await sorobanRpc.simulateTransaction(transaction);
+      } catch (simError) {
+        console.error('❌ Error en simulateTransaction:', simError);
+        console.error('Error name:', simError.name);
+        console.error('Error message:', simError.message);
+        
+        // Si es un error de parsing (Bad union switch), puede ser un problema de versión del SDK
+        // o un formato inesperado de la respuesta del servidor RPC
+        if (simError.message && simError.message.includes('Bad union switch')) {
+          return res.status(500).json({
+            success: false,
+            error: {
+              message: 'Error de parsing en la respuesta de simulación. Esto puede ser un problema de versión del SDK de Stellar.',
+              code: 'PARSING_ERROR',
+              details: {
+                error: 'Bad union switch: 4',
+                suggestion: 'Intenta actualizar @stellar/stellar-sdk a la última versión o verifica la configuración del servidor RPC',
+                sdkVersion: '12.1.0'
+              }
+            }
+          });
+        }
+        
+        return res.status(500).json({
+          success: false,
+          error: {
+            message: `Error simulando transacción: ${simError.message || 'Error desconocido'}`,
+            code: 'SIMULATION_ERROR',
+            details: simError.toString()
+          }
+        });
+      }
+      
+      if (simulation.errorResult) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Error en simulación del contrato',
+            code: 'CONTRACT_ERROR',
+            details: simulation.errorResult
+          }
+        });
+      }
+      
+      // Verificar que simulation.transactionData existe
+      if (!simulation.transactionData) {
+        return res.status(500).json({
+          success: false,
+          error: {
+            message: 'La simulación no retornó transactionData',
+            code: 'MISSING_TRANSACTION_DATA'
+          }
+        });
+      }
+
+      // Aplicar recursos de la simulación
+      // Usar assembleTransaction si está disponible (versiones recientes del SDK)
+      let finalTransaction;
+      
+      try {
+        // Verificar si assembleTransaction existe como método estático o de instancia
+        const hasAssembleTransaction = typeof SorobanRpc.assembleTransaction === 'function' ||
+                                      typeof sorobanRpc.assembleTransaction === 'function';
+        
+        if (hasAssembleTransaction) {
+          // Método moderno: usar assembleTransaction
+          const assembleFn = SorobanRpc.assembleTransaction || sorobanRpc.assembleTransaction;
+          finalTransaction = assembleFn(transaction, simulation).build();
+        } else {
+          // Fallback: usar el método manual para versiones antiguas
+          // Reconstruir la transacción desde XDR con los datos de Soroban aplicados
+          const txXdr = transaction.toXDR();
+          const txEnv = xdr.TransactionEnvelope.fromXDR(txXdr, 'base64');
+          
+          // Aplicar los datos de Soroban de la simulación
+          if (simulation.transactionData) {
+            const sorobanData = simulation.transactionData;
+            const tx = txEnv.v1().tx();
+            
+            // Crear o actualizar la extensión de Soroban
+            if (!tx.ext() || tx.ext().switch() !== xdr.TransactionExt.transactionExtV1) {
+              tx.ext(xdr.TransactionExt.transactionExtV1({
+                ext: xdr.ExtensionPoint.ext(0),
+                sorobanData: sorobanData
+              }));
+            } else {
+              tx.ext().v1().sorobanData(sorobanData);
+            }
+            
+            // Reconstruir la transacción desde XDR
+            finalTransaction = TransactionBuilder.fromXDR(
+              txEnv.toXDR('base64'),
+              STELLAR_NETWORK_PASSPHRASE
+            );
+          } else {
+            finalTransaction = transaction;
+          }
+        }
+      } catch (error) {
+        console.error('Error aplicando datos de Soroban:', error);
+        // Si falla, intentar usar la transacción original (puede fallar al enviar)
+        finalTransaction = transaction;
+      }
+
+      // Firmar y enviar
+      finalTransaction.sign(sourceKeypair);
+      const sendResult = await sorobanRpc.sendTransaction(finalTransaction);
+
+      if (sendResult.errorResult) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Error enviando transacción',
+            code: 'TRANSACTION_ERROR',
+            details: sendResult.errorResult
+          }
+        });
+      }
+
+      // Esperar a que se confirme (con manejo de errores para Bad union switch)
+      let getResult = null;
+      let decodedResult = null;
+      
+      try {
+        getResult = await sorobanRpc.getTransaction(sendResult.hash);
+        let attempts = 0;
+        while (getResult && getResult.status === 'NOT_FOUND' && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          try {
+            getResult = await sorobanRpc.getTransaction(sendResult.hash);
+          } catch (getError) {
+            // Si hay un error de parsing, continuar sin el resultado detallado
+            console.warn('⚠️ Error obteniendo detalles de transacción:', getError.message);
+            break;
+          }
+          attempts++;
+        }
+
+        // Decodificar resultado si está disponible
+        if (getResult && getResult.resultValue) {
+          try {
+            const retval = getResult.resultValue;
+            if (retval.switch() === xdr.ScValType.scvBytes) {
+              decodedResult = '0x' + Buffer.from(retval.bytes()).toString('hex');
+            } else if (retval.switch() === xdr.ScValType.scvI128) {
+              decodedResult = retval.i128().toString();
+            }
+          } catch (decodeError) {
+            console.warn('⚠️ Error decodificando resultado:', decodeError.message);
+            // Continuar sin el resultado decodificado
+          }
+        }
+      } catch (getTxError) {
+        // Si hay un error de parsing (Bad union switch), aún podemos retornar el hash
+        console.warn('⚠️ Error obteniendo transacción después de enviar:', getTxError.message);
+        // Continuar sin el resultado detallado, pero retornar el hash de la transacción
+      }
+
+      return res.json({
+        success: true,
+        txHash: sendResult.hash,
+        proofId: decodedResult,
+        result: getResult.resultValue ? getResult.resultValue.toString() : null
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error en /api/soroban/invoke-contract:', error);
+    res.status(500).json({
+      success: false,
+      error: { 
+        message: error.message || 'Error invocando contrato',
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
 // Error handler para rutas no encontradas
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -1196,22 +1625,24 @@ app.post('/api/portal/refresh-session/:clientId', async (req, res) => {
 app.post('/api/zk/generate-proof', async (req, res) => {
   console.log('📥 Endpoint /api/zk/generate-proof llamado');
   try {
-    const { balance, targetAmount } = req.body;
+    // Soporta tanto 'balance' (legacy) como 'saved_amount' (nuevo)
+    const { balance, saved_amount, targetAmount } = req.body;
+    const savedAmount = saved_amount || balance; // Usar saved_amount si está disponible
 
-    if (!balance || !targetAmount) {
+    if (!savedAmount || !targetAmount) {
       return res.status(400).json({
         success: false,
-        error: { message: 'balance y targetAmount son requeridos' }
+        error: { message: 'saved_amount (o balance) y targetAmount son requeridos' }
       });
     }
 
-    const balanceNum = parseInt(balance);
+    const savedAmountNum = parseInt(savedAmount);
     const targetNum = parseInt(targetAmount);
 
-    if (balanceNum < targetNum) {
+    if (savedAmountNum < targetNum) {
       return res.status(400).json({
         success: false,
-        error: { message: 'balance debe ser mayor o igual a targetAmount' }
+        error: { message: 'saved_amount debe ser mayor o igual a targetAmount' }
       });
     }
 
@@ -1261,8 +1692,8 @@ app.post('/api/zk/generate-proof', async (req, res) => {
       });
     }
 
-    // Actualizar Prover.toml con los valores
-    const proverToml = `balance = "${balanceNum}"
+    // Actualizar Prover.toml con los valores (usar saved_amount)
+    const proverToml = `saved_amount = "${savedAmountNum}"
 target_amount = "${targetNum}"
 `;
     
@@ -1297,8 +1728,35 @@ target_amount = "${targetNum}"
       const proofPath = path.join(circuitPath, 'proofs/savings_proof.proof');
       const proofContent = await fs.readFile(proofPath, 'utf8');
       proofHex = '0x' + proofContent.trim();
-      publicInputs = [(balanceNum - targetNum).toString()]; // Solo diferencia pública
+      publicInputs = [(savedAmountNum - targetNum).toString()]; // Solo diferencia pública
+      
+      // Crear proof_blob en el formato esperado por el verificador
+      // Formato: [4-byte count][public_inputs (32 bytes cada uno)][proof bytes]
+      const fields = publicInputs.length;
+      const fieldsBytes = Buffer.alloc(4);
+      fieldsBytes.writeUInt32BE(fields, 0);
+      
+      // Public inputs como bytes (cada uno es 32 bytes, big-endian)
+      const publicInputsBytes = Buffer.concat(
+        publicInputs.map(input => {
+          const num = BigInt(input);
+          const buffer = Buffer.alloc(32);
+          // Escribir en los últimos 8 bytes (u64)
+          buffer.writeBigUInt64BE(num, 24);
+          return buffer;
+        })
+      );
+      
+      // Proof como bytes hex
+      const proofHexClean = proofHex.startsWith('0x') ? proofHex.slice(2) : proofHex;
+      const proofBytes = Buffer.from(proofHexClean, 'hex');
+      
+      // Concatenar todo para crear el proof_blob
+      const proofBlob = Buffer.concat([fieldsBytes, publicInputsBytes, proofBytes]);
+      const proofBlobHex = '0x' + proofBlob.toString('hex');
+      
       console.log('✅ Proof generado exitosamente con nargo');
+      console.log(`📦 Proof blob creado: ${proofBlob.length} bytes`);
     } catch (error) {
       console.error('❌ Error ejecutando nargo prove:', error);
       return res.status(500).json({
@@ -1321,17 +1779,19 @@ target_amount = "${targetNum}"
       });
     }
 
-    // Generar proof ID (hash del proof)
-    const proofId = '0x' + crypto.createHash('sha256').update(proofHex).digest('hex');
+    // Generar proof ID (hash del proof_blob completo)
+    const proofId = '0x' + crypto.createHash('sha256').update(proofBlob).digest('hex');
 
     res.json({
       success: true,
-      proof: proofHex,
+      proof: proofHex, // Proof original en hex
+      proofBlob: proofBlobHex, // Proof blob en formato para el verificador
       publicInputs,
       proofId,
       metadata: {
         timestamp: new Date().toISOString(),
-        generatedWith: 'nargo'
+        generatedWith: 'nargo',
+        proofBlobSize: proofBlob.length
       }
     });
 
@@ -1497,72 +1957,6 @@ total_questions = "${total_questions}"
         code: 'NARGO_PROVE_ERROR',
         details: error.stderr || error.stdout
       }
-    });
-  }
-});
-
-// ================================
-// ENDPOINTS DE SOROBAN
-// ================================
-
-/**
- * Invocar contrato Soroban
- * Endpoint: POST /api/soroban/invoke-contract
- */
-app.post('/api/soroban/invoke-contract', async (req, res) => {
-  console.log('📥 Endpoint /api/soroban/invoke-contract llamado');
-  try {
-    const { contractAddress, function: functionName, args, network } = req.body;
-
-    if (!contractAddress || !functionName) {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'contractAddress y function son requeridos' }
-      });
-    }
-
-    // Verificar que el SDK de Soroban esté configurado
-    const sorobanRpcUrl = process.env.SOROBAN_RPC_URL;
-    const sorobanNetworkPassphrase = process.env.SOROBAN_NETWORK_PASSPHRASE;
-
-    if (!sorobanRpcUrl) {
-      return res.status(500).json({
-        success: false,
-        error: { 
-          message: 'SOROBAN_RPC_URL no está configurado. Por favor, configura las variables de entorno.',
-          code: 'SOROBAN_NOT_CONFIGURED'
-        }
-      });
-    }
-
-    // En producción, esto debe usar el SDK de Soroban real
-    // Por ahora, retornamos error indicando que necesita implementación
-    console.log('🔄 Intentando invocar contrato Soroban:', {
-      contractAddress,
-      function: functionName,
-      network: network || 'testnet',
-      rpcUrl: sorobanRpcUrl
-    });
-
-    return res.status(501).json({
-      success: false,
-      error: { 
-        message: 'Invocación de contratos Soroban no implementada. Por favor, integra el SDK de Soroban (@stellar/stellar-sdk) en el backend.',
-        code: 'NOT_IMPLEMENTED',
-        details: {
-          contractAddress,
-          function: functionName,
-          requiredSDK: '@stellar/stellar-sdk',
-          documentation: 'https://developers.stellar.org/docs/smart-contracts/getting-started'
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error en /api/soroban/invoke-contract:', error);
-    res.status(500).json({
-      success: false,
-      error: { message: error.message || 'Error invocando contrato' }
     });
   }
 });

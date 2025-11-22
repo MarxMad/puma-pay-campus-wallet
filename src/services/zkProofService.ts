@@ -6,12 +6,13 @@
  */
 
 export interface ProofInput {
-  balance: number;
+  balance: number; // Representa saved_amount de la cajita de ahorro
   targetAmount: number;
 }
 
 export interface ProofResult {
-  proof: string; // Hex string del proof
+  proof: string; // Hex string del proof original
+  proofBlob?: string; // Proof blob en formato para el verificador (si viene del backend)
   publicInputs: string[]; // Inputs públicos del proof
   proofId?: string; // ID del proof (hash)
   verified?: boolean; // Si fue verificado on-chain
@@ -26,9 +27,9 @@ export class ZKProofService {
    * o usaría WASM del compilador Noir en el frontend.
    */
   async generateProof(input: ProofInput): Promise<ProofResult> {
-    // Validar inputs
+    // Validar inputs (balance ahora representa saved_amount de la cajita)
     if (input.balance < input.targetAmount) {
-      throw new Error('Balance debe ser mayor o igual a targetAmount para generar proof');
+      throw new Error('El monto guardado debe ser mayor o igual al objetivo para generar proof');
     }
 
     try {
@@ -39,7 +40,7 @@ export class ZKProofService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          balance: input.balance.toString(),
+          saved_amount: input.balance.toString(), // Usar saved_amount en lugar de balance
           targetAmount: input.targetAmount.toString(),
         }),
       });
@@ -61,6 +62,7 @@ export class ZKProofService {
 
       return {
         proof: data.proof,
+        proofBlob: data.proofBlob, // Proof blob en formato para el verificador
         publicInputs: data.publicInputs,
         proofId: data.proofId,
       };

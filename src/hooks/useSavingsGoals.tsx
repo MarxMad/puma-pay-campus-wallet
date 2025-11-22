@@ -10,14 +10,15 @@ export interface UseSavingsGoalsReturn {
   goals: SavingsGoal[];
   isLoading: boolean;
   error: Error | null;
-  createGoal: (targetAmount: number, deadline?: Date) => Promise<SavingsGoal>;
+  createGoal: (targetAmount: number, deadline?: Date) => Promise<SavingsGoal & { txHash?: string }>;
   deleteGoal: (goalId: string) => Promise<void>;
   updateGoal: (
     goalId: string,
     updates: Partial<Pick<SavingsGoal, 'targetAmount' | 'deadline'>>
   ) => Promise<SavingsGoal>;
+  depositToGoal: (goalId: string, amount: number) => Promise<{ success: boolean; savedAmount: number; txHash?: string }>;
   getProgress: (goalId: string) => GoalProgress | null;
-  generateProof: (goalId: string) => Promise<void>;
+  generateProof: (goalId: string) => Promise<{ verificationTxHash?: string } | void>;
   claimReward: (goalId: string) => Promise<void>;
   refreshGoals: () => Promise<void>;
 }
@@ -35,7 +36,7 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
     refetch,
   } = useQuery({
     queryKey: ['savingsGoals', user?.address || user?.email],
-    queryFn: () => savingsService.getSavingsGoals(),
+    queryFn: () => savingsService.getSavingsGoals(user?.walletAddress || user?.address),
     enabled: !!user,
   });
 
@@ -47,7 +48,13 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
     }: {
       targetAmount: number;
       deadline?: Date;
-    }) => savingsService.createSavingsGoal(targetAmount, deadline),
+    }) => savingsService.createSavingsGoal(
+      targetAmount, 
+      deadline,
+      user?.walletAddress || user?.address,
+      (user as any)?.id, // userId desde Supabase
+      user?.email
+    ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savingsGoals'] });
     },
@@ -75,13 +82,32 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
     },
   });
 
+  // Mutation para depositar en meta
+  const depositMutation = useMutation({
+    mutationFn: async ({ goalId, amount }: { goalId: string; amount: number }) => {
+      return savingsService.depositToGoal(
+        goalId,
+        amount,
+        user?.walletAddress || user?.address,
+        (user as any)?.id, // userId desde Supabase
+        user?.email
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savingsGoals'] });
+    },
+  });
+
   // Mutation para generar proof
   const generateProofMutation = useMutation({
     mutationFn: async (goalId: string) => {
-      const currentBalance = balance.balance || 0;
+      // Ya no necesitamos pasar balance, se usa savedAmount de la meta
       const proof = await savingsService.generateProofIfAchieved(
         goalId,
-        currentBalance
+        undefined, // No se usa, se mantiene por compatibilidad
+        user?.walletAddress || user?.address,
+        (user as any)?.id, // userId desde Supabase
+        user?.email
       );
 
       if (!proof) {
@@ -103,30 +129,36 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
         throw new Error('Meta no encontrada o proof no generado');
       }
 
-      // Obtener proof completo (necesitamos guardarlo cuando se genera)
+      // La recompensa ya fue reclamada cuando se generó el proof
+      // Este método puede usarse para lógica adicional
       const currentBalance = balance.balance || 0;
       const proof = await zkProofService.generateProof({
         balance: currentBalance,
         targetAmount: goal.targetAmount,
       });
 
-      await savingsService.claimReward(goalId, proof);
+      await savingsService.claimReward(
+        goalId, 
+        proof,
+        user?.walletAddress || user?.address
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savingsGoals'] });
     },
   });
 
-  // Obtener progreso de una meta
+  // Obtener progreso de una meta usando savedAmount de la cajita
   const getProgress = useCallback(
     (goalId: string): GoalProgress | null => {
-      const currentBalance = balance.balance || 0;
       const goal = goals.find((g) => g.id === goalId);
       if (!goal) return null;
 
-      const progress = Math.min((currentBalance / goal.targetAmount) * 100, 100);
+      // Usar savedAmount de la cajita en lugar del balance total
+      const savedAmount = goal.savedAmount || 0;
+      const progress = Math.min((savedAmount / goal.targetAmount) * 100, 100);
       const canGenerateProof =
-        currentBalance >= goal.targetAmount && !goal.achieved;
+        savedAmount >= goal.targetAmount && !goal.achieved;
 
       let daysRemaining: number | undefined;
       if (goal.deadline) {
@@ -138,13 +170,13 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
 
       return {
         goal,
-        currentBalance,
+        currentBalance: savedAmount, // Usar savedAmount
         progress,
         canGenerateProof,
         daysRemaining: daysRemaining && daysRemaining > 0 ? daysRemaining : undefined,
       };
     },
-    [goals, balance.balance]
+    [goals] // Ya no depende de balance.balance
   );
 
   return {
@@ -163,9 +195,12 @@ export const useSavingsGoals = (): UseSavingsGoalsReturn => {
     ) => {
       return updateMutation.mutateAsync({ goalId, updates });
     },
+    depositToGoal: async (goalId: string, amount: number) => {
+      return depositMutation.mutateAsync({ goalId, amount });
+    },
     getProgress,
     generateProof: async (goalId: string) => {
-      await generateProofMutation.mutateAsync(goalId);
+      return generateProofMutation.mutateAsync(goalId);
     },
     claimReward: async (goalId: string) => {
       await claimRewardMutation.mutateAsync(goalId);

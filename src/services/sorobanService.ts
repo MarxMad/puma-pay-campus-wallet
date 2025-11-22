@@ -5,6 +5,8 @@
  * en la red Stellar usando Soroban.
  */
 
+import { buildApiUrl } from '@/config/backend';
+
 export interface SorobanConfig {
   network: 'testnet' | 'mainnet' | 'local';
   rpcUrl?: string;
@@ -16,6 +18,22 @@ export interface VerificationResult {
   proofId: string;
   txHash?: string;
   error?: string;
+}
+
+export interface SavingsGoal {
+  target_amount: string; // i128 como string
+  saved_amount: string; // i128 como string - dinero guardado en esta "cajita"
+  deadline_ts: string | null; // Option<i64> como string o null
+  achieved: boolean;
+  proof_id: string | null; // Option<BytesN<32>> como hex string o null
+}
+
+export interface SetSavingsGoalParams {
+  userAddress: string;
+  targetAmount: number; // Se convierte a i128
+  deadlineTs?: number | null; // Timestamp opcional
+  userId?: string; // Para obtener secret key del backend
+  email?: string; // Alternativa a userId
 }
 
 export class SorobanService {
@@ -36,7 +54,7 @@ export class SorobanService {
       // En producción, esto usaría el SDK de Soroban
       // Por ahora, simulamos la llamada al contrato
       
-      const response = await fetch('/api/soroban/invoke-contract', {
+      const response = await fetch(buildApiUrl('/api/soroban/invoke-contract'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,23 +108,149 @@ export class SorobanService {
   }
 
   /**
-   * Envía un proof al contrato savings-goals
+   * Obtiene el estado de una meta de ahorro
    */
-  async submitProofToSavingsGoals(
-    proofBlob: string,
-    savingsGoalsContractAddress: string
-  ): Promise<VerificationResult> {
+  async getSavingsGoal(
+    userAddress: string,
+    savingsGoalsContractAddress?: string
+  ): Promise<SavingsGoal | null> {
     try {
-      const response = await fetch('/api/soroban/invoke-contract', {
+      const contractAddress = savingsGoalsContractAddress || this.config.contractAddress;
+      if (!contractAddress) {
+        throw new Error('Dirección del contrato savings-goals no configurada');
+      }
+
+      const response = await fetch(buildApiUrl('/api/soroban/invoke-contract'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contractAddress: savingsGoalsContractAddress,
-          function: 'submit_proof',
-          args: [proofBlob],
+          contractAddress,
+          function: 'get_savings_goal',
+          args: [userAddress],
           network: this.config.network,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.error?.code === 'GOAL_NOT_FOUND' || response.status === 404) {
+          return null; // Meta no encontrada
+        }
+        throw new Error(errorData.error?.message || `Error obteniendo meta: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        if (data.error?.code === 'GOAL_NOT_FOUND') {
+          return null;
+        }
+        throw new Error(data.error?.message || 'Error obteniendo meta');
+      }
+
+      return data.goal as SavingsGoal;
+    } catch (error: any) {
+      console.error('Error obteniendo meta de ahorro:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crea o actualiza una meta de ahorro
+   */
+  async setSavingsGoal(
+    params: SetSavingsGoalParams,
+    savingsGoalsContractAddress?: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    try {
+      const contractAddress = savingsGoalsContractAddress || this.config.contractAddress;
+      if (!contractAddress) {
+        throw new Error('Dirección del contrato savings-goals no configurada');
+      }
+
+      const requestBody = {
+        contractAddress,
+        function: 'set_savings_goal',
+        args: [
+          params.userAddress,
+          params.targetAmount.toString(),
+          params.deadlineTs ? params.deadlineTs.toString() : null,
+        ],
+        network: this.config.network,
+        userId: params.userId,
+        email: params.email,
+      };
+
+      console.log('📤 sorobanService.setSavingsGoal - Enviando request:', requestBody);
+
+      const apiUrl = buildApiUrl('/api/soroban/invoke-contract');
+      console.log('🌐 URL del backend:', apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 sorobanService.setSavingsGoal - Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ sorobanService.setSavingsGoal - Error response:', errorData);
+        return {
+          success: false,
+          error: errorData.error?.message || `Error estableciendo meta: ${response.statusText}`,
+        };
+      }
+
+      const data = await response.json();
+      console.log('✅ sorobanService.setSavingsGoal - Success response:', data);
+      return {
+        success: data.success || false,
+        txHash: data.txHash,
+        error: data.error?.message,
+      };
+    } catch (error: any) {
+      console.error('Error estableciendo meta de ahorro:', error);
+      return {
+        success: false,
+        error: error.message || 'Error desconocido estableciendo meta',
+      };
+    }
+  }
+
+  /**
+   * Envía un proof ZK al contrato savings-goals para marcar la meta como lograda
+   * El contrato internamente invoca al verificador Ultrahonk
+   */
+  async submitProofToSavingsGoals(
+    userAddress: string,
+    proofBlob: string, // Blob completo del proof (fields + public_inputs + proof)
+    savingsGoalsContractAddress?: string,
+    userId?: string,
+    email?: string
+  ): Promise<VerificationResult> {
+    try {
+      const contractAddress = savingsGoalsContractAddress || this.config.contractAddress;
+      if (!contractAddress) {
+        throw new Error('Dirección del contrato savings-goals no configurada');
+      }
+
+      const response = await fetch(buildApiUrl('/api/soroban/invoke-contract'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractAddress,
+          function: 'submit_proof',
+          args: [userAddress, proofBlob],
+          network: this.config.network,
+          userId,
+          email,
         }),
       });
 
@@ -129,13 +273,13 @@ export class SorobanService {
         const errorCode = data.error?.code;
         return {
           verified: false,
-          proofId: this.generateProofId(proofBlob),
+          proofId: data.proofId || this.generateProofId(proofBlob),
           error: `${errorMessage}${errorCode ? ` (${errorCode})` : ''}`,
         };
       }
 
       return {
-        verified: data.verified || false,
+        verified: true,
         proofId: data.proofId || this.generateProofId(proofBlob),
         txHash: data.txHash,
       };
@@ -150,43 +294,134 @@ export class SorobanService {
   }
 
   /**
-   * Obtiene el estado de una meta de ahorro
+   * Deposita dinero en la "cajita" de ahorro de un usuario
    */
-  async getSavingsGoal(
+  async depositToGoal(
     userAddress: string,
-    savingsGoalsContractAddress: string
-  ): Promise<{
-    targetAmount?: number;
-    achieved?: boolean;
-    proofId?: string;
-  }> {
+    amount: number,
+    savingsGoalsContractAddress?: string,
+    userId?: string,
+    email?: string
+  ): Promise<{ success: boolean; savedAmount: number; txHash?: string; error?: string }> {
     try {
-      const response = await fetch('/api/soroban/invoke-contract', {
+      const contractAddress = savingsGoalsContractAddress || this.config.contractAddress;
+      if (!contractAddress) {
+        throw new Error('Dirección del contrato savings-goals no configurada');
+      }
+
+      const response = await fetch(buildApiUrl('/api/soroban/invoke-contract'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contractAddress: savingsGoalsContractAddress,
-          function: 'get_savings_goal',
-          args: [userAddress],
+          contractAddress,
+          function: 'deposit_to_goal',
+          args: [userAddress, amount],
           network: this.config.network,
+          userId,
+          email,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Error obteniendo meta: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || errorData.message || `Error depositando: ${response.statusText}`;
+        return {
+          success: false,
+          savedAmount: 0,
+          error: errorMessage,
+        };
       }
 
       const data = await response.json();
+      
+      if (!data.success) {
+        return {
+          success: false,
+          savedAmount: 0,
+          error: data.error?.message || 'Error depositando',
+        };
+      }
+
       return {
-        targetAmount: data.targetAmount,
-        achieved: data.achieved,
-        proofId: data.proofId,
+        success: true,
+        savedAmount: parseInt(data.result?.saved_amount || data.savedAmount || '0'),
+        txHash: data.txHash,
       };
     } catch (error: any) {
-      console.error('Error obteniendo meta de ahorro:', error);
-      return {};
+      console.error('Error depositando a meta:', error);
+      return {
+        success: false,
+        savedAmount: 0,
+        error: error.message || 'Error desconocido depositando',
+      };
+    }
+  }
+
+  /**
+   * Retira dinero de la "cajita" de ahorro (opcional)
+   */
+  async withdrawFromGoal(
+    userAddress: string,
+    amount: number,
+    savingsGoalsContractAddress?: string,
+    userId?: string,
+    email?: string
+  ): Promise<{ success: boolean; savedAmount: number; txHash?: string; error?: string }> {
+    try {
+      const contractAddress = savingsGoalsContractAddress || this.config.contractAddress;
+      if (!contractAddress) {
+        throw new Error('Dirección del contrato savings-goals no configurada');
+      }
+
+      const response = await fetch(buildApiUrl('/api/soroban/invoke-contract'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractAddress,
+          function: 'withdraw_from_goal',
+          args: [userAddress, amount],
+          network: this.config.network,
+          userId,
+          email,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || errorData.message || `Error retirando: ${response.statusText}`;
+        return {
+          success: false,
+          savedAmount: 0,
+          error: errorMessage,
+        };
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        return {
+          success: false,
+          savedAmount: 0,
+          error: data.error?.message || 'Error retirando',
+        };
+      }
+
+      return {
+        success: true,
+        savedAmount: parseInt(data.result?.saved_amount || data.savedAmount || '0'),
+        txHash: data.txHash,
+      };
+    } catch (error: any) {
+      console.error('Error retirando de meta:', error);
+      return {
+        success: false,
+        savedAmount: 0,
+        error: error.message || 'Error desconocido retirando',
+      };
     }
   }
 

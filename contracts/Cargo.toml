@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "ultrahonk-verifier",
+    "simple-verifier",
     "savings-goals",
     "course-completion",
     "user-levels",

@@ -10,6 +10,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from '@/hooks/use-toast';
 
+const STELLAR_EXPLORER_BASE =
+  (import.meta.env.VITE_STELLAR_NETWORK || 'testnet').toLowerCase() === 'mainnet'
+    ? 'https://stellar.expert/explorer/public/tx/'
+    : 'https://stellar.expert/explorer/testnet/tx/';
+
 const SendPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -706,10 +711,10 @@ const SendPage = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => window.open(`https://sepolia.arbiscan.io/tx/${txHash}`, '_blank')}
+                    onClick={() => window.open(`${STELLAR_EXPLORER_BASE}${txHash}`, '_blank')}
                     className="mt-2 text-xs text-green-100 hover:text-white"
                   >
-                    Ver en Arbiscan <ExternalLink className="h-3 w-3 ml-1 inline" />
+                    Ver en Stellar Expert <ExternalLink className="h-3 w-3 ml-1 inline" />
                   </Button>
                 </div>
 
@@ -727,6 +732,17 @@ const SendPage = () => {
           </Dialog>
         )}
       </div>
+      <Dialog open={isLoading && !txHash}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-sm">
+          <div className="flex flex-col items-center space-y-4 py-6">
+            <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            <DialogTitle className="text-xl font-semibold">Procesando envío...</DialogTitle>
+            <DialogDescription className="text-center text-gray-300">
+              Estamos firmando y transmitiendo tu transacción en Stellar. Este paso puede tardar unos segundos.
+            </DialogDescription>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
