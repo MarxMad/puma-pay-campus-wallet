@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "dev:tunnel": "node start-with-ngrok.js",
     "test": "jest"
   },
   "keywords": ["pumapay", "juno", "mxnb", "blockchain", "wallet"],

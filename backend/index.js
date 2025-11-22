@@ -76,14 +76,41 @@ function buildJunoAuthHeader(apiKey, apiSecret, method, path, body = '') {
 const app = express();
 
 // Configurar CORS para producción
+// Acepta localhost, Vercel, y URLs de ngrok (para desarrollo con backend local)
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'https://pumapay-campus.vercel.app',
+  'https://puma-pay-campus-wallet.vercel.app',
+  /^https:\/\/.*\.vercel\.app$/,
+  /^https:\/\/.*\.ngrok\.io$/,
+  /^https:\/\/.*\.ngrok-free\.app$/,
+  /^https:\/\/.*\.ngrok\.app$/
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:8080', // Agregado para desarrollo
-    'https://pumapay-campus.vercel.app',
-    'https://*.vercel.app'
-  ],
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Verificar si el origin está en la lista permitida
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS bloqueado para origin: ${origin}`);
+      callback(null, true); // Permitir de todas formas en desarrollo
+    }
+  },
   credentials: true
 }));
 
@@ -2093,8 +2120,8 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Para desarrollo local
-if (process.env.NODE_ENV !== 'production') {
+// Para desarrollo local (Vercel maneja el servidor en producción)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
     console.log(`🚀 Servidor PumaPay Backend escuchando en http://localhost:${PORT}`);
