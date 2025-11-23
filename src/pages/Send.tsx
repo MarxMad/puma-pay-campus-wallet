@@ -551,8 +551,8 @@ const SendPage = () => {
 
         {/* Modal de Confirmación de Transacción */}
         <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
-            <DialogHeader>
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-xl font-bold flex items-center space-x-2">
                 <AlertCircle className="h-6 w-6 text-orange-500" />
                 <span>Confirmar Transacción XLM</span>
@@ -562,7 +562,7 @@ const SendPage = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
               {/* Token y Red */}
               <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -644,7 +644,7 @@ const SendPage = () => {
               </div>
             </div>
 
-            <div className="flex space-x-3 pt-4 border-t border-gray-700">
+            <div className="flex space-x-3 pt-4 border-t border-gray-700 flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={() => setShowConfirmDialog(false)}
@@ -674,8 +674,8 @@ const SendPage = () => {
         {/* Modal de Éxito */}
         {txHash && (
           <Dialog open={!!txHash} onOpenChange={() => setTxHash(null)}>
-            <DialogContent className="bg-gradient-to-br from-green-600 to-emerald-600 border-none text-white max-w-md">
-              <div className="text-center py-4">
+            <DialogContent className="bg-gradient-to-br from-green-600 to-emerald-600 border-none text-white max-w-md max-h-[90vh] flex flex-col">
+              <div className="text-center py-4 overflow-y-auto flex-1 min-h-0">
                 <div className="mb-4 flex justify-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
