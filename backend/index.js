@@ -2097,6 +2097,38 @@ app.get('/api/defindex/apy', async (req, res) => {
 });
 
 // Error handler para rutas no encontradas
+// Ruta raíz - Información del API
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'PumaPay Campus Wallet Backend API',
+    version: '1.0.0',
+    status: 'operational',
+    endpoints: {
+      health: '/api/health',
+      info: '/api/info',
+      stellar: {
+        send: 'POST /api/stellar/send'
+      },
+      balance: {
+        get: 'GET /api/balance',
+        transactions: 'GET /api/transactions'
+      },
+      savings: {
+        deposit: 'POST /api/defindex/deposit',
+        withdraw: 'POST /api/defindex/withdraw',
+        balance: 'GET /api/defindex/balance',
+        apy: 'GET /api/defindex/apy'
+      },
+      zk: {
+        generateProof: 'POST /api/zk/generate-proof',
+        generateCourseProof: 'POST /api/zk/generate-course-proof'
+      }
+    },
+    documentation: 'Visita /api/info para más detalles'
+  });
+});
+
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
