@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Category, Transaction, GlobalBudget, DEFAULT_CATEGORIES, DEFAULT_GLOBAL_BUDGET } from '@/types/categories';
+import { useAuth } from '@/contexts/AuthContext';
 // ⚠️ COMENTADO - Ya no usamos Portal ni ethers
 // import { portalService } from '@/services/portal';
 // import { ethers } from 'ethers';
@@ -7,6 +8,17 @@ import { Category, Transaction, GlobalBudget, DEFAULT_CATEGORIES, DEFAULT_GLOBAL
 const CATEGORIES_STORAGE_KEY = 'pumapay_categories';
 const TRANSACTIONS_STORAGE_KEY = 'pumapay_transactions';
 const GLOBAL_BUDGET_STORAGE_KEY = 'pumapay_global_budget';
+
+// Función para obtener la clave de transacciones específica por usuario
+const getTransactionsStorageKey = (userEmail?: string, userAddress?: string): string => {
+  if (userEmail) {
+    return `pumapay_transactions_${userEmail}`;
+  }
+  if (userAddress) {
+    return `pumapay_transactions_${userAddress}`;
+  }
+  return TRANSACTIONS_STORAGE_KEY; // Fallback para compatibilidad
+};
 
 // ⚠️ COMENTADO - Ya no verificamos contratos MXNB, ahora usamos Stellar
 /*
@@ -132,6 +144,10 @@ export const useCategories = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [globalBudget, setGlobalBudget] = useState<GlobalBudget>(DEFAULT_GLOBAL_BUDGET);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  // Obtener clave de transacciones específica para este usuario
+  const transactionsStorageKey = getTransactionsStorageKey(user?.email, user?.address);
 
   // Cargar categorías y transacciones reales al inicializar
   useEffect(() => {
@@ -146,12 +162,8 @@ export const useCategories = () => {
           localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
         }
 
-        // Obtener dirección de la wallet desde AuthContext (clave correcta: 'pumapay_auth')
-        const user = JSON.parse(localStorage.getItem('pumapay_auth') || '{}');
-        const walletAddress = user?.address;
-        // Log solo si hay wallet address (evitar spam en consola)
-        // if (walletAddress) console.log('[DEBUG] Dirección de wallet detectada:', walletAddress);
-        if (walletAddress) {
+        // Cargar transacciones desde localStorage usando clave específica por usuario
+        if (user?.email || user?.address) {
           // ⚠️ COMENTADO - Ya no obtenemos transacciones desde blockchain usando ethers
           // Ahora usamos Stellar para transacciones
           /*
@@ -163,8 +175,8 @@ export const useCategories = () => {
           const allTxs = [...mxnbTxs, ...ethTxs];
           */
           // Por ahora, solo usamos transacciones locales
-          // Cargar transacciones desde localStorage
-          const storedTransactions = localStorage.getItem(TRANSACTIONS_STORAGE_KEY);
+          // Cargar transacciones desde localStorage usando clave específica por usuario
+          const storedTransactions = localStorage.getItem(transactionsStorageKey);
           const allTxs: TransactionWithToken[] = storedTransactions 
             ? JSON.parse(storedTransactions) 
             : [];
@@ -203,7 +215,7 @@ export const useCategories = () => {
       }
     };
     loadData();
-  }, []);
+  }, [user?.email, user?.address, transactionsStorageKey]);
 
   // Guardar categorías en localStorage cuando cambien
   useEffect(() => {

@@ -6,7 +6,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { stellarService } from '@/services/stellarService';
 
-const BALANCE_STORAGE_KEY = 'pumapay_mxnb_balance';
+// Función para obtener la clave de balance específica por usuario
+const getBalanceStorageKey = (userEmail?: string, userAddress?: string): string => {
+  if (userEmail) {
+    return `pumapay_balance_${userEmail}`;
+  }
+  if (userAddress) {
+    return `pumapay_balance_${userAddress}`;
+  }
+  return 'pumapay_mxnb_balance'; // Fallback para compatibilidad
+};
+
+const BALANCE_STORAGE_KEY = 'pumapay_mxnb_balance'; // Mantener para compatibilidad
 
 export interface BalanceState {
   balance: number;
@@ -67,6 +78,9 @@ export const useBalance = () => {
   
   const { user, isAuthenticated } = useAuth();
   
+  // Obtener clave de balance específica para este usuario
+  const balanceStorageKey = getBalanceStorageKey(user?.email, user?.address);
+  
   // Flag para prevenir múltiples consultas simultáneas
   const isRefreshingRef = useRef(false);
   const lastRefreshTimeRef = useRef<number>(0);
@@ -75,11 +89,15 @@ export const useBalance = () => {
   // Función para recalcular balance basado en transacciones
   // Memoizada para evitar recreaciones y loops infinitos
   const recalculateBalance = useCallback(() => {
-    const rawTransactions = localStorage.getItem('pumapay_transactions');
+    // Usar clave específica por usuario para transacciones también
+    const transactionsKey = user?.email ? `pumapay_transactions_${user.email}` : 
+                           user?.address ? `pumapay_transactions_${user.address}` : 
+                           'pumapay_transactions';
+    const rawTransactions = localStorage.getItem(transactionsKey);
     
     // Solo calcular si hay transacciones o si no hay balance cacheado
     if (!rawTransactions) {
-      const cached = localStorage.getItem(BALANCE_STORAGE_KEY);
+      const cached = localStorage.getItem(balanceStorageKey);
       if (cached) {
         try {
           const cachedState = JSON.parse(cached);
@@ -104,7 +122,7 @@ export const useBalance = () => {
         lastUpdated: new Date()
       };
       setBalanceState(zeroState);
-      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(zeroState));
+      localStorage.setItem(balanceStorageKey, JSON.stringify(zeroState));
       return 0;
     }
     
@@ -120,7 +138,7 @@ export const useBalance = () => {
         lastUpdated: new Date()
       };
       setBalanceState(zeroState);
-      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(zeroState));
+      localStorage.setItem(balanceStorageKey, JSON.stringify(zeroState));
       return 0;
     }
     
@@ -143,10 +161,10 @@ export const useBalance = () => {
     };
     
     setBalanceState(newState);
-    localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
+    localStorage.setItem(balanceStorageKey, JSON.stringify(newState));
     
     return correctBalance;
-  }, []); // Sin dependencias - función pura que solo lee localStorage
+  }, [balanceStorageKey]); // Depende de balanceStorageKey para usar la clave correcta
 
   // Escuchar cuando se agreguen nuevas transacciones para recalcular balance
   // Optimizado: solo recalcula cuando realmente hay cambios
@@ -309,7 +327,7 @@ export const useBalance = () => {
       };
       
       setBalanceState(newState);
-      localStorage.setItem(BALANCE_STORAGE_KEY, JSON.stringify(newState));
+      localStorage.setItem(balanceStorageKey, JSON.stringify(newState));
     } catch (error) {
       console.error('❌ Error refreshing balance:', error);
       setBalanceState(prev => ({ ...prev, isLoading: false }));
@@ -344,8 +362,8 @@ export const useBalance = () => {
 
     hasInitializedRef.current = true;
 
-    // Cargar balance inicial desde cache si existe
-    const cached = localStorage.getItem(BALANCE_STORAGE_KEY);
+    // Cargar balance inicial desde cache si existe (usando clave específica por usuario)
+    const cached = localStorage.getItem(balanceStorageKey);
     if (cached) {
       try {
         const cachedState = JSON.parse(cached);
@@ -357,8 +375,11 @@ export const useBalance = () => {
             isLoading: false
           });
           // Solo recalcular si hay transacciones nuevas (comparar contador)
-          const lastCount = localStorage.getItem('pumapay_last_transaction_count');
-          const currentTransactions = JSON.parse(localStorage.getItem('pumapay_transactions') || '[]');
+          const transactionsKey = user?.email ? `pumapay_transactions_${user.email}` : 
+                                 user?.address ? `pumapay_transactions_${user.address}` : 
+                                 'pumapay_transactions';
+          const lastCount = localStorage.getItem(`pumapay_last_transaction_count_${user?.email || user?.address || ''}`);
+          const currentTransactions = JSON.parse(localStorage.getItem(transactionsKey) || '[]');
           if (lastCount !== currentTransactions.length.toString()) {
             // Hay transacciones nuevas, recalcular
             recalculateBalance();
@@ -373,7 +394,7 @@ export const useBalance = () => {
     // Si no hay cache, recalcular desde transacciones
     recalculateBalance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user?.address]); // recalculateBalance es estable (memoizada sin dependencias)
+  }, [isAuthenticated, user?.email, user?.address, balanceStorageKey]); // Depende de email/address para detectar cambio de usuario
 
   return {
     ...balanceState,

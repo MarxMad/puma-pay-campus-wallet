@@ -323,7 +323,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (onStepChange) onStepChange('Finalizando registro...');
       
-      // 4. Guardar usuario autenticado en localStorage
+      // 4. Limpiar cualquier balance o transacciones previas antes de crear la cuenta
+      // Esto asegura que cada nueva cuenta empiece con balance en 0
+      if (email) {
+        localStorage.removeItem(`pumapay_balance_${email}`);
+        localStorage.removeItem(`pumapay_transactions_${email}`);
+        localStorage.removeItem(`pumapay_last_transaction_count_${email}`);
+      }
+      if (address) {
+        localStorage.removeItem(`pumapay_balance_${address}`);
+        localStorage.removeItem(`pumapay_transactions_${address}`);
+        localStorage.removeItem(`pumapay_last_transaction_count_${address}`);
+      }
+      // También limpiar la clave genérica
+      localStorage.removeItem('pumapay_mxnb_balance');
+      localStorage.removeItem('pumapay_transactions');
+      
+      // 5. Guardar usuario autenticado en localStorage
       // NOTA: No guardamos la secret key en localStorage por seguridad
       // El usuario necesitará hacer login para acceder a su cuenta
       const userData: User = {
@@ -349,6 +365,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Logout
   const logout = () => {
+    // Limpiar balance y transacciones del usuario actual antes de hacer logout
+    if (user?.email) {
+      localStorage.removeItem(`pumapay_balance_${user.email}`);
+      localStorage.removeItem(`pumapay_transactions_${user.email}`);
+      localStorage.removeItem(`pumapay_last_transaction_count_${user.email}`);
+    }
+    if (user?.address) {
+      localStorage.removeItem(`pumapay_balance_${user.address}`);
+      localStorage.removeItem(`pumapay_transactions_${user.address}`);
+      localStorage.removeItem(`pumapay_last_transaction_count_${user.address}`);
+    }
+    // También limpiar la clave genérica por si acaso
+    localStorage.removeItem('pumapay_mxnb_balance');
+    localStorage.removeItem('pumapay_transactions');
+    
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
     // ⚠️ COMENTADO - Ya no usamos Portal
