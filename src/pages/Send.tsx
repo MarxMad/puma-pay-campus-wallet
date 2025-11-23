@@ -197,9 +197,18 @@ const SendPage = () => {
       
       // Enviar a backend para firmar en Stellar
       const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      
       if (!backendUrl) {
-        throw new Error('VITE_BACKEND_URL no está configurado.');
+        console.error('❌ VITE_BACKEND_URL no está configurado:', {
+          env: import.meta.env,
+          mode: import.meta.env.MODE,
+          dev: import.meta.env.DEV,
+          prod: import.meta.env.PROD
+        });
+        throw new Error('Backend URL no está configurado. Por favor, configura VITE_BACKEND_URL en las variables de entorno de Vercel.');
       }
+
+      console.log('🔗 Conectando al backend:', backendUrl);
 
       const response = await fetch(`${backendUrl}/api/stellar/send`, {
         method: 'POST',
@@ -209,7 +218,6 @@ const SendPage = () => {
         body: JSON.stringify({
           destination,
           amount: amountNum,
-          userId: user?.id,
           email: user?.email
         })
       });
@@ -677,10 +685,12 @@ const SendPage = () => {
                   </div>
                 </div>
                 
-                <DialogTitle className="text-2xl font-bold mb-2">¡Transacción Exitosa!</DialogTitle>
-                <DialogDescription className="text-green-100 mb-4">
-                  Tu transferencia de <strong>{amountNum.toFixed(2)} XLM</strong> ha sido enviada correctamente en <strong>Stellar</strong>.
-                </DialogDescription>
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold mb-2">¡Transacción Exitosa!</DialogTitle>
+                  <DialogDescription className="text-green-100 mb-4">
+                    Tu transferencia de <strong>{amountNum.toFixed(2)} XLM</strong> ha sido enviada correctamente en <strong>Stellar</strong>.
+                  </DialogDescription>
+                </DialogHeader>
 
                 <div className="bg-white/20 rounded-lg p-3 mb-4 backdrop-blur-sm">
                   <div className="flex items-center justify-between mb-2">
@@ -729,13 +739,15 @@ const SendPage = () => {
       </div>
       <Dialog open={isLoading && !txHash}>
         <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-sm">
-          <div className="flex flex-col items-center space-y-4 py-6">
-            <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-            <DialogTitle className="text-xl font-semibold">Procesando envío...</DialogTitle>
-            <DialogDescription className="text-center text-gray-300">
-              Estamos firmando y transmitiendo tu transacción en Stellar. Este paso puede tardar unos segundos.
-            </DialogDescription>
-          </div>
+          <DialogHeader>
+            <div className="flex flex-col items-center space-y-4 py-6">
+              <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+              <DialogTitle className="text-xl font-semibold">Procesando envío...</DialogTitle>
+              <DialogDescription className="text-center text-gray-300">
+                Estamos firmando y transmitiendo tu transacción en Stellar. Este paso puede tardar unos segundos.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
     </div>
