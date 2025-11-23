@@ -1,9 +1,27 @@
 // Configuración del backend de PumaPay
 // Este archivo maneja la conexión con las APIs de Juno
 
+// Función helper para obtener la URL del backend
+function getBackendUrl(): string {
+  const url = import.meta.env.VITE_BACKEND_URL?.trim() || '';
+  
+  // En producción, nunca usar localhost
+  if (import.meta.env.PROD && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+    console.error('❌ VITE_BACKEND_URL no puede ser localhost en producción:', url);
+    return '';
+  }
+  
+  // En desarrollo, si no hay URL configurada, usar el proxy de Vite
+  if (import.meta.env.DEV && !url) {
+    return ''; // El proxy de Vite manejará las rutas /api
+  }
+  
+  return url;
+}
+
 export const backendConfig = {
   // URL base del backend (cambiar según entorno)
-  baseUrl: import.meta.env.VITE_BACKEND_URL || '',
+  baseUrl: getBackendUrl(),
   
   // Endpoints disponibles
   endpoints: {
@@ -42,7 +60,19 @@ export const backendConfig = {
  * Construir URL completa para un endpoint
  */
 export function buildApiUrl(endpoint: string): string {
-  return `${backendConfig.baseUrl}${endpoint}`;
+  const baseUrl = backendConfig.baseUrl;
+  
+  if (!baseUrl) {
+    console.error('❌ Backend URL no está configurado. VITE_BACKEND_URL debe estar definido.');
+    throw new Error('Backend URL no está configurado. Configura VITE_BACKEND_URL en Vercel Dashboard.');
+  }
+  
+  // En desarrollo, si no hay baseUrl, usar el proxy de Vite (rutas relativas)
+  if (import.meta.env.DEV && !baseUrl) {
+    return endpoint;
+  }
+  
+  return `${baseUrl}${endpoint}`;
 }
 
 /**

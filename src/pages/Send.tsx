@@ -196,16 +196,25 @@ const SendPage = () => {
       });
       
       // Enviar a backend para firmar en Stellar
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL?.trim() || '';
       
-      if (!backendUrl) {
-        console.error('❌ VITE_BACKEND_URL no está configurado:', {
-          env: import.meta.env,
+      // Validar que la URL no sea localhost en producción
+      if (!backendUrl || (import.meta.env.PROD && backendUrl.includes('localhost'))) {
+        console.error('❌ VITE_BACKEND_URL no está configurado correctamente:', {
+          backendUrl,
+          hasValue: !!import.meta.env.VITE_BACKEND_URL,
           mode: import.meta.env.MODE,
           dev: import.meta.env.DEV,
           prod: import.meta.env.PROD
         });
-        throw new Error('Backend URL no está configurado. Por favor, configura VITE_BACKEND_URL en las variables de entorno de Vercel.');
+        
+        toast({
+          title: 'Error de configuración',
+          description: 'El backend no está configurado. Por favor, configura VITE_BACKEND_URL en Vercel Dashboard y redespliega la aplicación.',
+          variant: 'destructive',
+        });
+        
+        throw new Error('Backend URL no está configurado. Configura VITE_BACKEND_URL=https://puma-pay-backend.vercel.app en Vercel Dashboard y redespliega.');
       }
 
       console.log('🔗 Conectando al backend:', backendUrl);
