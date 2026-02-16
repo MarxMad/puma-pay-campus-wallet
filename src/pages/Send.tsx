@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { useBalance } from '@/hooks/useBalance';
-import { stellarService } from '@/services/stellarService';
+import { stellarService, decryptSecretKey } from '@/services/stellarService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from '@/hooks/use-toast';
@@ -171,134 +172,113 @@ const SendPage = () => {
     setShowConfirmDialog(true);
   };
 
-  // Confirmar y enviar la transacción
+  // Confirmar y enviar la transacción (XLM nativo)
   const handleConfirmSend = async () => {
     if (!walletAddress || !amount) return;
 
     setIsLoading(true);
     setSummaryError('');
     setShowConfirmDialog(false);
-    
+
+    const amountNum = parseFloat(amount);
+    const destination = walletAddress.trim().toUpperCase();
+    const MIN_RESERVE_XLM = 0.5; // Reserva mínima para fees y cuenta
+
     try {
-      const amountNum = parseFloat(amount);
-      
       if (!isValidAddress(walletAddress)) {
         throw new Error('Dirección de wallet inválida');
       }
-      
-      const destination = walletAddress.toUpperCase();
+      if (amountNum <= 0) {
+        throw new Error('El monto debe ser mayor a 0');
+      }
+      if (available < amountNum + MIN_RESERVE_XLM) {
+        throw new Error(`Fondos insuficientes. Deja al menos ${MIN_RESERVE_XLM} XLM para comisiones.`);
+      }
 
-      console.log('🚀 Enviando XLM a wallet en Stellar:', { 
-        to: destination, 
+      console.log('🚀 Enviando XLM a wallet en Stellar:', {
+        to: destination,
         amount: amountNum,
         network: 'Stellar',
-        asset: 'XLM'
+        asset: 'XLM',
       });
-      
-      // Enviar a backend para firmar en Stellar
-      const backendUrl = import.meta.env.VITE_BACKEND_URL?.trim() || '';
-      
-      // Validar que la URL no sea localhost en producción
-      if (!backendUrl || (import.meta.env.PROD && backendUrl.includes('localhost'))) {
-        console.error('❌ VITE_BACKEND_URL no está configurado correctamente:', {
-          backendUrl,
-          hasValue: !!import.meta.env.VITE_BACKEND_URL,
-          mode: import.meta.env.MODE,
-          dev: import.meta.env.DEV,
-          prod: import.meta.env.PROD
-        });
-        
-        toast({
-          title: 'Error de configuración',
-          description: 'El backend no está configurado. Por favor, configura VITE_BACKEND_URL en Vercel Dashboard y redespliega la aplicación.',
-          variant: 'destructive',
-        });
-        
-        throw new Error('Backend URL no está configurado. Configura VITE_BACKEND_URL=https://puma-pay-backend.vercel.app en Vercel Dashboard y redespliega.');
+
+      let hash: string;
+
+      const backendUrl = (import.meta.env.VITE_BACKEND_URL || '').trim();
+      const useBackend = backendUrl && !(import.meta.env.PROD && backendUrl.includes('localhost'));
+
+      if (useBackend) {
+        try {
+          const response = await fetch(`${backendUrl}/api/stellar/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              destination,
+              amount: amountNum,
+              email: user?.email,
+            }),
+          });
+          const result = await response.json();
+          if (response.ok && result.success && result.hash) {
+            hash = result.hash;
+            console.log('✅ Transacción enviada vía backend:', hash);
+          } else {
+            throw new Error(result.error?.message || 'Error en el backend');
+          }
+        } catch (backendErr: any) {
+          console.warn('⚠️ Backend falló, intentando envío directo con XLM:', backendErr?.message);
+          if (!user?.clabe) {
+            throw new Error('No se puede enviar: falta la clave de tu wallet. Inicia sesión de nuevo.');
+          }
+          const secretKey = decryptSecretKey(user.clabe);
+          hash = await stellarService.sendXLM(destination, amountNum, secretKey);
+        }
+      } else {
+        if (!user?.clabe) {
+          throw new Error('No se puede enviar: falta la clave de tu wallet. Inicia sesión de nuevo.');
+        }
+        const secretKey = decryptSecretKey(user.clabe);
+        hash = await stellarService.sendXLM(destination, amountNum, secretKey);
+        console.log('✅ Transacción XLM enviada (cliente):', hash);
       }
 
-      console.log('🔗 Conectando al backend:', backendUrl);
-
-      const response = await fetch(`${backendUrl}/api/stellar/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          destination,
-          amount: amountNum,
-          email: user?.email
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error?.message || 'Error enviando transacción.');
-      }
-
-      const hash = result.hash;
-      
-      console.log('✅ Transacción enviada en Stellar:', hash);
-      
-      // IMPLEMENTACIÓN ARBITRUM (Comentada)
-      /*
-      // Enviar MXNB a wallet usando Portal SDK (TRANSACCIÓN REAL EN ARBITRUM)
-      // Pasar la dirección del usuario para Account Abstraction
-      console.log('🔑 Credenciales del usuario para enviar:', {
-        hasApiKey: !!user?.apiKey,
-        hasClientId: !!user?.clientId,
-        apiKeyPrefix: user?.apiKey?.substring(0, 20) + '...',
-        apiKeyLength: user?.apiKey?.length,
-        clientId: user?.clientId
-      });
-      
-      const hash = await portalService.sendMXNB(
-        walletAddress, 
-        amountNum, 
-        user?.address,
-        user?.apiKey ? { apiKey: user.apiKey, clientId: user.clientId } : undefined
-      );
-      
-      console.log('✅ Transacción enviada en Arbitrum:', hash);
-      */
       setTxHash(hash);
-      
-      // Actualizar balance
+
       if (typeof refreshBalance === 'function') {
         await refreshBalance();
       } else if (typeof recalculateBalance === 'function') {
         recalculateBalance();
       }
-      
-      // Disparar evento para actualizar transacciones
-      window.dispatchEvent(new CustomEvent('transactionAdded', {
-        detail: {
-          id: hash,
-          amount: amountNum,
-          type: 'expense',
-          description: `Transferencia XLM a ${destination.substring(0, 6)}...${destination.slice(-4)}`,
-          categoryId: '',
-          date: new Date(),
-          txHash: hash,
-          recipient: destination,
-          isXLM: true,
-          tokenSymbol: 'XLM',
-          network: 'Stellar'
-        }
-      }));
-      
+
+      window.dispatchEvent(
+        new CustomEvent('transactionAdded', {
+          detail: {
+            id: hash,
+            amount: amountNum,
+            type: 'expense',
+            description: `Transferencia XLM a ${destination.substring(0, 6)}...${destination.slice(-4)}`,
+            categoryId: '',
+            date: new Date(),
+            txHash: hash,
+            recipient: destination,
+            isXLM: true,
+            tokenSymbol: 'XLM',
+            network: 'Stellar',
+          },
+        })
+      );
       window.dispatchEvent(new CustomEvent('forceBalanceUpdate'));
-      
-      // Esperar un poco antes de navegar para que el usuario vea el éxito
-      setTimeout(() => {
-        navigate('/home');
-      }, 3000);
-      
+
+      setTimeout(() => navigate('/home'), 3000);
     } catch (error: any) {
       console.error('❌ Error al enviar:', error);
-      setSummaryError(error.message || 'Error al enviar. Intenta nuevamente.');
+      setSummaryError(error?.message || 'Error al enviar. Intenta nuevamente.');
       setShowConfirmDialog(false);
+      toast({
+        title: 'Error al enviar',
+        description: error?.message || 'No se pudo completar la transferencia.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -321,27 +301,16 @@ const SendPage = () => {
   const newBalance = available - amountNum;
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center space-x-2">
-          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-          </div>
-        <div className="text-center">
-            <h1 className="text-lg font-semibold text-white">Enviar XLM</h1>
-          <p className="text-xs text-gray-400">Red: Stellar</p>
-          </div>
-        </div>
-        <div className="w-8"></div>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<ArrowLeft className={headerIconClass} />}
+        onLeftAction={() => navigate('/home')}
+        subtitle="Enviar XLM"
+      />
 
       <div className="p-4 space-y-6">
         {/* Balance */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="text-center">
             <span className="text-gray-300 text-sm">Saldo disponible</span>
             <div className="text-3xl font-bold mt-2">
@@ -351,10 +320,10 @@ const SendPage = () => {
         </Card>
 
         {/* Wallet Address Input */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="space-y-4">
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-16 h-16 bg-gold-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Wallet className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Dirección de destino</h3>
@@ -372,7 +341,7 @@ const SendPage = () => {
                 }}
                 variant="outline"
                 className={`flex-1 border-gray-500 bg-white text-black hover:bg-gray-100 ${
-                  inputMethod === 'manual' ? 'ring-2 ring-blue-500' : 'opacity-80'
+                  inputMethod === 'manual' ? 'ring-2 ring-gold-500' : 'opacity-80'
                 }`}
               >
                 <Wallet className="h-4 w-4 mr-2 text-black" />
@@ -385,7 +354,7 @@ const SendPage = () => {
                 }}
                 variant="outline"
                 className={`flex-1 border-gray-500 bg-white text-black hover:bg-gray-100 ${
-                  inputMethod === 'qr' ? 'ring-2 ring-blue-500' : 'opacity-80'
+                  inputMethod === 'qr' ? 'ring-2 ring-gold-500' : 'opacity-80'
                 }`}
               >
                 <QrCode className="h-4 w-4 mr-2 text-black" />
@@ -405,7 +374,7 @@ const SendPage = () => {
                     setSummaryError('');
                   }}
                   placeholder="G..."
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-gold-500"
                 />
                 {walletAddress && !isValidAddress(walletAddress) && (
                   <p className="text-xs text-red-400">
@@ -431,13 +400,13 @@ const SendPage = () => {
                     </p>
                     <Button 
                       onClick={() => setShowScanner(true)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      className="w-full bg-gold-600 hover:bg-gold-600 text-white"
                     >
                       <Camera className="h-5 w-5 mr-2" />
                       Abrir cámara QR
                     </Button>
                     {scannedAmount && (
-                      <p className="text-xs text-amber-400 mt-2">
+                      <p className="text-xs text-gold-500 mt-2">
                         Monto detectado: {scannedAmount} XLM
                       </p>
                     )}
@@ -460,8 +429,8 @@ const SendPage = () => {
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-3">
-                      <p className="text-xs text-blue-300 text-center">
+                    <div className="bg-gold-500/20 border border-gold-500/40 rounded-lg p-3">
+                      <p className="text-xs text-zinc-300 text-center">
                         📷 Apunta la cámara al código QR. El escaneo se detendrá automáticamente cuando detecte una dirección válida.
                       </p>
                     </div>
@@ -504,7 +473,7 @@ const SendPage = () => {
 
         {/* Amount Input */}
         {walletAddress && isValidAddress(walletAddress) && (
-          <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+          <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-300 mb-2 block">Monto a enviar</label>
@@ -515,7 +484,7 @@ const SendPage = () => {
                   placeholder="0.00"
                   step="0.01"
                   min="0"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-gold-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">XLM (Stellar)</p>
               </div>
@@ -532,7 +501,7 @@ const SendPage = () => {
                       disabled={disabled}
                       variant="outline"
                       className={`text-sm border border-gray-500 bg-white text-black hover:bg-gray-100 ${
-                        isSelected ? 'ring-2 ring-blue-500' : ''
+                        isSelected ? 'ring-2 ring-gold-500' : ''
                       } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                     >
                       ${quickAmount}
@@ -550,7 +519,7 @@ const SendPage = () => {
               <Button 
                 onClick={handleConfirmClick}
                 disabled={isLoading || !amount || parseFloat(amount) <= 0 || hasInsufficientFunds(amountNum)}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                className="w-full bg-gold-600 hover:bg-gold-500 text-white"
               >
                 Continuar
               </Button>
@@ -563,7 +532,7 @@ const SendPage = () => {
           <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md max-h-[90vh] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-xl font-bold flex items-center space-x-2">
-                <AlertCircle className="h-6 w-6 text-orange-500" />
+                <AlertCircle className="h-6 w-6 text-gold-500" />
                 <span>Confirmar Transacción XLM</span>
               </DialogTitle>
               <DialogDescription className="text-gray-400 pt-2">
@@ -573,9 +542,9 @@ const SendPage = () => {
 
             <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
               {/* Token y Red */}
-              <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-3 flex items-center justify-between">
+              <div className="bg-gold-500/20 border border-gold-500/40 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center">
                     <span className="text-xs font-bold">XLM</span>
                   </div>
                   <div>
@@ -584,7 +553,7 @@ const SendPage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-gold-500 rounded-full animate-pulse"></div>
                   <p className="text-xs text-gray-300 mt-1">Red Activa</p>
                 </div>
               </div>
@@ -607,8 +576,8 @@ const SendPage = () => {
                   </Button>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                    <Wallet className="h-5 w-5 text-blue-400" />
+                  <div className="w-10 h-10 bg-gold-500/20 rounded-full flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-gold-500" />
                   </div>
                   <div className="flex-1">
                     <p className="font-mono text-sm break-all">{walletAddress}</p>
@@ -665,7 +634,7 @@ const SendPage = () => {
               <Button
                 onClick={handleConfirmSend}
                 disabled={isLoading}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                className="flex-1 bg-gold-600 hover:bg-gold-500 text-white"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
@@ -726,7 +695,7 @@ const SendPage = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => window.open(`${STELLAR_EXPLORER_BASE}${txHash}`, '_blank')}
-                    className="mt-2 text-xs text-green-100 hover:text-white"
+                    className="mt-2 text-xs text-green-100 hover:bg-white/10 rounded px-1"
                   >
                     Ver en Stellar Expert <ExternalLink className="h-3 w-3 ml-1 inline" />
                   </Button>

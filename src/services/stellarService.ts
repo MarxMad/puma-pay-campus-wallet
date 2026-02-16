@@ -3,6 +3,8 @@
  * Reemplaza la implementación anterior de Arbitrum
  */
 
+import CryptoJS from 'crypto-js';
+
 // Importación dinámica para evitar errores si el SDK no está disponible
 let StellarSDK: any = null;
 const loadStellarSDK = async () => {
@@ -17,7 +19,6 @@ const loadStellarSDK = async () => {
 // Helper para desencriptar la secret key desde el campo 'clabe' de Supabase
 // La secret key se guarda encriptada en el campo 'clabe' de Supabase
 export const decryptSecretKey = (encryptedSecretKey: string): string => {
-  const CryptoJS = require('crypto-js');
   const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'pumapay-stellar-secret-key-2024';
   const bytes = CryptoJS.AES.decrypt(encryptedSecretKey, ENCRYPTION_KEY);
   return bytes.toString(CryptoJS.enc.Utf8);
@@ -62,9 +63,10 @@ class StellarService {
   private async initializeSDK() {
     try {
       const sdk = await loadStellarSDK();
-      
-      if (sdk && sdk.Server) {
-        this.server = new sdk.Server(STELLAR_HORIZON_URL);
+      // El servidor Horizon está en Horizon.Server, no en Server
+      const HorizonServer = sdk?.Horizon?.Server ?? sdk?.Server;
+      if (sdk && HorizonServer) {
+        this.server = new HorizonServer(STELLAR_HORIZON_URL);
         this.isInitialized = true;
         // Log solo en desarrollo
         if (import.meta.env.DEV) {
@@ -159,6 +161,53 @@ class StellarService {
     } catch (error: any) {
       console.error('❌ Error enviando USDC en Stellar:', error);
       throw new Error(`Error enviando USDC: ${error.message}`);
+    }
+  }
+
+  /**
+   * Envía XLM nativo a una dirección Stellar (para testnet/mainnet).
+   * Deja reservado el mínimo para la cuenta y el fee (~0.5 XLM).
+   */
+  async sendXLM(
+    destinationAddress: string,
+    amount: number,
+    sourceSecretKey: string
+  ): Promise<string> {
+    try {
+      await this.ensureInitialized();
+      if (!this.isValidStellarAddress(destinationAddress)) {
+        throw new Error('Dirección Stellar inválida. Debe comenzar con "G"');
+      }
+      if (!sourceSecretKey) {
+        throw new Error('Secret key del remitente requerida');
+      }
+
+      const sourceKeypair = StellarSDK.Keypair.fromSecret(sourceSecretKey);
+      const sourcePublicKey = sourceKeypair.publicKey();
+      const sourceAccount = await this.server.loadAccount(sourcePublicKey);
+
+      const nativeAsset = StellarSDK.Asset.native();
+      const transaction = new StellarSDK.TransactionBuilder(sourceAccount, {
+        fee: '100',
+        networkPassphrase: this.networkPassphrase,
+      })
+        .addOperation(
+          StellarSDK.Operation.payment({
+            destination: destinationAddress,
+            asset: nativeAsset,
+            amount: amount.toFixed(7),
+          })
+        )
+        .setTimeout(30)
+        .build();
+
+      transaction.sign(sourceKeypair);
+      const result = await this.server.submitTransaction(transaction);
+      console.log('✅ Transacción XLM enviada:', result.hash);
+      return result.hash;
+    } catch (error: any) {
+      console.error('❌ Error enviando XLM en Stellar:', error);
+      throw new Error(`Error enviando XLM: ${error.message}`);
     }
   }
 

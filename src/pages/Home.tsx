@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, Target } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 // ⚠️ COMENTADO - Ahora usamos Stellar
 // import { bitsoService } from '@/services/bitso';
 // import { portalService } from '@/services/portal';
@@ -12,12 +13,38 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useBalance } from '@/hooks/useBalance';
+import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { SkeletonBalance } from '../components/SkeletonLoader';
 import { BottomNav } from '@/components/BottomNav';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { stellarService } from '@/services/stellarService';
 
 // Extensión temporal del tipo Transaction para props extra de portalService
 type TransactionWithToken = import('@/types/categories').Transaction & { isUSDC?: boolean; tokenSymbol?: string };
+
+// Insignias por puntaje (cada 500 pts hasta 10_000)
+const ACHIEVEMENT_BADGES: { points: number; name: string; emoji: string }[] = [
+  { points: 500, name: 'Primer paso', emoji: '🌱' },
+  { points: 1000, name: 'En camino', emoji: '👣' },
+  { points: 1500, name: 'Constante', emoji: '📚' },
+  { points: 2000, name: 'Avanzado', emoji: '⚡' },
+  { points: 2500, name: 'Destacado', emoji: '🌟' },
+  { points: 3000, name: 'Estrella', emoji: '⭐' },
+  { points: 3500, name: 'Brillante', emoji: '✨' },
+  { points: 4000, name: 'Experto', emoji: '🎯' },
+  { points: 4500, name: 'Maestro', emoji: '🏆' },
+  { points: 5000, name: 'Campeón', emoji: '🥇' },
+  { points: 5500, name: 'Leyenda', emoji: '👑' },
+  { points: 6000, name: 'Ídolo', emoji: '🔥' },
+  { points: 6500, name: 'Fenómeno', emoji: '💎' },
+  { points: 7000, name: 'Pro', emoji: '🚀' },
+  { points: 7500, name: 'Elite', emoji: '💫' },
+  { points: 8000, name: 'Supremo', emoji: '🎖️' },
+  { points: 8500, name: 'Puma', emoji: '🐾' },
+  { points: 9000, name: 'Oro', emoji: '🥇' },
+  { points: 9500, name: 'Máximo', emoji: '👑' },
+  { points: 10000, name: 'Legendario', emoji: '🏅' },
+];
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -41,7 +68,7 @@ const HomePage = () => {
     console.log('💰 Iniciando fondeo de cuenta Stellar:', user);
     
     if (!user?.address) {
-      alert('No se encontró tu dirección de wallet. Completa tu registro primero.');
+      toast({ title: 'Error', description: 'No se encontró tu dirección de wallet. Completa tu registro primero.', variant: 'destructive' });
       return;
     }
     
@@ -62,6 +89,8 @@ const HomePage = () => {
       const fundedKey = `pumapay_funded_${user.address}`;
       localStorage.setItem(fundedKey, 'true');
       setFunded(true);
+      
+      toast({ title: 'Cuenta fondeada', description: 'Has recibido 10,000 XLM en testnet correctamente.' });
       
       // Mostrar animación de éxito
       setShowFundingAnimation(true);
@@ -86,7 +115,9 @@ const HomePage = () => {
       
     } catch (error: any) {
       console.error('❌ Error fondeando cuenta:', error);
-      setFundingMsg(`Error al fondear cuenta: ${error.message || 'Intenta nuevamente.'}`);
+      const msg = error?.message || 'Intenta nuevamente.';
+      setFundingMsg(`Error al fondear cuenta: ${msg}`);
+      toast({ title: 'Error al fondear', description: msg, variant: 'destructive' });
     } finally {
       setFundingLoading(false);
     }
@@ -110,6 +141,9 @@ const HomePage = () => {
     refreshBalance,
     getRealBalanceFromBlockchain
   } = useBalance();
+
+  const { userPoints } = useCourseProgress();
+  const totalPoints = userPoints?.totalPoints ?? 0;
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastBalanceUpdate, setLastBalanceUpdate] = useState<Date | null>(null);
@@ -215,14 +249,9 @@ const HomePage = () => {
   // Función handleDeposit eliminada - los depósitos se hacen en /receive
 
   const quickActions = [
-    {
-      icon: Target,
-      label: 'Metas',
-      action: () => navigate('/savings-goals'),
-      color: 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-    },
-    { icon: Send, label: 'Enviar', color: 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600', action: () => navigate('/send') },
-    { icon: Download, label: 'Recibir', color: 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700', action: () => navigate('/receive') },
+    { to: '/feed', icon: MessageSquare, label: 'Feed', color: 'bg-gold-600 hover:bg-gold-500 text-black' },
+    { to: '/send', icon: Send, label: 'Enviar', color: 'bg-zinc-700 hover:bg-zinc-600 text-white' },
+    { to: '/receive', icon: Download, label: 'Recibir', color: 'bg-positive-600 hover:bg-positive-500 text-white' },
   ];
 
   // Calcular gastos por día de la semana
@@ -255,108 +284,81 @@ const HomePage = () => {
   const weeklySpending = calculateWeeklySpending();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-gray-900 to-slate-900 pb-20">
-      {/* Top Navigation - Estilo Bancario */}
-      <div className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-4 text-white bg-gradient-to-r from-slate-800/95 via-gray-800/95 to-slate-800/95 backdrop-blur-xl border-b border-white/10 shadow-lg">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/profile')}
-          className="rounded-full hover:bg-white/10 transition-colors"
-        >
-          <User className="h-5 w-5 sm:h-6 sm:w-6" />
-        </Button>
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              PumaPay
-            </h1>
-            <p className="text-xs text-gray-400 hidden sm:block">Campus Wallet</p>
-          </div>
-        </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/notifications')}
-          className="rounded-full hover:bg-white/10 transition-colors relative"
-        >
-          <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
-          <span className="absolute top-0 right-0 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-        </Button>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] pb-20 overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<User className={headerIconClass} />}
+        onLeftAction={() => navigate('/profile')}
+        subtitle="Inicio"
+        rightAction={<Bell className={headerIconClass} />}
+        onRightAction={() => navigate('/notifications')}
+        showNotificationDot
+      />
 
-      {/* Wallet Info */}
+      {/* Wallet Info - Tema oscuro */}
       <div className="p-4">
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white mb-6 relative overflow-hidden">
-          {/* Logo decorativo en el fondo */}
-          <div className="absolute top-4 right-4 opacity-5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 object-contain" />
+        <Card className="bg-black/40 backdrop-blur-xl border-2 border-gold-500/20 p-5 sm:p-6 text-white mb-4 relative overflow-hidden">
+          <div className="absolute top-2 right-2 opacity-[0.06]">
+            <img src="/PumaPay.png" alt="" className="h-24 w-24 object-contain" />
           </div>
           <div className="relative z-10">
-            {/* Logo principal */}
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/30 rounded-2xl flex items-center justify-center shadow-lg p-2">
-                <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center shadow-inner border border-gray-600/50">
-                  <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain brightness-110 rounded-xl" />
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center border border-gold-500/40 p-2">
+                  <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">PumaPay Wallet</h2>
+                  <p className="text-xs text-gray-400">Tu wallet estudiantil</p>
                 </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  PumaPay Wallet
-                </h2>
-                <p className="text-xs text-gray-400">Tu wallet estudiantil</p>
-              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowBalance((prev) => !prev); }}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-white/5 transition-colors"
+                aria-label={showBalance ? 'Ocultar balance' : 'Mostrar balance'}
+              >
+                {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
             
-            {/* Balance Principal */}
-            <div className="mb-6 pb-6 border-b border-white/10">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-300 text-sm font-medium">Balance disponible</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowBalance(!showBalance)}
-                  className="h-6 w-6 text-gray-400 hover:text-white"
-                >
-                  {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
+            <div className="mb-5 pb-5 border-b border-white/10">
+              <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">Balance disponible</span>
               {balanceLoading ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-                  <span className="text-gray-400 text-sm">Cargando balance...</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-gold-400" />
+                  <span className="text-gray-500 text-sm">Cargando...</span>
                 </div>
               ) : (
-                <div>
-                  <h3 className="text-4xl sm:text-5xl font-bold text-white mb-1">
+                <div className="mt-1">
+                  <h3 className="text-3xl sm:text-4xl font-bold text-white tabular-nums">
                     {showBalance ? `$${available.toFixed(2)}` : '••••••'}
                   </h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-gray-400 text-sm">{assetSymbol || 'USDC'}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-pulse" />
+                    <span className="text-gold-400/90 text-sm">{assetSymbol || 'USDC'}</span>
                   </div>
                 </div>
               )}
             </div>
             
-            <div className="mb-2">
-              <span className="text-gray-300 text-sm">Dirección de wallet</span>
-              <div className="flex items-center space-x-2 font-mono text-blue-400 text-xs break-all mt-1">
-                <span>{user?.address}</span>
+            <div>
+              <span className="text-gray-500 text-xs">Dirección</span>
+              <div className="flex items-center gap-2 flex-wrap mt-1">
+                <span className="font-mono text-gold-400/90 text-xs break-all">{user?.address}</span>
                 {user?.address && (
                   <Button
-                    size="icon"
+                    type="button"
                     variant="ghost"
+                    size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText(user.address);
-                      alert('¡Dirección copiada!');
+                      toast({ title: 'Copiado', description: 'Dirección copiada al portapapeles' });
                     }}
-                    title="Copiar dirección"
+                    className="h-7 px-2 text-gold-400 hover:text-gold-400 hover:bg-gold-500/20 rounded text-xs gap-1"
+                    aria-label="Copiar dirección"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar</span>
                   </Button>
                 )}
               </div>
@@ -382,7 +384,7 @@ const HomePage = () => {
             )}
             {user?.clabe && (
               <div className="mt-4 mb-6">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-2">
+                <div className="p-4 bg-blue-50 border border-zinc-300 rounded mb-2">
                   <div className="font-semibold text-blue-800 mb-1">¿Cómo funciona el fondeo?</div>
                   <div className="text-xs text-blue-700">
                     1. Deposita MXN a tu CLABE desde cualquier banco vía SPEI.<br />
@@ -405,89 +407,87 @@ const HomePage = () => {
         </Card>
       </div>
 
-      {/* Botón de actualizar balance */}
+      {/* Actualizar balance */}
       <div className="px-4 sm:px-6 mb-4">
-        <Button 
-          variant="ghost" 
+        <Button
+          type="button"
+          variant="outline"
           size="sm"
           onClick={async () => {
             setIsRefreshing(true);
-            await refreshBalance();
-            setLastBalanceUpdate(new Date());
-            setIsRefreshing(false);
+            try {
+              await refreshBalance();
+              setLastBalanceUpdate(new Date());
+              toast({ title: 'Balance actualizado', description: 'El saldo se actualizó correctamente desde la red.' });
+            } catch (e) {
+              toast({ title: 'Error', description: 'No se pudo actualizar el balance.', variant: 'destructive' });
+            } finally {
+              setIsRefreshing(false);
+            }
           }}
           disabled={isRefreshing || balanceLoading}
-          className="w-full sm:w-auto text-gray-300 hover:text-white hover:bg-white/10 rounded-full"
+          className="border-gold-500/30 text-gold-300 hover:text-gold-300 hover:bg-gold-500/10 rounded-xl"
           title="Actualizar balance desde blockchain"
         >
           {isRefreshing || balanceLoading ? (
             <>
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin mr-2"></div>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
               Actualizando...
             </>
           ) : (
             <>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="w-4 h-4 mr-2" />
               Actualizar balance
             </>
           )}
         </Button>
       </div>
-          
-      {/* Estadísticas rápidas - Estilo Bancario */}
-      <div className="px-4 sm:px-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/20 p-5 sm:p-6 relative overflow-hidden group hover:border-blue-500/40 transition-all duration-300 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <TrendingDown className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Gastos del mes</p>
-                  <p className="text-white font-bold text-xl sm:text-2xl">${totalExpenses.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -top-8 -right-8 w-24 h-24 bg-blue-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-          </Card>
 
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-yellow-500/20 p-5 sm:p-6 relative overflow-hidden group hover:border-yellow-500/40 transition-all duration-300 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-xs sm:text-sm font-medium mb-1">Ingresos del mes</p>
-                  <p className="text-white font-bold text-xl sm:text-2xl">${totalIncome.toFixed(2)}</p>
-                </div>
+      {/* Estadísticas rápidas */}
+      <div className="px-4 sm:px-6 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="bg-black/30 border border-gold-500/20 p-4 relative overflow-hidden group hover:border-gold-500/40 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400 group-hover:scale-105 transition-transform">
+                <TrendingDown className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs font-medium">Gastos</p>
+                <p className="text-white font-bold text-lg tabular-nums">${totalExpenses.toFixed(2)}</p>
               </div>
             </div>
-            <div className="absolute -top-8 -right-8 w-24 h-24 bg-yellow-500/10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+          </Card>
+          <Card className="bg-black/30 border border-gold-500/20 p-4 relative overflow-hidden group hover:border-gold-500/40 transition-all">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400 group-hover:scale-105 transition-transform">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs font-medium">Ingresos</p>
+                <p className="text-white font-bold text-lg tabular-nums">${totalIncome.toFixed(2)}</p>
+              </div>
+            </div>
           </Card>
         </div>
       </div>
 
-      {/* Gráfico de gastos semanales - Estilo Bancario */}
+      {/* Gastos semanales */}
       {weeklySpending.some(d => d.amount > 0) && (
         <div className="px-4 sm:px-6 mb-6">
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/20 p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <Card className="bg-black/30 border border-gold-500/20 p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-white text-base sm:text-lg font-semibold">Gastos de la semana</h3>
-                  <p className="text-gray-400 text-xs sm:text-sm">Resumen semanal</p>
+                  <h3 className="text-white text-sm font-semibold">Gastos de la semana</h3>
+                  <p className="text-gray-500 text-xs">Resumen</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-gray-400 text-xs">Total</p>
-                <p className="text-white font-bold text-lg sm:text-xl">
-                  ${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}
-                </p>
+                <p className="text-gray-500 text-xs">Total</p>
+                <p className="text-white font-bold">${weeklySpending.reduce((sum, d) => sum + d.amount, 0).toFixed(0)}</p>
               </div>
             </div>
             
@@ -512,12 +512,12 @@ const HomePage = () => {
                             isHovered ? 'scale-105' : 'scale-100'
                           } ${
                             isToday 
-                              ? 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400' 
-                              : 'bg-gradient-to-t from-yellow-600 via-yellow-500 to-yellow-400'
+                              ? 'bg-gradient-to-t from-gold-600 via-gold-500 to-gold-400' 
+                              : 'bg-gradient-to-t from-gold-700 via-gold-600 to-gold-500'
                           }`}
                           style={{ 
                             height: `${heightPercentage}%`,
-                            boxShadow: isHovered ? (isToday ? '0 0 20px rgba(59, 130, 246, 0.6)' : '0 0 20px rgba(234, 179, 8, 0.6)') : 'none'
+                            boxShadow: isHovered ? '0 0 20px rgba(212, 160, 18, 0.5)' : 'none'
                           }}
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
@@ -529,9 +529,9 @@ const HomePage = () => {
                     <div className="text-center w-full">
                       <span className={`text-xs sm:text-sm font-semibold block transition-all duration-200 ${
                         isToday 
-                          ? 'text-blue-400' 
+                          ? 'text-gold-500' 
                           : isHovered 
-                            ? 'text-yellow-400' 
+                            ? 'text-gold-400' 
                             : 'text-gray-400'
                       }`}>
                         {day.day}
@@ -547,109 +547,99 @@ const HomePage = () => {
               })}
             </div>
             
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-gold-400 rounded-full" />
                 <span>Hoy</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-gold-500 rounded-full" />
                 <span>Otros días</span>
               </div>
-              <div className="text-gray-300 font-medium">
-                Promedio: ${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día
-              </div>
+              <span className="text-gray-400">${(weeklySpending.reduce((sum, d) => sum + d.amount, 0) / 7).toFixed(0)}/día</span>
             </div>
           </Card>
         </div>
       )}
 
-      {/* Acciones rápidas - Estilo Bancario */}
+      {/* Acciones rápidas */}
       <div className="px-4 sm:px-6 mb-6">
-        <h3 className="text-white text-lg sm:text-xl font-semibold mb-4">Acciones rápidas</h3>
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <h3 className="text-white text-base font-semibold mb-3">Acciones rápidas</h3>
+        <div className="grid grid-cols-3 gap-3">
           {quickActions.map((action, index) => (
-            <Button 
+            <Button
               key={index}
-              onClick={action.action}
-              className={`${action.color} text-white p-4 sm:p-6 rounded-2xl flex flex-col items-center space-y-2 h-auto transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl active:scale-95 group relative overflow-hidden`}
+              type="button"
+              onClick={() => navigate(action.to)}
+              className={`${action.color} p-4 rounded-xl flex flex-col items-center justify-center gap-2 min-h-[80px] h-auto font-medium hover:opacity-90 active:scale-95 transition-all`}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-700 ease-out"></div>
-              <action.icon className="h-6 w-6 sm:h-8 sm:w-8 relative z-10 transform transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
-              <span className="text-xs sm:text-sm font-medium relative z-10">{action.label}</span>
+              <action.icon className="h-6 w-6 sm:h-7 sm:w-7 shrink-0" />
+              <span className="text-xs sm:text-sm">{action.label}</span>
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Logros y Badges - Estilo Bancario */}
+      {/* Logros: insignias por puntaje (cursos) */}
       <div className="px-4 sm:px-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
-            <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
-            <span>Logros</span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-base font-semibold flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-gold-400" />
+            Insignias
           </h3>
-          <Badge className="bg-yellow-500/20 border-yellow-500/50 text-yellow-400 text-xs sm:text-sm">
-            {realTransactions.length} transacciones
+          <Badge className="bg-gold-500/20 border-gold-500/40 text-gold-300 text-xs">
+            {totalPoints} pts
           </Badge>
         </div>
-        <div className="flex space-x-3 sm:space-x-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-yellow-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-lg">
-            <div className="text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Star className="h-6 w-6 sm:h-7 sm:w-7 text-white fill-white" />
-              </div>
-              <p className="text-white font-semibold text-sm sm:text-base mb-1">Primer pago</p>
-              <p className="text-yellow-400 text-xs sm:text-sm">
-                {realTransactions.length > 0 ? '✓ Completado' : 'En progreso'}
-              </p>
-            </div>
-          </Card>
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
-            <div className="text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              </div>
-              <p className="text-white font-semibold text-sm sm:text-base mb-1">Usuario activo</p>
-              <p className="text-blue-300 text-xs sm:text-sm">
-                {realTransactions.length >= 5 ? '✓ Completado' : `${realTransactions.length}/5`}
-              </p>
-            </div>
-          </Card>
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-blue-500/30 p-4 sm:p-5 min-w-[140px] sm:min-w-[160px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
-            <div className="text-center">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                <Banknote className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              </div>
-              <p className="text-white font-semibold text-sm sm:text-base mb-1">Ahorrador</p>
-              <p className="text-blue-300 text-xs sm:text-sm">
-                {available >= 500 ? '✓ Completado' : 'En progreso'}
-              </p>
-            </div>
-          </Card>
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+          {ACHIEVEMENT_BADGES.map((badge) => {
+            const unlocked = totalPoints >= badge.points;
+            return (
+              <Card
+                key={badge.points}
+                className={`p-4 min-w-[100px] flex-shrink-0 transition-all ${
+                  unlocked
+                    ? 'bg-black/30 border-2 border-gold-500/40 hover:border-gold-500/60'
+                    : 'bg-black/20 border border-white/10 opacity-60'
+                }`}
+              >
+                <div className="text-center">
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-2 text-xl ${
+                      unlocked ? 'bg-gold-500/20 border border-gold-500/40' : 'bg-white/10 border border-white/20'
+                    }`}
+                  >
+                    {badge.emoji}
+                  </div>
+                  <p className={`font-medium text-sm mb-0.5 ${unlocked ? 'text-white' : 'text-gray-400'}`}>
+                    {badge.name}
+                  </p>
+                  <p className={`text-xs ${unlocked ? 'text-gold-400' : 'text-gray-500'}`}>
+                    {badge.points} pts
+                  </p>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
-      {/* Promociones del Campus - Estilo Bancario */}
+      {/* Promociones del Campus */}
       <div className="px-4 sm:px-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" />
-            <span>Promociones del Campus</span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-base font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-gold-400" />
+            Promociones
           </h3>
-          <div className="flex items-center space-x-1 text-yellow-400">
-            <span className="text-xs sm:text-sm font-medium">Descuentos exclusivos</span>
-          </div>
+          <span className="text-xs text-gold-400/80">Descuentos</span>
         </div>
-        
-        <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-          {/* Cafetería Las Islas */}
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-blue-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-base sm:text-lg">🍽️</span>
                   </div>
                   <div>
@@ -658,7 +648,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
                     <span className="text-xs sm:text-sm font-bold text-white">-20%</span>
                   </div>
                 </div>
@@ -666,24 +656,23 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Chilaquiles con pollo</span>
-                  <span className="font-bold text-blue-200 text-sm sm:text-base">75 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">75 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Café americano</span>
-                  <span className="font-bold text-blue-200 text-sm sm:text-base">25 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">25 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
-          {/* Café y Cuernito */}
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-yellow-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
+          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-base sm:text-lg">☕</span>
                   </div>
                   <div>
@@ -692,7 +681,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
                     <span className="text-xs sm:text-sm font-bold text-white">-15%</span>
                   </div>
                 </div>
@@ -700,24 +689,23 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Café especial</span>
-                  <span className="font-bold text-yellow-200 text-sm sm:text-base">80 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">80 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Jugo de naranja</span>
-                  <span className="font-bold text-yellow-200 text-sm sm:text-base">25 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">25 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
-          {/* Librería Central */}
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-blue-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-blue-500/50 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"></div>
+          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-base sm:text-lg">📚</span>
                   </div>
                   <div>
@@ -726,7 +714,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
                     <span className="text-xs sm:text-sm font-bold text-white">-10%</span>
                   </div>
                 </div>
@@ -734,24 +722,23 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Álgebra Lineal</span>
-                  <span className="font-bold text-blue-200 text-sm sm:text-base">120 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">120 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Cálculo Diferencial</span>
-                  <span className="font-bold text-blue-200 text-sm sm:text-base">95 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">95 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-blue-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
 
-          {/* Gimnasio */}
-          <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border-yellow-500/30 p-4 sm:p-5 min-w-[280px] sm:min-w-[300px] flex-shrink-0 relative overflow-hidden group hover:scale-105 hover:border-yellow-500/50 transition-all duration-300 shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent"></div>
+          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-base sm:text-lg">🏃‍♂️</span>
                   </div>
                   <div>
@@ -760,7 +747,7 @@ const HomePage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-2 sm:px-3 py-1 shadow-md">
+                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
                     <span className="text-xs sm:text-sm font-bold text-white">-25%</span>
                   </div>
                 </div>
@@ -768,29 +755,32 @@ const HomePage = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Membresía mensual</span>
-                  <span className="font-bold text-yellow-200 text-sm sm:text-base">200 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">200 USDC</span>
                 </div>
                 <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
                   <span className="text-xs sm:text-sm text-white font-medium">Clase de natación</span>
-                  <span className="font-bold text-yellow-200 text-sm sm:text-base">50 USDC</span>
+                  <span className="font-bold text-zinc-300 text-sm sm:text-base">50 USDC</span>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
+            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           </Card>
         </div>
       </div>
 
-      {/* Campus Map Feature - Estilo Bancario */}
+      {/* Campus Map */}
       <div className="px-4 sm:px-6 mb-6">
-        <Card 
-          className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-xl border border-blue-500/30 p-5 sm:p-6 text-white relative overflow-hidden group hover:border-blue-500/50 hover:scale-[1.02] transition-all duration-500 shadow-2xl cursor-pointer"
+        <Card
+          role="button"
+          tabIndex={0}
+          className="bg-black/30 border-2 border-gold-500/20 p-4 sm:p-5 text-white relative overflow-hidden hover:border-gold-500/40 transition-all cursor-pointer"
           onClick={() => navigate('/campus-map')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/campus-map'); } }}
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4 flex-1">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                <MapPin className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400 flex-shrink-0">
+                <MapPin className="h-6 w-6 sm:h-7 sm:w-7" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg sm:text-xl font-bold mb-1">🗺️ Descubre el Campus</h3>
@@ -799,30 +789,26 @@ const HomePage = () => {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="flex items-center space-x-1">
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
-                    <span className="text-yellow-400 font-semibold">Descuentos exclusivos</span>
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-gold-400" />
+                    <span className="text-gold-400 font-semibold">Descuentos exclusivos</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <span className="text-blue-400">20+ lugares disponibles</span>
+                    <span className="text-gold-500">20+ lugares disponibles</span>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="text-left sm:text-right flex-shrink-0">
-              <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-full px-3 py-1 mb-2 inline-block sm:block">
-                <span className="text-yellow-400 text-xs font-bold">¡NUEVO!</span>
-              </div>
-              <div className="flex items-center space-x-1 text-gray-300">
-                <span className="text-sm sm:text-base">Ver mapa</span>
-                <ArrowUp className="h-4 w-4 rotate-45" />
+              <Badge className="bg-gold-500/20 border-gold-500/40 text-gold-300 text-xs mb-2">Nuevo</Badge>
+              <div className="flex items-center gap-1 text-gold-400 text-sm">
+                <span>Ver mapa</span>
+                <ChevronRight className="h-4 w-4" />
               </div>
             </div>
           </div>
-          
-          {/* Popular places preview */}
-          <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-3 sm:gap-4">
-            <span className="text-xs sm:text-sm text-gray-400">Populares:</span>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs text-gray-500">Populares:</span>
             <div className="flex items-center space-x-1 bg-white/5 rounded-lg px-2 py-1">
               <span className="text-base sm:text-lg">🍕</span>
               <span className="text-xs sm:text-sm text-white">Cafetería</span>
@@ -837,9 +823,6 @@ const HomePage = () => {
             </div>
           </div>
           
-          {/* Animated background effects */}
-          <div className="absolute -top-6 -right-6 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-          <div className="absolute -bottom-4 -left-4 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
         </Card>
       </div>
 
@@ -847,9 +830,9 @@ const HomePage = () => {
       {/* 
       <div className="px-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-orange-500/20 backdrop-blur-lg border border-orange-500/30 p-5 relative overflow-hidden group hover:bg-orange-500/30 transition-all duration-300 shadow-lg shadow-orange-500/10">
+          <Card className="bg-gold-500/20 backdrop-blur-lg border border-gold-500/30 p-5 relative overflow-hidden group hover:bg-gold-500/30 transition-all duration-300 shadow-lg shadow-gold-500/10">
             <div className="flex items-center space-x-3 mb-2">
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gold-500 rounded-full flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div className="flex-1">
@@ -859,20 +842,20 @@ const HomePage = () => {
             </div>
             
             {monthlyGoalProgress > 0 && (
-              <div className="mt-2 w-full bg-orange-200 rounded-full h-1.5 overflow-hidden">
+              <div className="mt-2 w-full bg-gold-200 rounded-full h-1.5 overflow-hidden">
                 <div 
-                  className="h-1.5 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-700"
+                  className="h-1.5 bg-gradient-to-r from-gold-500 to-gold-400 rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(monthlyGoalProgress, 100)}%` }}
                 ></div>
               </div>
             )}
             
-            <div className="absolute -top-3 -right-3 w-12 h-12 bg-orange-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+            <div className="absolute -top-3 -right-3 w-12 h-12 bg-gold-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           </Card>
           
-          <Card className="bg-blue-500/20 backdrop-blur-lg border border-blue-500/30 p-5 relative overflow-hidden group hover:bg-blue-500/30 transition-all duration-300 shadow-lg shadow-blue-500/10">
+          <Card className="bg-gold-500/20 backdrop-blur-lg border border-zinc-600 p-5 relative overflow-hidden group hover:bg-gold-500/30 transition-all duration-300 shadow-lg shadow-gold-500/10">
             <div className="flex items-center space-x-3 mb-2">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gold-500 rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-white text-lg">🎯</span>
               </div>
               <div className="flex-1">
@@ -911,7 +894,7 @@ const HomePage = () => {
               </div>
             </div>
             
-            <div className="absolute -top-3 -right-3 w-12 h-12 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+            <div className="absolute -top-3 -right-3 w-12 h-12 bg-gold-500/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           </Card>
         </div>
       </div>
@@ -923,10 +906,11 @@ const HomePage = () => {
         <div className="px-4 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white text-lg font-semibold">Categorías más usadas</h3>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-orange-400 hover:text-orange-300"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-gold-400 hover:text-gold-400 hover:bg-gold-500/10 rounded-md px-2 py-1"
               onClick={() => navigate('/statistics')}
             >
               Ver todas
@@ -980,18 +964,19 @@ const HomePage = () => {
       )}
       */}
 
-      {/* Recent Transactions - Estilo Bancario */}
+      {/* Transacciones recientes */}
       <div className="px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white text-lg sm:text-xl font-semibold flex items-center space-x-2">
-            <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
-            <span>Transacciones recientes</span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-base font-semibold flex items-center gap-2">
+            <Activity className="h-5 w-5 text-gold-400" />
+            Transacciones recientes
           </h3>
           {realTransactions.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-blue-400 hover:text-blue-300 text-xs sm:text-sm"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-gold-500 hover:text-gold-500 hover:bg-gold-500/10 text-xs sm:text-sm rounded-md px-2 py-1"
               onClick={() => navigate('/statistics')}
             >
               Ver todas
@@ -1009,8 +994,8 @@ const HomePage = () => {
               // Monto seguro
               const amount = (typeof tx.amount === 'number' && !isNaN(tx.amount)) ? tx.amount : 0;
               // Color
-              const amountColor = !tx.isUSDC ? 'text-blue-400' : (tx.type === 'expense' ? 'text-blue-400' : 'text-yellow-400');
-              const bgColor = !tx.isUSDC ? 'bg-blue-500/20' : (tx.type === 'expense' ? 'bg-blue-500/20' : 'bg-yellow-500/20');
+              const amountColor = !tx.isUSDC ? 'text-gold-500' : (tx.type === 'expense' ? 'text-gold-500' : 'text-gold-400');
+              const bgColor = !tx.isUSDC ? 'bg-gold-500/20' : (tx.type === 'expense' ? 'bg-gold-500/20' : 'bg-gold-500/20');
               // Símbolo
               const symbol = tx.tokenSymbol || tx.currency || 'USDC';
               // Fecha
@@ -1031,7 +1016,7 @@ const HomePage = () => {
                 }
               }
               return (
-                <Card key={idx} className={`bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border ${bgColor.replace('bg-', 'border-').replace('/20', '/30')} p-4 sm:p-5 hover:scale-[1.02] transition-all duration-300 group relative overflow-hidden shadow-lg`}>
+                <Card key={idx} className={`bg-black/30 border ${bgColor.replace('bg-', 'border-').replace('/20', '/30')} p-4 hover:border-opacity-60 transition-all group`}>
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-100%] transition-transform duration-1000"></div>
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
@@ -1046,7 +1031,7 @@ const HomePage = () => {
                           <span>{dateStr}</span>
                         </p>
                         {!tx.isUSDC && (
-                          <Badge className="mt-1 bg-blue-500/30 border-blue-400/50 text-blue-300 text-xs">
+                          <Badge className="mt-1 bg-gold-500/30 border-gold-400/50 text-gold-400 text-xs">
                             {symbol}
                           </Badge>
                         )}
@@ -1063,62 +1048,48 @@ const HomePage = () => {
               );
             })
           ) : (
-            <Card className="bg-gradient-to-br from-slate-800/90 to-gray-800/90 backdrop-blur-lg border border-gray-700/50 p-6 sm:p-8 md:p-10 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-yellow-500/5"></div>
-              <div className="absolute top-4 right-4 opacity-5">
-                <img src="/PumaPay.png" alt="PumaPay" className="h-32 w-32 sm:h-40 sm:w-40 object-contain" />
+            <Card className="bg-black/30 border border-gold-500/20 p-6 sm:p-8 text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="w-16 h-16 bg-gold-500/20 border-2 border-gold-500/40 rounded-2xl flex items-center justify-center p-2">
+                  <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
+                </div>
               </div>
-              <div className="relative z-10">
-                {/* Logo grande en el centro */}
-                <div className="mb-6 sm:mb-8 flex justify-center">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-gradient-to-br from-slate-800 to-gray-900 border-2 border-blue-500/30 rounded-3xl flex items-center justify-center shadow-2xl p-2 sm:p-3">
-                    <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center shadow-inner border border-gray-600/50">
-                      <img src="/PumaPay.png" alt="PumaPay" className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain brightness-110 rounded-2xl" />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-white font-semibold text-base sm:text-lg md:text-xl mb-2">¡Bienvenido a PumaPay Campus!</p>
-                <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">Inicia enviando o recibiendo tu primer pago</p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                  <Button 
-                    onClick={() => navigate('/send')} 
-                    size="default"
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg text-sm sm:text-base"
-                  >
-                    <Send className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                    Enviar dinero
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/receive')} 
-                    size="default"
-                    className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-lg text-sm sm:text-base"
-                  >
-                    <Download className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                    Recibir dinero
-                  </Button>
-                </div>
+              <p className="text-white font-semibold text-lg mb-1">Bienvenido a PumaPay</p>
+              <p className="text-gray-400 text-sm mb-6">Envía o recibe tu primer pago</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button type="button" onClick={() => navigate('/send')} className="bg-gold-600 hover:bg-gold-500 text-black font-semibold rounded-xl">
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar
+                </Button>
+                <Button type="button" onClick={() => navigate('/receive')} className="bg-positive-600 hover:bg-positive-500 text-white font-semibold rounded-xl">
+                  <Download className="h-4 w-4 mr-2" />
+                  Recibir
+                </Button>
               </div>
             </Card>
           )}
         </div>
       </div>
 
-      {/* Botón para fondear cuenta en testnet */}
       {!funded && (
-        <div className="my-4 flex flex-col items-center justify-center px-4">
-          <button
+        <div className="my-6 flex flex-col items-center px-4">
+          <Button
+            type="button"
             onClick={handleFundAccount}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg text-lg disabled:opacity-60 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-105 active:scale-95"
             disabled={fundingLoading}
+            className="bg-gold-600 hover:bg-gold-500 text-black font-bold py-3 px-6 rounded-xl shadow-lg disabled:opacity-60"
           >
             {fundingLoading ? (
-              <span className="flex items-center"><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Fondeando…</span>
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Fondeando…
+              </span>
             ) : (
-              '💰 Fondear en testnet (10,000 XLM)'
+              '💰 Fondear testnet (10,000 XLM)'
             )}
-          </button>
+          </Button>
           {fundingMsg && (
-            <div className="mt-3 text-blue-200 text-center text-sm animate-pulse">{fundingMsg}</div>
+            <p className="mt-2 text-gray-400 text-center text-sm">{fundingMsg}</p>
           )}
         </div>
       )}
@@ -1126,7 +1097,7 @@ const HomePage = () => {
       {/* Modal de animación de éxito del fondeo */}
       {showFundingSuccess && (
         <Dialog open={showFundingSuccess} onOpenChange={setShowFundingSuccess}>
-          <DialogContent className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 border-none text-white p-0 overflow-hidden max-w-md">
+          <DialogContent className="bg-[#0a0a0a] border-2 border-gold-500/30 text-white p-0 overflow-hidden max-w-md">
             <div className="relative p-8 text-center">
               {/* Confetti animation */}
               {showFundingAnimation && (
@@ -1142,7 +1113,7 @@ const HomePage = () => {
                         animationDuration: `${1 + Math.random() * 1}s`,
                       }}
                     >
-                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                      <Sparkles className="w-4 h-4 text-gold-300" />
                     </div>
                   ))}
                 </div>
@@ -1152,31 +1123,32 @@ const HomePage = () => {
               <div className="relative z-10">
                 <div className="mb-4 flex justify-center">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-blue-500 rounded-full p-6 animate-pulse">
+                    <div className="absolute inset-0 bg-gold-400 rounded-full animate-ping opacity-75"></div>
+                    <div className="relative bg-gold-500 rounded-full p-6 animate-pulse">
                       <Zap className="w-16 h-16 text-white" />
                     </div>
                   </div>
                 </div>
                 
                 <h2 className="text-3xl font-bold mb-2 animate-bounce">¡Cuenta Fondeada!</h2>
-                <p className="text-lg mb-4 text-blue-100">
-                  Has recibido <span className="font-bold text-yellow-300 text-2xl">10,000 XLM</span>
+                <p className="text-lg mb-4 text-zinc-200">
+                  Has recibido <span className="font-bold text-gold-300 text-2xl">10,000 XLM</span>
                 </p>
                 
                 <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
-                    <CheckCircle className="w-5 h-5 text-blue-300" />
+                    <CheckCircle className="w-5 h-5 text-gold-400" />
                     <span className="text-sm">Fondeo exitoso en testnet</span>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
-                    <CheckCircle className="w-5 h-5 text-blue-300" />
+                    <CheckCircle className="w-5 h-5 text-gold-400" />
                     <span className="text-sm">10,000 XLM disponibles</span>
                   </div>
                 </div>
                 
                 <div className="mt-6">
                   <Button
+                    type="button"
                     onClick={() => setShowFundingSuccess(false)}
                     className="bg-white text-black hover:bg-gray-100 font-bold py-2 px-6 rounded-full"
                   >

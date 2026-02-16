@@ -3,6 +3,7 @@ import { ArrowLeft, QrCode, Copy, Share2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import QRCodeSVG from 'react-qr-code';
 import { toast } from '@/hooks/use-toast';
@@ -60,27 +61,16 @@ const ReceivePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center space-x-2">
-          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-white">Recibir XLM</h1>
-            <p className="text-xs text-gray-400">Red: Stellar</p>
-          </div>
-        </div>
-        <div className="w-8"></div>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<ArrowLeft className={headerIconClass} />}
+        onLeftAction={() => navigate('/home')}
+        subtitle="Recibir XLM"
+      />
 
       <div className="p-4 space-y-6">
         {/* QR Code */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="text-center space-y-4">
             {walletAddress ? (
               <div className="bg-white rounded-lg p-4 mx-auto w-fit">
@@ -104,7 +94,7 @@ const ReceivePage = () => {
                   : 'Comparte este código para recibir MXNB'}
               </p>
               {amount && parseFloat(amount) > 0 && (
-                <p className="text-amber-400 text-xs mt-1 font-medium">
+                <p className="text-gold-500 text-xs mt-1 font-medium">
                   Monto solicitado: {amount} MXNB
                 </p>
               )}
@@ -113,7 +103,7 @@ const ReceivePage = () => {
         </Card>
 
         {/* Wallet Address */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-300 mb-2 block">Tu dirección de wallet</label>
@@ -125,7 +115,7 @@ const ReceivePage = () => {
             <div className="flex space-x-3">
               <Button 
                 onClick={handleCopyAddress}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-gold-600 hover:bg-gold-600 text-white"
               >
                 {copied ? (
                   <>
@@ -142,7 +132,7 @@ const ReceivePage = () => {
               <Button 
                 onClick={handleShare}
                 variant="outline"
-                className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white"
+                className="flex-1 border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 <Share2 className="h-4 w-4 mr-2" />
                 Compartir
@@ -152,7 +142,7 @@ const ReceivePage = () => {
         </Card>
 
         {/* Amount Request (Optional) */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-300 mb-2 block">Monto solicitado (opcional)</label>
@@ -161,7 +151,7 @@ const ReceivePage = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-gold-500"
               />
               <p className="text-xs text-gray-400 mt-1">MXNB</p>
             </div>
@@ -173,7 +163,7 @@ const ReceivePage = () => {
                   key={quickAmount}
                   onClick={() => setAmount(quickAmount)}
                   variant="outline"
-                  className="text-sm border-gray-600 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  className="text-sm border-gray-600 text-gray-200 hover:bg-gray-700"
                 >
                   ${quickAmount}
                 </Button>
@@ -181,9 +171,9 @@ const ReceivePage = () => {
             </div>
 
             {amount && (
-              <div className="bg-blue-500/20 border border-blue-500/40 rounded-lg p-4">
-                <p className="text-blue-400 text-sm font-medium">💡 Información</p>
-                <p className="text-blue-300 text-xs mt-1">
+              <div className="bg-gold-500/20 border border-gold-500/40 rounded-lg p-4">
+                <p className="text-gold-500 text-sm font-medium">💡 Información</p>
+                <p className="text-zinc-300 text-xs mt-1">
                   El monto solicitado aparecerá en el QR para facilitar el envío
                 </p>
               </div>
@@ -192,20 +182,20 @@ const ReceivePage = () => {
         </Card>
 
         {/* Instructions */}
-        <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-6 text-white">
+        <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">¿Cómo recibir MXNB?</h3>
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-start space-x-2">
-                <span className="text-blue-400 font-bold">1.</span>
+                <span className="text-gold-500 font-bold">1.</span>
                 <span>Comparte tu código QR o dirección de wallet</span>
               </div>
               <div className="flex items-start space-x-2">
-                <span className="text-blue-400 font-bold">2.</span>
+                <span className="text-gold-500 font-bold">2.</span>
                 <span>El remitente escanea el QR o copia la dirección</span>
               </div>
               <div className="flex items-start space-x-2">
-                <span className="text-blue-400 font-bold">3.</span>
+                <span className="text-gold-500 font-bold">3.</span>
                 <span>Recibe el MXNB directamente en tu wallet</span>
               </div>
             </div>

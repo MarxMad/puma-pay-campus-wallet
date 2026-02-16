@@ -21,16 +21,14 @@ const Index = () => {
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-2 border-gold-500/60 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <div className="flex items-center justify-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg p-1">
-              <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
-                <img src="/PumaPay.png" alt="PumaPay" className="h-5 w-5 object-contain" />
-              </div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center ring-1 ring-gold-500/40 bg-black/40 p-1">
+              <img src="/PumaPay.png" alt="PumaPay" className="h-5 w-5 object-contain" />
             </div>
-            <p className="text-white">Cargando...</p>
+            <p className="text-zinc-300 text-sm font-medium">Cargando...</p>
           </div>
         </div>
       </div>

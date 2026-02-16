@@ -50,14 +50,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 max-w-sm w-full shadow-2xl shadow-black/50">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+      <Card className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700/50 p-8 max-w-sm w-full shadow-xl">
         <div className="flex items-center mb-6">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/welcome')}
-            className="text-gray-400 hover:text-white p-2"
+            className="text-zinc-400 hover:text-white p-2"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -65,45 +65,43 @@ const Login = () => {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-blue-400/20 p-2">
-            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
-            </div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-zinc-800 border border-zinc-600/50 flex items-center justify-center p-2 ring-1 ring-gold-500/20">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-9 w-9 object-contain" />
           </div>
-          <h2 className="text-lg font-semibold text-white mb-2">Bienvenido de nuevo</h2>
-          <p className="text-gray-400 text-sm">Accede a tu wallet estudiantil</p>
+          <h2 className="text-base font-semibold text-white mb-1">Bienvenido de nuevo</h2>
+          <p className="text-zinc-500 text-sm">Accede a tu wallet estudiantil</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="email" className="text-gray-300 text-sm">Email estudiantil</Label>
+            <Label htmlFor="email" className="text-zinc-400 text-sm">Email estudiantil</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              className="bg-gray-700 border-gray-600 text-white mt-1"
+              className="bg-zinc-800 border-zinc-600 text-white mt-1 focus-visible:ring-gold-500"
               placeholder="tu-email@estudiante.unam.mx"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="password" className="text-gray-300 text-sm">Contraseña</Label>
+            <Label htmlFor="password" className="text-zinc-400 text-sm">Contraseña</Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="bg-gray-700 border-gray-600 text-white mt-1 pr-10"
+                className="bg-zinc-800 border-zinc-600 text-white mt-1 pr-10 focus-visible:ring-gold-500"
                 placeholder="••••••••"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-400 hover:text-white"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -111,13 +109,13 @@ const Login = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            <label className="flex items-center space-x-2 text-sm text-gray-400">
-              <input type="checkbox" className="rounded border-gray-600" />
+            <label className="flex items-center space-x-2 text-sm text-zinc-500">
+              <input type="checkbox" className="rounded border-zinc-600 bg-zinc-800" />
               <span>Recordarme</span>
             </label>
             <button 
               type="button"
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="text-sm text-gold-500 hover:text-gold-400"
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -126,7 +124,7 @@ const Login = () => {
           <Button 
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-xl mt-6 disabled:opacity-50"
+            className="w-full bg-gold-600 hover:bg-gold-500 text-black font-semibold py-3 rounded-xl mt-6 disabled:opacity-50"
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">

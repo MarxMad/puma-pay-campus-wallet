@@ -1,6 +1,9 @@
 /**
- * Servicio para gestionar cuestionarios de cursos
+ * Servicio para gestionar cuestionarios de cursos (guías de estudio).
+ * Cada guía tiene un cuestionario de 15 preguntas según su categoría.
  */
+
+import { getQuestionsForCourse } from '@/data/quizBank';
 
 export interface QuizQuestion {
   id: string;
@@ -16,7 +19,6 @@ export interface Quiz {
   title: string;
   questions: QuizQuestion[];
   passingScore: number; // Puntuación mínima para pasar (0-100)
-  timeLimit?: number; // Tiempo límite en minutos
 }
 
 export interface QuizAnswer {
@@ -30,6 +32,8 @@ export interface QuizResult {
   correctAnswers: number;
   passed: boolean;
   badgeLevel?: 1 | 2 | 3; // Bronze, Silver, Gold
+  /** Tiempo en segundos que tardó en completar el cuestionario (cronómetro). Para leaderboard. */
+  timeSpentSeconds?: number;
 }
 
 export class QuizService {
@@ -43,16 +47,21 @@ export class QuizService {
   }
 
   /**
-   * Envía las respuestas del cuestionario
+   * Envía las respuestas del cuestionario.
+   * @param timeSpentSeconds Tiempo en segundos que tardó (cronómetro). Se guarda para leaderboard.
    */
   async submitQuiz(
     courseId: string,
-    answers: QuizAnswer[]
+    answers: QuizAnswer[],
+    timeSpentSeconds?: number
   ): Promise<QuizResult> {
     const quiz = await this.getQuiz(courseId);
     const result = this.calculateScore(answers, quiz.questions);
+    if (timeSpentSeconds != null) {
+      result.timeSpentSeconds = timeSpentSeconds;
+    }
 
-    // Guardar resultado localmente
+    // Guardar resultado localmente (incluye tiempo para leaderboard)
     this.saveQuizResult(courseId, result);
 
     return result;
@@ -127,77 +136,16 @@ export class QuizService {
   }
 
   /**
-   * Obtiene un cuestionario mock para desarrollo
+   * Obtiene el cuestionario de una guía por courseId (15 preguntas por tema dentro de la categoría).
    */
   private getMockQuiz(courseId: string): Quiz {
+    const questions = getQuestionsForCourse(courseId);
     return {
       id: `quiz-${courseId}`,
       courseId,
-      title: 'Cuestionario Final',
+      title: 'Cuestionario (15 preguntas)',
       passingScore: 70,
-      timeLimit: 30,
-      questions: [
-        {
-          id: 'q1',
-          question: '¿Qué es un presupuesto?',
-          options: [
-            'Un plan de gastos',
-            'Un tipo de cuenta bancaria',
-            'Una tarjeta de crédito',
-            'Un préstamo',
-          ],
-          correctAnswer: 0,
-          explanation: 'Un presupuesto es un plan que te ayuda a controlar tus gastos.',
-        },
-        {
-          id: 'q2',
-          question: '¿Cuál es la regla 50/30/20?',
-          options: [
-            '50% necesidades, 30% deseos, 20% ahorro',
-            '50% ahorro, 30% gastos, 20% inversión',
-            '50% ingresos, 30% gastos, 20% ahorro',
-            '50% gastos, 30% ahorro, 20% inversión',
-          ],
-          correctAnswer: 0,
-          explanation: 'La regla 50/30/20 divide tus ingresos en necesidades (50%), deseos (30%) y ahorro (20%).',
-        },
-        {
-          id: 'q3',
-          question: '¿Qué es el interés compuesto?',
-          options: [
-            'Interés que se calcula solo sobre el capital inicial',
-            'Interés que se calcula sobre el capital y los intereses acumulados',
-            'Un tipo de préstamo',
-            'Una tarifa bancaria',
-          ],
-          correctAnswer: 1,
-          explanation: 'El interés compuesto es cuando los intereses se calculan sobre el capital inicial más los intereses acumulados.',
-        },
-        {
-          id: 'q4',
-          question: '¿Cuál es el beneficio de ahorrar regularmente?',
-          options: [
-            'Solo acumular dinero',
-            'Crear un fondo de emergencia y alcanzar metas financieras',
-            'Evitar pagar impuestos',
-            'Obtener más tarjetas de crédito',
-          ],
-          correctAnswer: 1,
-          explanation: 'Ahorrar regularmente te ayuda a crear un fondo de emergencia y alcanzar tus metas financieras.',
-        },
-        {
-          id: 'q5',
-          question: '¿Qué es un fondo de emergencia?',
-          options: [
-            'Una inversión de alto riesgo',
-            'Dinero reservado para gastos inesperados',
-            'Un tipo de préstamo',
-            'Una cuenta de ahorro con intereses altos',
-          ],
-          correctAnswer: 1,
-          explanation: 'Un fondo de emergencia es dinero que reservas para cubrir gastos inesperados o situaciones de emergencia.',
-        },
-      ],
+      questions,
     };
   }
 }

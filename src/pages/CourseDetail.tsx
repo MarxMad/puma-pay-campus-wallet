@@ -3,25 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
-  Clock,
-  Star,
   PlayCircle,
   Award,
-  TrendingUp,
   Sparkles,
   BookOpen,
-  ListChecks,
   CheckCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { QuizComponent } from '@/components/QuizComponent';
 import { coursesService } from '@/services/coursesService';
 import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { quizService, type QuizResult } from '@/services/quizService';
 import { toast } from '@/hooks/use-toast';
 import { BottomNav } from '@/components/BottomNav';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { getCategoryIcon } from '@/pages/Courses';
 
 export const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -86,214 +84,144 @@ export const CourseDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <p>Cargando curso...</p>
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+        <p>Cargando guía...</p>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl mb-4">Curso no encontrado</p>
-          <Button onClick={() => navigate('/courses')}>Volver a Cursos</Button>
+          <p className="text-xl mb-4">Guía no encontrada</p>
+          <Button onClick={() => navigate('/courses')}>Volver a Guías</Button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white pb-20">
-      <header className="sticky top-0 z-40 bg-gray-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center justify-between px-4 py-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-gray-300 hover:text-white"
-            onClick={() => navigate('/courses')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                PumaPay
-              </h1>
-              <p className="text-xs text-gray-400 hidden sm:block">Detalle del Curso</p>
-            </div>
-          </div>
-          <div className="w-8" aria-hidden />
-        </div>
-      </header>
+  const Icon = getCategoryIcon(course.category);
 
-      <main className="px-4 py-6 space-y-6">
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white pb-20 overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<ArrowLeft className={headerIconClass} />}
+        onLeftAction={() => (showQuiz ? setShowQuiz(false) : navigate('/courses'))}
+        subtitle="Guía"
+      />
+
+      <main className="px-4 py-5 space-y-6 overflow-x-hidden min-w-0">
         {!showQuiz ? (
           <>
-            <Card className="bg-gradient-to-br from-gray-900 via-gray-900/90 to-gray-800 border border-white/10 shadow-2xl shadow-black/40">
-              <CardHeader className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-amber-300">
-                      {course.category} • {course.level}
-                    </p>
-                    <CardTitle className="text-2xl text-white">{course.title}</CardTitle>
-                    <CardDescription className="text-gray-200 mt-1">
-                      {course.instructor}
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-gray-200 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" /> {course.duration}
+            {/* Hero: icono + título + categoría */}
+            <div className="flex flex-col items-center text-center pt-2 pb-4">
+              <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-gold-500/15 border-2 border-gold-500/40 text-gold-400 mb-4 animate-float">
+                <Icon className="w-10 h-10" strokeWidth={2} />
+              </div>
+              <span className="text-xs font-medium text-gold-400 uppercase tracking-wider mb-1">
+                {course.category}
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
+                {course.title}
+              </h1>
+              <p className="text-gray-400 text-sm">{course.instructor}</p>
+            </div>
+
+            {/* Descripción corta */}
+            <p className="text-gray-300 text-center text-sm leading-relaxed max-w-lg mx-auto">
+              {course.description}
+            </p>
+
+            {/* Highlights en una fila compacta */}
+            {hasHighlights && (
+              <div className="flex flex-wrap justify-center gap-2">
+                {course.highlights!.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-gold-500/20 text-gray-200 text-xs"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-gold-400 flex-shrink-0" />
+                    {item}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-amber-300" />
-                    {course.rating.toFixed(1)} · {course.reviews} reseñas
+                ))}
+              </div>
+            )}
+
+            {/* Progreso + puntos en una sola barra */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              {progress?.completed && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-positive-500/15 border border-positive-500/40">
+                  <Award className="h-5 w-5 text-positive-400" />
+                  <span className="text-sm font-semibold text-positive-200">
+                    Completado · {progress.badgeLevel === 3 ? '🥇' : progress.badgeLevel === 2 ? '🥈' : '🥉'} {progress.quizScore}% · +{progress.pointsEarned} pts
                   </span>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 text-gray-100">
-                <p className="text-gray-200">{course.description}</p>
-                {hasHighlights && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {course.highlights!.map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center gap-2 p-3 rounded-xl bg-white/5"
-                      >
-                        <Sparkles className="h-4 w-4 text-amber-300" />
-                        <span className="text-gray-100">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4">
-              {course.requirements && course.requirements.length > 0 && (
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <ListChecks className="h-4 w-4 text-gray-400" />
-                      Requisitos sugeridos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-gray-300">
-                    {course.requirements.map((req) => (
-                      <div key={req} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-emerald-400" />
-                        <span>{req}</span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
               )}
-
-              {progress && progress.completed && (
-                <Card className="bg-green-950/40 border border-green-500/40">
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-green-400" />
-                      <span className="font-semibold text-green-200">
-                        Curso completado
-                      </span>
-                    </div>
-                    {progress.badgeLevel && (
-                      <p className="text-sm text-gray-200">
-                        Badge obtenido:{' '}
-                        {progress.badgeLevel === 3
-                          ? '🥇 Gold'
-                          : progress.badgeLevel === 2
-                          ? '🥈 Silver'
-                          : '🥉 Bronze'}
-                      </p>
-                    )}
-                    {progress.quizScore !== undefined && (
-                      <p className="text-sm text-gray-200">
-                        Puntuación: {progress.quizScore}%
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-200">
-                      Puntos ganados: {progress.pointsEarned}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {userPoints && (
-                <Card className="bg-blue-950/30 border border-blue-500/40">
-                  <CardContent className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-200 text-sm">Tus puntos</p>
-                      <p className="text-3xl font-bold text-white">
-                        {userPoints.totalPoints}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {userPoints.coursesCompleted} cursos completados
-                      </p>
-                    </div>
-                    <TrendingUp className="h-10 w-10 text-blue-200" />
-                  </CardContent>
-                </Card>
+              {userPoints && !progress?.completed && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-500/10 border border-gold-500/30">
+                  <span className="text-sm text-gold-300">{userPoints.totalPoints} pts</span>
+                  <span className="text-xs text-gray-400">· {userPoints.coursesCompleted} guías</span>
+                </div>
               )}
             </div>
 
+            {/* Requisitos: lista mínima */}
+            {course.requirements && course.requirements.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Requisitos sugeridos</p>
+                <ul className="space-y-1.5">
+                  {course.requirements.map((req) => (
+                    <li key={req} className="flex items-center gap-2 text-sm text-gray-400">
+                      <CheckCircle className="h-4 w-4 text-positive-500/80 flex-shrink-0" />
+                      {req}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Contenido de la guía */}
             {course.syllabus && course.syllabus.length > 0 && (
               <section className="space-y-3">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-gray-300" />
-                  Contenido del curso
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-gold-400" />
+                  Contenido
                 </h2>
-                <Accordion type="single" collapsible className="bg-gray-900 border border-gray-800 rounded-2xl divide-y divide-gray-800">
+                <Accordion type="single" collapsible className="rounded-2xl border border-gold-500/20 bg-black/30 overflow-hidden">
                   {course.syllabus.map((module, index) => (
-                    <AccordionItem key={module.id} value={module.id} className="px-4">
-                      <AccordionTrigger className="text-left text-white">
-                        <div>
-                          <p className="text-xs text-gray-400 uppercase">Módulo {index + 1}</p>
-                          <p className="text-base font-semibold">{module.title}</p>
+                    <AccordionItem key={module.id} value={module.id} className="border-b border-white/5 last:border-0">
+                      <AccordionTrigger className="px-4 py-3 text-left text-white hover:bg-white/5 hover:text-white hover:no-underline">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gold-400/80 font-medium">M{index + 1}</span>
+                          <span className="font-medium">{module.title}</span>
                         </div>
+                        <ChevronRight className="h-4 w-4 text-gray-500 shrink-0 transition-transform" />
                       </AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-gray-400 mb-4">
-                          {module.description}
-                        </p>
-                        <div className="space-y-3">
+                      <AccordionContent className="px-4 pb-4 pt-0">
+                        <p className="text-sm text-gray-400 mb-4">{module.description}</p>
+                        <div className="space-y-2">
                           {module.lessons.map((lesson) => (
-                            <div key={lesson.id} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-800/60">
-                              <div>
-                                <p className="font-medium text-white">{lesson.title}</p>
-                                <p className="text-sm text-gray-400">{lesson.description}</p>
-                                {lesson.content && (
-                                  <ul className="text-xs text-gray-500 mt-2 list-disc list-inside">
-                                    {lesson.content.map((item) => (
-                                      <li key={item}>{item}</li>
-                                    ))}
-                                  </ul>
-                                )}
-                                {lesson.resources && (
-                                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                    {lesson.resources.map((resource) => (
-                                      <a
-                                        key={resource.label}
-                                        href={resource.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="px-2 py-1 bg-black/30 border border-white/10 rounded-full text-gray-200 hover:text-white"
-                                      >
-                                        {resource.label}
-                                      </a>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-400 whitespace-nowrap">
-                                {lesson.duration}
-                              </span>
+                            <div key={lesson.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                              <p className="font-medium text-white text-sm">{lesson.title}</p>
+                              {lesson.description && (
+                                <p className="text-xs text-gray-500 mt-0.5">{lesson.description}</p>
+                              )}
+                              {lesson.resources && lesson.resources.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {lesson.resources.map((resource) => (
+                                    <a
+                                      key={resource.label}
+                                      href={resource.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-xs px-2 py-1 rounded-lg bg-gold-500/15 border border-gold-500/30 text-gold-300 hover:text-gold-300 hover:bg-gold-500/25"
+                                    >
+                                      {resource.label}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -304,43 +232,39 @@ export const CourseDetail: React.FC = () => {
               </section>
             )}
 
-            <Button
-              onClick={handleStartQuiz}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold"
-              size="lg"
-            >
-              <PlayCircle className="h-5 w-5 mr-2" />
-              {progress?.completed ? 'Revisar cuestionario' : 'Resolver cuestionario'}
-            </Button>
+            {/* CTA principal */}
+            <div className="pt-2 pb-4">
+              <Button
+                onClick={handleStartQuiz}
+                className="w-full bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-black font-bold py-6 rounded-xl shadow-lg shadow-gold-500/20 border-0"
+                size="lg"
+              >
+                <PlayCircle className="h-5 w-5 mr-2" />
+                {progress?.completed ? 'Ver de nuevo el cuestionario' : 'Resolver cuestionario'}
+              </Button>
+            </div>
           </>
         ) : (
           <>
-            <div className="space-y-4">
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-amber-400" />
-                    Cuestionario: {course.title}
-                  </CardTitle>
-                  <CardDescription>
-                    Completa el cuestionario para obtener tu badge y puntos
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              {courseId && (
-                <QuizComponent
-                  courseId={courseId}
-                  onComplete={handleQuizComplete}
-                />
-              )}
-
+            <div className="space-y-4 min-w-0 max-w-full">
+              <p className="text-center text-gray-400 text-sm">
+                {course.title}
+              </p>
+              <div className="min-w-0 max-w-full">
+                {courseId && (
+                  <QuizComponent
+                    courseId={courseId}
+                    onComplete={handleQuizComplete}
+                  />
+                )}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setShowQuiz(false)}
-                className="w-full"
+                className="w-full border-gold-500/40 text-gold-300 hover:text-gold-300 hover:bg-gold-500/10 rounded-xl"
               >
-                Volver al curso
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Volver a la guía
               </Button>
             </div>
           </>

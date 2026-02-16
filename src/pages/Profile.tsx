@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, LogOut, Copy, Award, Target, GraduationCap, Trophy, CheckCircle2, PiggyBank, Star } from 'lucide-react';
+import { ArrowLeft, LogOut, Copy, Award, Target, GraduationCap, Trophy, CheckCircle2, PiggyBank, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BottomNav } from '@/components/BottomNav';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { useQuery } from '@tanstack/react-query';
@@ -60,10 +62,10 @@ const Profile = () => {
     if (user?.address) {
       try {
         await navigator.clipboard.writeText(user.address);
-        alert('Dirección de wallet copiada al portapapeles');
+        toast({ title: 'Copiado', description: 'Dirección copiada al portapapeles' });
       } catch (error) {
         console.error('Error al copiar:', error);
-        alert('Error al copiar la dirección');
+        toast({ title: 'Error', description: 'No se pudo copiar la dirección', variant: 'destructive' });
       }
     }
   };
@@ -76,109 +78,99 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-          <Bell className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              PumaPay
-            </h1>
-            <p className="text-xs text-gray-400 hidden sm:block">Mi Perfil</p>
-          </div>
-        </div>
-        <div className="w-8" aria-hidden />
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] pb-20 overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<ArrowLeft className={headerIconClass} />}
+        onLeftAction={() => navigate('/home')}
+        subtitle="Mi Perfil"
+      />
             
-      <div className="p-4 space-y-6">
-        {/* Profile Info Card */}
-        <Card className="bg-gray-800/70 border-white/10 p-6 text-white shadow-xl">
+      <div className="p-4 sm:px-6 space-y-6">
+        {/* Profile Info Card - estilo Cursos */}
+        <Card className="bg-black/30 border-2 border-gold-500/20 p-6 text-white hover:border-gold-500/40 transition-all">
           <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ring-4 ring-blue-400/20">
-              <span className="text-2xl font-bold">
-                {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
-              </span>
+            <div className="w-20 h-20 bg-gradient-to-br from-gold-500 to-gold-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl border-2 border-gold-500/40 text-black font-bold text-2xl">
+              {user?.name ? user.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase() : 'U'}
             </div>
-            <h1 className="text-xl font-bold">{user?.name || 'Usuario'}</h1>
+            <h1 className="text-xl font-bold text-white">{user?.name || 'Usuario'}</h1>
             <p className="text-gray-400 mb-4">{user?.email || 'Sin email'}</p>
             
             {/* Wallet Info */}
-            <div className="bg-gray-700/50 p-3 rounded-xl">
+            <div className="bg-black/30 border border-gold-500/20 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-300 text-sm">Wallet Address</span>
+                <span className="text-gray-400 text-sm">Dirección de wallet</span>
                 <Button
+                  type="button"
                   onClick={handleCopyWallet}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-400 hover:text-white p-1 h-6 w-6"
+                  className="text-gold-400 hover:text-gold-400 hover:bg-gold-500/20 h-8 px-2 text-xs gap-1"
                 >
                   <Copy className="h-3 w-3" />
+                  Copiar
                 </Button>
               </div>
-              <p className="text-xs font-mono text-gray-300 break-all">
+              <p className="text-xs font-mono text-gold-400/90 break-all">
                 {user?.address}
               </p>
             </div>
           </div>
         </Card>
 
-        {/* Estadísticas rápidas */}
+        {/* Estadísticas rápidas - estilo Cursos */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-blue-600/50 to-blue-700/50 border-blue-500/50 p-4 text-white">
+          {false && (
+          <Card className="bg-black/30 border-2 border-gold-500/20 p-4 text-white hover:border-gold-500/40 transition-all">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                <Target className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
+                <Target className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs text-white font-medium">Metas completadas</p>
+                <p className="text-xs text-gray-400 font-medium">Metas completadas</p>
                 <p className="text-2xl font-bold text-white">{achievedGoals.length}</p>
               </div>
             </div>
           </Card>
-          <Card className="bg-gradient-to-br from-yellow-600/50 to-yellow-700/50 border-yellow-500/50 p-4 text-white">
+          )}
+          <Card className="bg-black/30 border-2 border-gold-500/20 p-4 text-white hover:border-gold-500/40 transition-all col-span-2 sm:col-span-1">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
+                <GraduationCap className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs text-white font-medium">Cursos completados</p>
+                <p className="text-xs text-gray-400 font-medium">Guías completadas</p>
                 <p className="text-2xl font-bold text-white">{completedCourses.length}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Puntos del usuario */}
+        {/* Puntos del usuario - estilo Cursos */}
         {userPoints && (
-          <Card className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 border-white/20 p-6 text-white">
+          <Card className="bg-black/30 border-2 border-gold-500/20 p-6 text-white hover:border-gold-500/40 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Star className="h-8 w-8 text-white" />
+                <div className="w-16 h-16 bg-gold-500/20 border-2 border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
+                  <Star className="h-8 w-8" />
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium">Puntos totales</p>
+                  <p className="text-gray-400 text-sm font-medium">Puntos totales</p>
                   <p className="text-3xl font-bold text-white">{userPoints.totalPoints || 0}</p>
-                  <p className="text-xs text-gray-300 mt-1">
-                    {userPoints.coursesCompleted || 0} cursos completados
+                  <p className="text-xs text-gray-400 mt-1">
+                    {userPoints.coursesCompleted || 0} guías completadas
                   </p>
                 </div>
               </div>
-          </div>
-        </Card>
+            </div>
+          </Card>
         )}
 
-        {/* Logros de Ahorro */}
+        {/* Logros de Ahorro: sección oculta (código conservado) */}
+        {false && (
         <Card className="bg-gray-800/70 border-white/10 text-white shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
-              <PiggyBank className="h-5 w-5 text-blue-400" />
+              <PiggyBank className="h-5 w-5 text-gold-500" />
               Logros de Ahorro
             </CardTitle>
           </CardHeader>
@@ -189,7 +181,7 @@ const Profile = () => {
                 <p className="text-gray-400">Aún no has completado ninguna meta de ahorro</p>
                 <Button
                   onClick={() => navigate('/savings-goals')}
-                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
+                  className="mt-4 bg-gold-500 hover:bg-gold-600 text-white"
                 >
                   Ver metas de ahorro
                 </Button>
@@ -199,9 +191,9 @@ const Profile = () => {
                 {achievedGoals.map((goal) => (
                   <div
                     key={goal.id}
-                    className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-xl p-4 flex items-center space-x-4"
+                    className="bg-gradient-to-br from-gold-500/20 to-gold-600/20 border border-gold-500/30 rounded-xl p-4 flex items-center space-x-4"
                   >
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-gold-500 rounded-xl flex items-center justify-center flex-shrink-0">
                       <CheckCircle2 className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -210,18 +202,18 @@ const Profile = () => {
                         Objetivo: ${goal.targetAmount.toFixed(2)}
                       </p>
                       {goal.proofId && (
-                        <p className="text-xs text-blue-300 mt-1">
+                        <p className="text-xs text-gold-400 mt-1">
                           ✓ Verificado con ZK Proof
                         </p>
                       )}
                     </div>
-                    <Trophy className="h-6 w-6 text-yellow-400 flex-shrink-0" />
+                    <Trophy className="h-6 w-6 text-positive-400 flex-shrink-0" />
                   </div>
                 ))}
                 <Button
                   onClick={() => navigate('/savings-goals')}
                   variant="outline"
-                  className="w-full border-blue-400/30 text-blue-200 hover:bg-blue-500/10"
+                  className="w-full border-gold-500/30 text-zinc-300 hover:text-zinc-300 hover:bg-gold-500/10"
                 >
                   Ver todas las metas
                 </Button>
@@ -229,27 +221,29 @@ const Profile = () => {
             )}
           </CardContent>
         </Card>
+        )}
 
-        {/* Logros de Cursos */}
-        <Card className="bg-gray-800/70 border-white/10 text-white shadow-xl">
+        {/* Logros de Guías - estilo Cursos */}
+        <Card className="bg-black/30 border-2 border-gold-500/20 text-white hover:border-gold-500/40 transition-all">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
-              <GraduationCap className="h-5 w-5 text-yellow-400" />
-              Logros de Cursos
+              <GraduationCap className="h-5 w-5 text-gold-400" />
+              Logros de Guías
             </CardTitle>
           </CardHeader>
           <CardContent>
             {completedCourses.length === 0 ? (
               <div className="text-center py-8">
                 <GraduationCap className="h-12 w-12 mx-auto mb-4 text-gray-500 opacity-50" />
-                <p className="text-gray-400">Aún no has completado ningún curso</p>
+                <p className="text-gray-400">Aún no has completado ninguna guía</p>
                 <Button
+                  type="button"
                   onClick={() => navigate('/courses')}
-                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
+                  className="mt-4 bg-gold-500 hover:bg-gold-600 text-black font-semibold"
                 >
-                  Explorar cursos
+                  Explorar guías
                 </Button>
-      </div>
+              </div>
             ) : (
               <div className="space-y-3">
                 {completedCourses.map((course) => {
@@ -266,18 +260,18 @@ const Profile = () => {
                   return (
                     <div
                       key={course.id}
-                      className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 rounded-xl p-4 flex items-center space-x-4"
+                      className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-4 flex items-center space-x-4"
                     >
-                      <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Award className="h-6 w-6 text-white" />
+                      <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center flex-shrink-0 text-gold-400">
+                        <Award className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-white">{course.title}</p>
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-gray-400">
                           {progress?.quizScore ? `Puntuación: ${progress.quizScore}%` : 'Completado'}
                         </p>
                         {progress?.badgeLevel && (
-                          <p className="text-xs text-yellow-300 mt-1">
+                          <p className="text-xs text-gold-400 mt-1">
                             {badgeEmoji} Badge obtenido
                           </p>
                         )}
@@ -288,24 +282,25 @@ const Profile = () => {
                     </div>
                   );
                 })}
-              <Button
+                <Button
+                  type="button"
                   onClick={() => navigate('/courses')}
                   variant="outline"
-                  className="w-full border-yellow-400/30 text-yellow-200 hover:bg-yellow-500/10"
+                  className="w-full border-gold-500/40 text-gold-400 hover:text-gold-400 hover:bg-gold-500/10"
                 >
                   Ver todos los cursos
-              </Button>
-            </div>
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Badges obtenidos */}
+        {/* Badges obtenidos - estilo Cursos */}
         {badges.length > 0 && (
-          <Card className="bg-gray-800/70 border-white/10 text-white shadow-xl">
+          <Card className="bg-black/30 border-2 border-gold-500/20 text-white hover:border-gold-500/40 transition-all">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <Trophy className="h-5 w-5 text-yellow-400" />
+                <Trophy className="h-5 w-5 text-gold-400" />
                 Badges Obtenidos
               </CardTitle>
             </CardHeader>
@@ -316,13 +311,13 @@ const Profile = () => {
                   return (
                     <div
                       key={index}
-                      className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 rounded-xl p-3 text-center"
+                      className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-3 text-center"
                     >
                       <div className="text-3xl mb-2">{badgeEmoji}</div>
-                      <p className="text-xs text-gray-300">
+                      <p className="text-xs text-gray-400">
                         {badge.level === 3 ? 'Gold' : badge.level === 2 ? 'Silver' : 'Bronze'}
-              </p>
-            </div>
+                      </p>
+                    </div>
                   );
                 })}
               </div>
@@ -330,20 +325,21 @@ const Profile = () => {
           </Card>
         )}
 
-        {/* Cerrar sesión */}
-        <Card className="bg-gray-800/70 border-white/10 text-white">
+        {/* Cerrar sesión - estilo Cursos */}
+        <Card className="bg-black/30 border-2 border-gold-500/20 text-white hover:border-gold-500/40 transition-all">
           <CardContent className="pt-6">
             <Button
+              type="button"
               onClick={handleLogout}
               variant="outline"
-              className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="w-full border-red-500/40 text-red-400 hover:text-red-400 hover:bg-red-500/10"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar sesión
             </Button>
           </CardContent>
-          </Card>
-        </div>
+        </Card>
+      </div>
 
       <BottomNav />
     </div>

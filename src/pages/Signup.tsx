@@ -115,14 +115,16 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <Card className="bg-gray-800/50 backdrop-blur-xl border-white/20 p-8 max-w-md w-full shadow-2xl shadow-black/50">
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(212,160,18,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(212,160,18,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold-600/5 rounded-full blur-3xl pointer-events-none" />
+      <Card className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 p-8 max-w-md w-full shadow-2xl relative z-10">
         <div className="flex items-center mb-6">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => navigate('/welcome')}
-            className="text-gray-400 hover:text-white p-2"
+            className="text-zinc-400 hover:text-white p-2"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -130,42 +132,40 @@ const Signup = () => {
         </div>
 
         {/* Aviso informativo */}
-        <div className="mb-4 p-3 bg-blue-900/40 border border-blue-700 rounded text-blue-200 text-sm text-center">
+        <div className="mb-4 p-3 bg-zinc-800/50 border border-zinc-600/50 rounded-xl text-zinc-300 text-sm text-center">
           Al crear tu cuenta, también se generará automáticamente tu wallet segura en Stellar.<br />
-          <span className="block mt-2 text-blue-300 font-semibold">Tu wallet PumaPay estará lista para recibir y enviar XLM en la red Stellar.</span>
+          <span className="block mt-2 text-gold-500 font-semibold">Tu wallet PumaPay estará lista para recibir y enviar XLM en la red Stellar.</span>
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl ring-4 ring-blue-400/20 p-2">
-            <div className="w-full h-full bg-gradient-to-br from-white to-gray-50 rounded-full flex items-center justify-center shadow-inner">
-              <img src="/PumaPay.png" alt="PumaPay" className="h-10 w-10 object-contain" />
-            </div>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gold-500/20 to-gold-600/10 border border-gold-500/30 flex items-center justify-center p-2 ring-1 ring-gold-500/20">
+            <img src="/PumaPay.png" alt="PumaPay" className="h-12 w-12 object-contain" />
           </div>
-          <p className="text-gray-400 text-sm">Únete a la comunidad estudiantil</p>
+          <p className="text-zinc-400 text-sm">Únete a la comunidad estudiantil</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name" className="text-gray-300 text-sm">Nombre</Label>
+              <Label htmlFor="name" className="text-zinc-300 text-sm">Nombre</Label>
               <Input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="bg-gray-700 border-gray-600 text-white mt-1"
+                className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 mt-1 focus:border-gold-500"
                 placeholder="Alex"
                 required
               />
             </div>
             <div>
-              <Label htmlFor="lastName" className="text-gray-300 text-sm">Apellido</Label>
+              <Label htmlFor="lastName" className="text-zinc-300 text-sm">Apellido</Label>
               <Input
                 id="lastName"
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                className="bg-gray-700 border-gray-600 text-white mt-1"
+                className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 mt-1 focus:border-gold-500"
                 placeholder="García"
                 required
               />
@@ -173,7 +173,7 @@ const Signup = () => {
           </div>
 
           <div>
-            <Label htmlFor="email" className="text-gray-300 text-sm">Email estudiantil</Label>
+            <Label htmlFor="email" className="text-zinc-300 text-sm">Email estudiantil</Label>
             <Input
               id="email"
               type="email"
@@ -182,7 +182,7 @@ const Signup = () => {
                 setFormData({...formData, email: e.target.value});
                 if (emailError) setEmailError(null);
               }}
-              className={`bg-gray-700 border-gray-600 text-white mt-1 ${emailError ? 'border-red-500' : ''}`}
+              className={`bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 mt-1 focus:border-gold-500 ${emailError ? 'border-red-500' : ''}`}
               placeholder="alex@estudiante.unam.mx"
               required
             />
@@ -194,13 +194,13 @@ const Signup = () => {
           </div>
 
           <div>
-            <Label htmlFor="studentId" className="text-gray-300 text-sm">Número de cuenta</Label>
+            <Label htmlFor="studentId" className="text-zinc-300 text-sm">Número de cuenta</Label>
             <Input
               id="studentId"
               type="text"
               value={formData.studentId}
               onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-              className="bg-gray-700 border-gray-600 text-white mt-1"
+              className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 mt-1 focus:border-gold-500"
               placeholder="318145672"
               required
             />
@@ -208,14 +208,14 @@ const Signup = () => {
 
           {/* Contraseña con validación */}
           <div>
-            <Label htmlFor="password" className="text-gray-300 text-sm">Contraseña</Label>
+            <Label htmlFor="password" className="text-zinc-300 text-sm">Contraseña</Label>
             <div className="relative mt-1">
             <Input
               id="password"
                 type={showPassword ? "text" : "password"}
               value={formData.password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white pr-10"
+                className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 pr-10 focus:border-gold-500"
                 placeholder="••••••••"
                 required
               />
@@ -223,7 +223,7 @@ const Signup = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-white"
+                className="absolute inset-y-0 right-0 px-3 text-zinc-400 hover:text-white"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -234,7 +234,7 @@ const Signup = () => {
             {formData.password && (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center space-x-2 text-xs">
-                  <span className="text-gray-400">Fortaleza:</span>
+                  <span className="text-zinc-400">Fortaleza:</span>
                   <div className="flex space-x-1">
                     {[1, 2, 3, 4, 5].map((level) => (
                       <div
@@ -242,16 +242,16 @@ const Signup = () => {
                         className={`w-4 h-1 rounded ${
                           5 - passwordErrors.length >= level
                             ? level <= 2 ? 'bg-red-500' 
-                              : level <= 3 ? 'bg-yellow-500' 
-                              : 'bg-green-500'
-                            : 'bg-gray-600'
+                              : level <= 3 ? 'bg-gold-500' 
+                              : 'bg-positive-500'
+                            : 'bg-zinc-600'
                         }`}
                       />
                     ))}
                   </div>
                   <span className={`text-xs ${
-                    passwordErrors.length === 0 ? 'text-green-400' :
-                    passwordErrors.length <= 2 ? 'text-yellow-400' : 'text-red-400'
+                    passwordErrors.length === 0 ? 'text-positive-400' :
+                    passwordErrors.length <= 2 ? 'text-gold-400' : 'text-red-400'
                   }`}>
                     {passwordErrors.length === 0 ? 'Fuerte' :
                      passwordErrors.length <= 2 ? 'Media' : 'Débil'}
@@ -274,16 +274,16 @@ const Signup = () => {
 
           {/* Confirmar contraseña */}
           <div>
-            <Label htmlFor="confirmPassword" className="text-gray-300 text-sm">Confirmar contraseña</Label>
+            <Label htmlFor="confirmPassword" className="text-zinc-300 text-sm">Confirmar contraseña</Label>
             <div className="relative mt-1">
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                className={`bg-gray-700 border-gray-600 text-white pr-10 ${
+                className={`bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 pr-10 focus:border-gold-500 ${
                   passwordsDontMatch ? 'border-red-500' : 
-                  passwordsMatch ? 'border-green-500' : ''
+                  passwordsMatch ? 'border-positive-500' : ''
                 }`}
               placeholder="••••••••"
               required
@@ -292,7 +292,7 @@ const Signup = () => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute inset-y-0 right-0 px-3 text-gray-400 hover:text-white"
+                className="absolute inset-y-0 right-0 px-3 text-zinc-400 hover:text-white"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -303,7 +303,7 @@ const Signup = () => {
             {formData.confirmPassword && (
               <div className="mt-2">
                 {passwordsMatch ? (
-                  <div className="flex items-center space-x-2 text-xs text-green-400">
+                  <div className="flex items-center space-x-2 text-xs text-positive-400">
                     <Check className="h-3 w-3" />
                     <span>Las contraseñas coinciden</span>
                   </div>
@@ -322,15 +322,15 @@ const Signup = () => {
             disabled={isLoading || !isFormValid}
             className={`w-full py-3 rounded-xl mt-6 transition-all duration-200 ${
               isFormValid 
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white' 
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                ? 'bg-gold-600 hover:bg-gold-500 text-black font-semibold' 
+                : 'bg-zinc-600 text-zinc-400 cursor-not-allowed'
             }`}
           >
             {isLoading ? (
               <div className="flex flex-col items-center space-y-2 w-full">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                 {signupStep && (
-                  <span className="text-xs text-blue-200 mt-2 animate-pulse">{signupStep}</span>
+                  <span className="text-xs text-zinc-400 mt-2 animate-pulse">{signupStep}</span>
                 )}
                 {!signupStep && <span>Creando cuenta...</span>}
               </div>
@@ -344,18 +344,18 @@ const Signup = () => {
 
           {/* Indicador de estado del formulario */}
           {!isFormValid && formData.password && (
-            <div className="flex items-center justify-center space-x-2 text-xs text-gray-400 mt-2">
+            <div className="flex items-center justify-center space-x-2 text-xs text-zinc-400 mt-2">
               <AlertCircle className="h-3 w-3" />
               <span>Completa todos los campos para continuar</span>
             </div>
           )}
 
-          <p className="text-center text-gray-400 text-sm mt-4">
+          <p className="text-center text-zinc-400 text-sm mt-4">
             ¿Ya tienes cuenta?{' '}
             <button 
               type="button"
               onClick={() => navigate('/welcome')}
-              className="text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-gold-500 hover:text-gold-400 transition-colors"
             >
               Inicia sesión
             </button>

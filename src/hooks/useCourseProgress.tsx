@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { courseGamificationService, type CourseProgress, type UserPoints, type Badge } from '@/services/courseGamificationService';
+import { upsertCourseProgress } from '@/services/supabaseCourseProgress';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface UseCourseProgressReturn {
@@ -11,7 +12,8 @@ export interface UseCourseProgressReturn {
   recordCompletion: (
     courseId: string,
     quizScore: number,
-    badgeLevel: 1 | 2 | 3
+    badgeLevel: 1 | 2 | 3,
+    timeSpentSeconds?: number
   ) => Promise<{ points: number; badge: Badge }>;
   getUserBadges: () => Promise<Badge[]>;
   refresh: () => Promise<void>;
@@ -34,23 +36,41 @@ export const useCourseProgress = (): UseCourseProgressReturn => {
     enabled: !!user,
   });
 
-  // Mutation para registrar completitud
+  // Mutation para registrar completitud (localStorage + Supabase)
   const recordCompletionMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       courseId,
       quizScore,
       badgeLevel,
+      timeSpentSeconds,
     }: {
       courseId: string;
       quizScore: number;
       badgeLevel: 1 | 2 | 3;
-    }) =>
-      courseGamificationService.recordCourseCompletion(
+      timeSpentSeconds?: number;
+    }) => {
+      const result = await courseGamificationService.recordCourseCompletion(
         userId,
         courseId,
         quizScore,
         badgeLevel
-      ),
+      );
+      // Persistir en Supabase para leaderboard (user_email = userId: email o address)
+      try {
+        await upsertCourseProgress({
+          userEmail: userId,
+          courseId,
+          score: quizScore,
+          passed: true,
+          badgeLevel,
+          pointsEarned: result.points,
+          timeSpentSeconds,
+        });
+      } catch (e) {
+        console.warn('No se pudo guardar progreso en Supabase:', e);
+      }
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courseProgress'] });
     },
@@ -76,12 +96,14 @@ export const useCourseProgress = (): UseCourseProgressReturn => {
     recordCompletion: async (
       courseId: string,
       quizScore: number,
-      badgeLevel: 1 | 2 | 3
+      badgeLevel: 1 | 2 | 3,
+      timeSpentSeconds?: number
     ) => {
       return recordCompletionMutation.mutateAsync({
         courseId,
         quizScore,
         badgeLevel,
+        timeSpentSeconds,
       });
     },
     getUserBadges,

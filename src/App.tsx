@@ -18,7 +18,7 @@ import CategoriesPage from "./pages/Categories";
 import Statistics from "./pages/Statistics";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
-// import CampusMap from "./pages/CampusMap";
+import CampusMap from "./pages/CampusMap";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { JunoDemo } from "./pages/JunoDemo";
@@ -26,6 +26,7 @@ import CoursesPage from "./pages/Courses";
 import { ZKDemo } from "./pages/ZKDemo";
 import { SavingsGoals } from "./pages/SavingsGoals";
 import { CourseDetail } from "./pages/CourseDetail";
+import { Feed } from "./pages/Feed";
 
 const queryClient = new QueryClient();
 
@@ -48,11 +49,12 @@ const App = () => (
             <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            {/* Campus Map temporalmente deshabilitado */}
-            {/* <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} /> */}
+            <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
             <Route path="/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-            <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} />
+            {/* Metas de ahorro: ruta oculta para usuarios (código conservado) */}
+            {/* <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} /> */}
+            <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/juno-demo" element={<JunoDemo />} />
             <Route path="/zk-demo" element={<ZKDemo />} />
