@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -90,22 +90,31 @@ const HomePage = () => {
     return () => { cancelled = true; };
   }, [user?.email]);
 
-  // Leaderboard top 50 desde Supabase
-  useEffect(() => {
-    let cancelled = false;
+  // Leaderboard: puntos de cursos + racha (vista campus_leaderboard suma todo user_course_progress)
+  const fetchLeaderboard = useCallback(async () => {
     setLeaderboardLoading(true);
-    getLeaderboardTop50()
-      .then((data) => {
-        if (!cancelled) setLeaderboard(data);
-      })
-      .catch(() => {
-        if (!cancelled) setLeaderboard([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLeaderboardLoading(false);
-      });
-    return () => { cancelled = true; };
+    try {
+      const data = await getLeaderboardTop50();
+      setLeaderboard(data);
+    } catch {
+      setLeaderboard([]);
+    } finally {
+      setLeaderboardLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  // Refrescar leaderboard cuando la pestaña vuelve a estar visible (p. ej. tras completar un quiz)
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchLeaderboard();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [fetchLeaderboard]);
 
   const handleFundAccount = async () => {
     console.log('💰 Iniciando fondeo de cuenta Stellar:', user);
@@ -312,6 +321,7 @@ const HomePage = () => {
           rewardPoints: 50,
         });
         toast({ title: '¡Premio reclamado!', description: `+${result.pointsAwarded} pts · Racha: ${result.streakDays} días` });
+        fetchLeaderboard(); // actualizar ranking (incluye los nuevos puntos)
       } else {
         toast({ title: 'Aún no', description: result.error ?? 'Espera 24h entre reclamos.', variant: 'destructive' });
         if (result.nextClaimAt) {
@@ -1068,12 +1078,25 @@ const HomePage = () => {
 
       {/* Leaderboard Top 50 */}
       <div className="px-4 sm:px-6 mb-6">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h3 className="text-white text-base font-semibold flex items-center gap-2">
             <Trophy className="h-5 w-5 text-gold-400" />
             Ranking del campus
           </h3>
-          <span className="text-xs text-gray-500">Top 50 por puntos</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">Top 50 · cursos + racha</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchLeaderboard()}
+              disabled={leaderboardLoading}
+              className="h-8 px-2 text-gold-400 hover:text-gold-300 hover:bg-gold-500/10 rounded-lg"
+              aria-label="Actualizar ranking"
+            >
+              <RefreshCw className={`h-4 w-4 ${leaderboardLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
         <Card className="bg-black/30 border-2 border-gold-500/20 overflow-hidden hover:border-gold-500/40 transition-all">
           {leaderboardLoading ? (
