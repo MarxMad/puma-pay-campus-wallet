@@ -10,7 +10,6 @@ export async function registrarUsuario({
   clabe,
   api_key,
   auth_method,
-  email_verified = true,
 }: {
   nombre: string,
   apellido: string,
@@ -23,6 +22,8 @@ export async function registrarUsuario({
   email_verified?: boolean,
 }) {
   const password_hash = await bcrypt.hash(password, 10);
+  // No enviamos email_verified: si la tabla no tiene esa columna (migración no aplicada), el insert fallaría.
+  // Si la tabla sí la tiene, Supabase usará el default (true) al no enviarla.
   const { data, error } = await supabase
     .from('usuarios')
     .insert([{
@@ -34,7 +35,6 @@ export async function registrarUsuario({
       clabe,
       api_key,
       auth_method,
-      email_verified,
     }])
     .select();
   if (error) throw error;
