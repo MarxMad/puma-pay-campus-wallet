@@ -1,10 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Sparkles,
-  Search,
   Star,
   BookOpen,
   TrendingUp,
@@ -18,68 +17,29 @@ import {
   Calculator,
   Landmark,
   Dog,
+  Compass,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { BottomNav } from "@/components/BottomNav";
 import { AppHeader, headerIconClass } from "@/components/AppHeader";
 import { coursesService } from "@/services/coursesService";
+import { getCategorySlugFromName } from "@/data/guiasEstudio";
 import type { Course } from "@/types/courses";
-
-const levelFilters: Array<{
-  id: "todos" | Course["level"];
-  label: string;
-}> = [
-  { id: "todos", label: "Todos los niveles" },
-  { id: "Principiante", label: "Principiante" },
-  { id: "Intermedio", label: "Intermedio" },
-  { id: "Avanzado", label: "Avanzado" },
-];
 
 const CoursesPage = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string>("todos");
-  const [selectedLevel, setSelectedLevel] =
-    useState<(typeof levelFilters)[number]["id"]>("todos");
-  const [searchTerm, setSearchTerm] = useState("");
 
   const {
     data: courses = [],
     isLoading,
-    isError,
     refetch,
   } = useQuery({
     queryKey: ["courses"],
     queryFn: coursesService.listCourses,
   });
-
-  const categories = useMemo(() => {
-    const categorySet = new Set<string>();
-    courses.forEach((course) => categorySet.add(course.category));
-    return ["todos", ...Array.from(categorySet)];
-  }, [courses]);
-
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
-      const matchesCategory =
-        selectedCategory === "todos" || course.category === selectedCategory;
-      const matchesLevel =
-        selectedLevel === "todos" || course.level === selectedLevel;
-      const matchesSearch =
-        searchTerm.trim().length === 0 ||
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.tags.some((tag) =>
-          tag.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-      return matchesCategory && matchesLevel && matchesSearch;
-    });
-  }, [courses, selectedCategory, selectedLevel, searchTerm]);
 
   /** Destacadas: una guía por categoría para que el carrusel muestre variedad (se deslizan a la izquierda) */
   const featuredByCategory = useMemo(() => {
@@ -93,16 +53,22 @@ const CoursesPage = () => {
     return Array.from(byCategory.values());
   }, [courses]);
 
-  /** Categorías únicas para los badges del hero (Economía, Derecho, Filosofía, etc.) */
-  const heroCategories = useMemo(
-    () => [...new Set(courses.map((c) => c.category))].slice(0, 5),
-    [courses]
-  );
+  /** Categorías con conteo para "Explorar por área"; al tocar navegan a la página de la categoría */
+  const categoriesWithCount = useMemo(() => {
+    const map = new Map<string, number>();
+    courses.forEach((c) => map.set(c.category, (map.get(c.category) ?? 0) + 1));
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [courses]);
 
-  const trendingCourses = useMemo(
-    () => courses.filter((course) => course.trending),
-    [courses]
-  );
+  /** Tendencias: solo 3 guías, una por categoría (Economía, Filosofía, Ingeniería) */
+  const trendingCourses = useMemo(() => {
+    const categories = ["Economía", "Filosofía", "Ingeniería"];
+    return categories
+      .map((cat) => courses.find((c) => c.category === cat))
+      .filter((c): c is Course => c != null);
+  }, [courses]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] pb-20 text-white overflow-x-hidden w-full max-w-full">
@@ -110,45 +76,46 @@ const CoursesPage = () => {
         leftAction={<ArrowLeft className={headerIconClass} />}
         onLeftAction={() => navigate(-1)}
         subtitle="Guías de estudio"
-        children={
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Busca temas, habilidades o instructores"
-              className="pl-10 bg-gray-900 border-gray-800 text-white placeholder:text-gray-500"
-            />
-          </div>
-        }
       />
 
       <main className="px-4 space-y-8">
-        <section className="mt-4 bg-gradient-to-br from-gold-500/20 via-gold-400/10 to-gold-500/20 border-2 border-gold-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl">
-          <div className="absolute -right-12 -top-10 w-40 h-40 bg-gold-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -left-10 bottom-0 w-32 h-32 bg-gold-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="relative z-10">
-            <div className="flex items-center space-x-2 text-zinc-300 font-bold text-sm mb-2">
-              <Sparkles className="h-5 w-5 text-gold-400" />
-              <span>✨ Aprende gratis desde tu móvil</span>
-            </div>
-            <h2 className="text-3xl font-bold mt-2 mb-3 text-white drop-shadow-lg">
-              Conviértete en experto desde el campus
-            </h2>
-            <p className="text-gray-100 text-base leading-relaxed">
-              Contenido premium con módulos cortos, recursos descargables
-              y cuestionarios gamificados. ¡Aprende mientras ganas puntos!
-            </p>
-            <div className="flex flex-wrap gap-3 mt-5">
-              {heroCategories.map((cat) => (
-                <Badge
-                  key={cat}
-                  className="bg-white/20 backdrop-blur-sm border border-gold-400/50 text-white font-semibold px-4 py-1.5"
+        {/* Hero corto: invitación a explorar */}
+        <section className="mt-4 rounded-2xl border border-gold-500/30 bg-gradient-to-br from-gold-500/10 to-transparent p-5">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
+            ¿Qué quieres repasar hoy?
+          </h2>
+          <p className="text-sm text-zinc-400">
+            Elige un área, resuelve el cuestionario y suma puntos.
+          </p>
+        </section>
+
+        {/* Explorar por área: cards que navegan a la página de cada categoría */}
+        <section className="space-y-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Compass className="h-5 w-5 text-gold-400" />
+            Explorar por área
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {categoriesWithCount.map(({ name, count }) => {
+              const Icon = getCategoryIcon(name);
+              const slug = getCategorySlugFromName(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => navigate(`/courses/category/${slug}`)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-zinc-700 bg-zinc-900/80 hover:border-gold-500/40 hover:bg-zinc-800/80 transition-all text-left min-h-[100px]"
                 >
-                  {cat}
-                </Badge>
-              ))}
-            </div>
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl border-2 bg-zinc-800 border-zinc-600 text-zinc-400">
+                    <Icon className="w-6 h-6" strokeWidth={2} />
+                  </div>
+                  <span className="text-sm font-semibold line-clamp-1 w-full text-center text-zinc-300">
+                    {name}
+                  </span>
+                  <span className="text-xs text-zinc-500">{count} guías</span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -190,75 +157,6 @@ const CoursesPage = () => {
               </p>
             )}
           </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Filtra por categoría</h3>
-          </div>
-          <Tabs
-            value={selectedCategory}
-            className="space-y-4"
-            onValueChange={setSelectedCategory}
-          >
-            <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-              <TabsList className="bg-gray-900 border border-gray-800 inline-flex min-w-full sm:min-w-0 sm:w-auto">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category}
-                    value={category}
-                    className="capitalize whitespace-nowrap flex-shrink-0"
-                  >
-                    {category === "todos" ? "Todas" : category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
-            <TabsContent value={selectedCategory} className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {levelFilters.map((level) => (
-                  <Button
-                    key={level.id}
-                    variant={
-                      level.id === selectedLevel ? "default" : "secondary"
-                    }
-                    size="sm"
-                    className={
-                      level.id === selectedLevel
-                        ? "bg-gold-500 hover:bg-gold-600 border-none whitespace-nowrap"
-                        : "bg-gray-900 border border-gray-800 text-gray-300 whitespace-nowrap"
-                    }
-                    onClick={() => setSelectedLevel(level.id)}
-                  >
-                    {level.label}
-                  </Button>
-                ))}
-              </div>
-
-              <Separator className="bg-gray-800" />
-
-              {isError && (
-                <div className="p-4 bg-gold-500/10 border border-gold-500/40 rounded-xl">
-                  <p className="text-zinc-300 text-sm">
-                    No se pudieron cargar las guías. Intenta nuevamente.
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {filteredCourses.map((course) => (
-                  <CourseGridCard key={course.id} course={course} />
-                ))}
-              </div>
-
-              {!isLoading && filteredCourses.length === 0 && (
-                <div className="p-6 bg-gray-900 border border-gray-800 rounded-2xl text-center text-gray-400 text-sm">
-                  No encontramos guías con esos filtros. Prueba otra categoría
-                  o busca por palabra clave.
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
         </section>
 
         {trendingCourses.length > 0 && (
@@ -372,6 +270,7 @@ const CourseCard = ({ course }: { course: Course }) => {
 const FeaturedSlideCard = ({ course }: { course: Course }) => {
   const navigate = useNavigate();
   const Icon = getCategoryIcon(course.category);
+  const subtitle = [course.carrera, course.tema].filter(Boolean).join(" · ") || course.category;
   return (
     <Card
       className="h-full bg-[#0a0a0a] border-2 border-gold-500/20 hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/20 transition-all duration-300 text-white cursor-pointer overflow-hidden rounded-2xl"
@@ -385,19 +284,21 @@ const FeaturedSlideCard = ({ course }: { course: Course }) => {
           {course.category}
         </Badge>
         <h4 className="text-sm font-bold text-white line-clamp-2 leading-tight mb-1">
-          {course.title}
+          {course.tema ?? course.title}
         </h4>
-        <p className="text-xs text-gray-400 line-clamp-1 mb-3">{course.instructor}</p>
+        <p className="text-xs text-zinc-500 line-clamp-1 mb-3">{subtitle}</p>
         <p className="text-xs text-gold-400/90 font-medium mt-auto">Ver guía →</p>
       </div>
     </Card>
   );
 };
 
-/** Tarjeta compacta para grid: icono animado por categoría, sin tiempo ni puntuación */
-const CourseGridCard = ({ course }: { course: Course }) => {
+/** Tarjeta compacta para grid: icono, tema y carrera visibles para explorar mejor. Exportada para CategoryCourses. */
+export const CourseGridCard = ({ course }: { course: Course }) => {
   const navigate = useNavigate();
   const Icon = getCategoryIcon(course.category);
+  const temaLabel = course.tema ?? course.title;
+  const carreraLabel = course.carrera ?? course.category;
   return (
     <Card
       className="h-full min-h-0 flex flex-col bg-[#0a0a0a] border-2 border-gold-500/20 hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/20 transition-all duration-300 text-white cursor-pointer overflow-hidden rounded-2xl"
@@ -408,20 +309,20 @@ const CourseGridCard = ({ course }: { course: Course }) => {
           <Icon className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={2} />
         </div>
         <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
-          <Badge className="bg-black/70 backdrop-blur-sm border border-gold-500/40 text-gold-300 text-[10px] sm:text-xs px-1.5 py-0">
+          <Badge className="bg-black/70 backdrop-blur-sm border border-gold-500/40 text-gold-300 text-[10px] sm:text-xs px-1.5 py-0 max-w-[70%] truncate">
             {course.category}
           </Badge>
           {course.featured && (
-            <Badge className="bg-gold-500 text-black text-[10px] px-1.5 py-0">⭐</Badge>
+            <Badge className="bg-gold-500 text-black text-[10px] px-1.5 py-0 flex-shrink-0">⭐</Badge>
           )}
         </div>
       </div>
       <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-h-0">
-        <h4 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-tight mb-1">
-          {course.title}
+        <h4 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-tight mb-0.5">
+          {temaLabel}
         </h4>
-        <p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1">{course.instructor}</p>
-        <p className="text-[10px] text-gold-400/90 mt-auto pt-1.5 font-medium">Ver guía →</p>
+        <p className="text-[10px] sm:text-xs text-zinc-500 line-clamp-1 mb-1">{carreraLabel}</p>
+        <p className="text-[10px] text-gold-400/90 mt-auto pt-1 font-medium">Ver guía →</p>
       </div>
     </Card>
   );

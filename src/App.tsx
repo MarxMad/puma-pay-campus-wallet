@@ -23,6 +23,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { JunoDemo } from "./pages/JunoDemo";
 import CoursesPage from "./pages/Courses";
+import CategoryCoursesPage from "./pages/CategoryCourses";
 import { ZKDemo } from "./pages/ZKDemo";
 import { SavingsGoals } from "./pages/SavingsGoals";
 import { CourseDetail } from "./pages/CourseDetail";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+            <Route path="/courses/category/:categorySlug" element={<ProtectedRoute><CategoryCoursesPage /></ProtectedRoute>} />
             <Route path="/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
             {/* Metas de ahorro: ruta oculta para usuarios (código conservado) */}
             {/* <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} /> */}

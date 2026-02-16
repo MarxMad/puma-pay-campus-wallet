@@ -57,3 +57,18 @@ export function sanitizeDisplayName(name: string | null | undefined): string | n
   const stripped = stripDangerousContent(name).slice(0, DISPLAY_NAME_MAX_LEN);
   return stripped || null;
 }
+
+/** Temas permitidos en el feed (slug → válido) */
+export const FEED_TOPICS = ['general', 'comida', 'seguridad', 'libros', 'fiestas'] as const;
+export type FeedTopic = (typeof FEED_TOPICS)[number];
+
+/**
+ * Sanitiza tema de publicación: solo valores permitidos.
+ */
+export function sanitizeTopic(topic: string | null | undefined): FeedTopic {
+  if (topic != null && typeof topic === 'string') {
+    const t = topic.trim().toLowerCase();
+    if ((FEED_TOPICS as readonly string[]).includes(t)) return t as FeedTopic;
+  }
+  return 'general';
+}

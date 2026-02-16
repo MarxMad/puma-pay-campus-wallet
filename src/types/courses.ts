@@ -23,6 +23,10 @@ export interface Course {
   title: string;
   instructor: string;
   category: string;
+  /** Carrera dentro de la categoría (ej. Economía, Finanzas) */
+  carrera?: string;
+  /** Tema del cuestionario (ej. Microeconomía, Derecho penal) */
+  tema?: string;
   level: "Principiante" | "Intermedio" | "Avanzado";
   description: string;
   duration: string;

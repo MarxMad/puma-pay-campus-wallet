@@ -131,6 +131,18 @@ export function getCategorySlugFromCourseId(courseId: string): string {
   return part || 'economia';
 }
 
+/** Slug para URL a partir del nombre de categoría (ej. "Economía" → "economia") */
+export function getCategorySlugFromName(categoryName: string): string {
+  const cat = CATEGORIAS_GUIAS.find((c) => c.name === categoryName);
+  return cat?.slug ?? categoryName.toLowerCase().replace(/\s+/g, '_');
+}
+
+/** Nombre para mostrar a partir del slug de la URL (ej. "economia" → "Economía") */
+export function getCategoryNameFromSlug(slug: string): string | null {
+  const cat = CATEGORIAS_GUIAS.find((c) => c.slug === slug);
+  return cat?.name ?? null;
+}
+
 /** Índice del tema dentro de la categoría (0 a 4). El courseId termina en -1..-5. */
 export function getTemaIndexFromCourseId(courseId: string): number {
   const parts = courseId.split('-');

@@ -25,6 +25,8 @@ function guiasToCourses(): Course[] {
       title: g.title,
       instructor: "PumaPay Campus",
       category: g.category,
+      carrera: g.carrera,
+      tema: g.tema,
       level: index % 3 === 0 ? "Avanzado" : index % 3 === 1 ? "Intermedio" : "Principiante",
       description: g.description,
       duration: "~30 min",

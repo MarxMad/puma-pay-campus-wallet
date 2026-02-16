@@ -1,15 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, MessageSquare, Send, Loader2, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Send, Loader2, ChevronDown, ChevronUp, User, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '@/components/BottomNav';
 import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { useAuth } from '@/contexts/AuthContext';
-import { feedService, type FeedPost, type FeedComment } from '@/services/feedService';
+import {
+  feedService,
+  FEED_TOPICS,
+  type FeedPost,
+  type FeedComment,
+  type FeedTopic,
+  type ReactionCounts,
+} from '@/services/feedService';
 import { toast } from 'sonner';
 import { sanitizeContent } from '@/utils/feedSanitize';
 import { rateLimit } from '@/utils/rateLimit';
+
+const TOPIC_LABELS: Record<FeedTopic, string> = {
+  general: 'Todos',
+  comida: 'Comida',
+  seguridad: 'Seguridad',
+  libros: 'Libros',
+  fiestas: 'Fiestas',
+};
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -39,25 +54,43 @@ export const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
+  const [newPostTopic, setNewPostTopic] = useState<FeedTopic>('general');
+  const [selectedTopic, setSelectedTopic] = useState<FeedTopic>('general');
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [commentsByPost, setCommentsByPost] = useState<Record<string, FeedComment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [sendingCommentFor, setSendingCommentFor] = useState<string | null>(null);
+  const [reactionCounts, setReactionCounts] = useState<Record<string, ReactionCounts>>({});
+  const [userReactions, setUserReactions] = useState<Record<string, 'like' | 'dislike'>>({});
+  const [reactionLoading, setReactionLoading] = useState<string | null>(null);
 
   const userEmail = user?.email ?? '';
   const userDisplayName = user?.name ?? user?.email ?? 'Anónimo';
 
   const loadPosts = useCallback(async () => {
+    setLoading(true);
     try {
-      const list = await feedService.getPosts();
+      const list = await feedService.getPosts(selectedTopic);
       setPosts(list);
+      const ids = list.map((p) => p.id);
+      if (ids.length > 0) {
+        const [counts, reactions] = await Promise.all([
+          feedService.getReactionCounts(ids),
+          userEmail ? feedService.getUserReactions(ids, userEmail) : Promise.resolve({}),
+        ]);
+        setReactionCounts(counts);
+        setUserReactions(reactions);
+      } else {
+        setReactionCounts({});
+        setUserReactions({});
+      }
     } catch (e) {
       console.error(e);
       toast.error('No se pudieron cargar las publicaciones');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedTopic, userEmail]);
 
   useEffect(() => {
     loadPosts();
@@ -66,14 +99,19 @@ export const Feed = () => {
   useEffect(() => {
     const unsub = feedService.subscribePosts((payload) => {
       if (payload.eventType === 'INSERT' && payload.new) {
-        setPosts((prev) => [payload.new!, ...prev]);
+        const post = payload.new as FeedPost;
+        const topic = post.topic ?? 'general';
+        if (selectedTopic === 'general' || selectedTopic === topic) {
+          setPosts((prev) => [post, ...prev]);
+          setReactionCounts((prev) => ({ ...prev, [post.id]: { like: 0, dislike: 0 } }));
+        }
       }
       if (payload.eventType === 'DELETE' && payload.old) {
         setPosts((prev) => prev.filter((p) => p.id !== payload.old!.id));
       }
     });
     return unsub;
-  }, []);
+  }, [selectedTopic]);
 
   const loadComments = useCallback(async (postId: string) => {
     try {
@@ -130,6 +168,7 @@ export const Feed = () => {
         user_email: userEmail,
         user_display_name: userDisplayName,
         content,
+        topic: newPostTopic,
       });
       setNewPostContent('');
       toast.success('Publicado');
@@ -137,6 +176,37 @@ export const Feed = () => {
       toast.error(e?.message ?? 'Error al publicar');
     } finally {
       setPosting(false);
+    }
+  };
+
+  const handleSetReaction = async (postId: string, reaction: 'like' | 'dislike') => {
+    if (!userEmail.trim()) {
+      toast.error('Inicia sesión para reaccionar');
+      return;
+    }
+    setReactionLoading(postId);
+    try {
+      const current = userReactions[postId];
+      const { action } = await feedService.setReaction(postId, userEmail, reaction);
+      const counts = { ...reactionCounts[postId], like: reactionCounts[postId]?.like ?? 0, dislike: reactionCounts[postId]?.dislike ?? 0 };
+      if (action === 'removed') {
+        counts[reaction] = Math.max(0, counts[reaction] - 1);
+        setUserReactions((prev) => {
+          const next = { ...prev };
+          delete next[postId];
+          return next;
+        });
+      } else {
+        const other = reaction === 'like' ? 'dislike' : 'like';
+        if (current === other) counts[other] = Math.max(0, counts[other] - 1);
+        counts[reaction] = (counts[reaction] ?? 0) + 1;
+        setUserReactions((prev) => ({ ...prev, [postId]: reaction }));
+      }
+      setReactionCounts((prev) => ({ ...prev, [postId]: counts }));
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Error al reaccionar');
+    } finally {
+      setReactionLoading(null);
     }
   };
 
@@ -177,6 +247,24 @@ export const Feed = () => {
       />
 
       <div className="p-4 space-y-4">
+        {/* Filtro por tema */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          {FEED_TOPICS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setSelectedTopic(t)}
+              className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                selectedTopic === t
+                  ? 'bg-gold-500/90 text-black'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-600'
+              }`}
+            >
+              {TOPIC_LABELS[t]}
+            </button>
+          ))}
+        </div>
+
         {/* Nueva publicación */}
         <Card className="bg-zinc-900/80 border border-gold-500/20 transition-all hover:border-gold-500/40 hover:shadow-lg hover:shadow-gold-500/10">
           <CardContent className="p-4">
@@ -187,6 +275,25 @@ export const Feed = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white">{userDisplayName}</p>
                 <p className="text-xs text-zinc-500">Publicar al feed del campus</p>
+              </div>
+            </div>
+            <div className="mb-3">
+              <p className="text-xs text-zinc-500 mb-2">Tema</p>
+              <div className="flex flex-wrap gap-2">
+                {FEED_TOPICS.filter((t) => t !== 'general').map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewPostTopic(t)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                      newPostTopic === t
+                        ? 'bg-gold-500/90 text-black'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-zinc-600'
+                    }`}
+                  >
+                    {TOPIC_LABELS[t]}
+                  </button>
+                ))}
               </div>
             </div>
             <textarea
@@ -231,12 +338,16 @@ export const Feed = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {posts.map((post, index) => {
+            {posts.map((post) => {
               const isExpanded = expandedPostId === post.id;
               const comments = commentsByPost[post.id] ?? [];
               const commentText = commentInputs[post.id] ?? '';
               const sending = sendingCommentFor === post.id;
               const authorName = post.user_display_name || post.user_email || 'Anónimo';
+              const topic = (post.topic ?? 'general') as FeedTopic;
+              const counts = reactionCounts[post.id] ?? { like: 0, dislike: 0 };
+              const myReaction = userReactions[post.id];
+              const reacting = reactionLoading === post.id;
               return (
                 <Card
                   key={post.id}
@@ -248,7 +359,12 @@ export const Feed = () => {
                         <User className="h-5 w-5 text-gold-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white">{authorName}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-white">{authorName}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-300 border border-zinc-600">
+                            {TOPIC_LABELS[topic]}
+                          </span>
+                        </div>
                         <p className="text-xs text-zinc-500">{formatDate(post.created_at)}</p>
                       </div>
                     </div>
@@ -257,10 +373,41 @@ export const Feed = () => {
                         <SafeText text={post.content} />
                       </p>
                     </div>
+                    {/* Like / Dislike */}
+                    <div className="mt-3 pl-[52px] flex items-center gap-4">
+                      <button
+                        type="button"
+                        disabled={reacting}
+                        onClick={() => handleSetReaction(post.id, 'like')}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                          myReaction === 'like'
+                            ? 'bg-gold-500/30 text-gold-400 border border-gold-500/50'
+                            : 'text-zinc-400 hover:text-gold-400 hover:bg-gold-500/10 border border-transparent'
+                        }`}
+                        aria-label="Like"
+                      >
+                        <ThumbsUp className="h-4 w-4" />
+                        <span>{counts.like}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={reacting}
+                        onClick={() => handleSetReaction(post.id, 'dislike')}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                          myReaction === 'dislike'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                            : 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent'
+                        }`}
+                        aria-label="Dislike"
+                      >
+                        <ThumbsDown className="h-4 w-4" />
+                        <span>{counts.dislike}</span>
+                      </button>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-3 text-zinc-400 hover:text-gold-400 hover:bg-gold-500/10 transition-colors rounded-lg px-3 py-1.5 -ml-1"
+                      className="mt-2 text-zinc-400 hover:text-gold-400 hover:bg-gold-500/10 transition-colors rounded-lg px-3 py-1.5 -ml-1"
                       onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
                     >
                       {isExpanded ? (

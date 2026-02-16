@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare } from 'lucide-react';
+import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -19,6 +19,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { stellarService } from '@/services/stellarService';
 import { getLeaderboardTop50, type LeaderboardEntry } from '@/services/supabaseCourseProgress';
+import { getStreak, claimStreakReward, type StreakData } from '@/services/streakService';
 
 // Extensión temporal del tipo Transaction para props extra de portalService
 type TransactionWithToken = import('@/types/categories').Transaction & { isUSDC?: boolean; tokenSymbol?: string };
@@ -60,12 +61,34 @@ const HomePage = () => {
   const [funded, setFunded] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [streak, setStreak] = useState<StreakData | null>(null);
+  const [streakLoading, setStreakLoading] = useState(false);
+  const [streakClaiming, setStreakClaiming] = useState(false);
+  const [streakNextTick, setStreakNextTick] = useState(0); // para refrescar countdown cada minuto
 
   useEffect(() => {
     // Verificar si la cuenta ya fue fondeada
     const fundedKey = `pumapay_funded_${user?.address}`;
     setFunded(localStorage.getItem(fundedKey) === 'true');
   }, [user?.address]);
+
+  // Racha diaria: cargar al tener user
+  useEffect(() => {
+    if (!user?.email) {
+      setStreak(null);
+      return;
+    }
+    let cancelled = false;
+    setStreakLoading(true);
+    getStreak(user.email)
+      .then((data) => {
+        if (!cancelled) setStreak(data);
+      })
+      .finally(() => {
+        if (!cancelled) setStreakLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [user?.email]);
 
   // Leaderboard top 50 desde Supabase
   useEffect(() => {
@@ -268,6 +291,50 @@ const HomePage = () => {
 
   // Función handleDeposit eliminada - los depósitos se hacen en /receive
 
+  // Actualizar countdown de racha cada minuto
+  useEffect(() => {
+    if (!streak?.nextClaimAt || streak.canClaim) return;
+    const interval = setInterval(() => setStreakNextTick((n) => n + 1), 60 * 1000);
+    return () => clearInterval(interval);
+  }, [streak?.nextClaimAt, streak?.canClaim]);
+
+  const handleClaimStreak = async () => {
+    if (!user?.email || streakClaiming) return;
+    setStreakClaiming(true);
+    try {
+      const result = await claimStreakReward(user.email);
+      if (result.success) {
+        setStreak({
+          streakDays: result.streakDays,
+          lastClaimAt: new Date().toISOString(),
+          canClaim: false,
+          nextClaimAt: result.nextClaimAt,
+          rewardPoints: 50,
+        });
+        toast({ title: '¡Premio reclamado!', description: `+${result.pointsAwarded} pts · Racha: ${result.streakDays} días` });
+      } else {
+        toast({ title: 'Aún no', description: result.error ?? 'Espera 24h entre reclamos.', variant: 'destructive' });
+        if (result.nextClaimAt) {
+          setStreak((s) => s ? { ...s, nextClaimAt: result.nextClaimAt!, canClaim: false } : s);
+        }
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message ?? 'No se pudo reclamar.', variant: 'destructive' });
+    } finally {
+      setStreakClaiming(false);
+    }
+  };
+
+  const formatTimeUntil = (until: Date | null): string => {
+    if (!until) return '';
+    const now = new Date();
+    const ms = Math.max(0, until.getTime() - now.getTime());
+    const h = Math.floor(ms / (1000 * 60 * 60));
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m} min`;
+  };
+
   const quickActions = [
     { to: '/feed', icon: MessageSquare, label: 'Feed', color: 'bg-gold-600 hover:bg-gold-500 text-black' },
     { to: '/send', icon: Send, label: 'Enviar', color: 'bg-zinc-700 hover:bg-zinc-600 text-white' },
@@ -463,6 +530,57 @@ const HomePage = () => {
           )}
         </Button>
       </div>
+
+      {/* Racha diaria: 50 pts cada 24h */}
+      {user?.email && (
+        <div className="px-4 sm:px-6 mb-4">
+          <Card className="bg-black/30 border border-gold-500/20 p-4 relative overflow-hidden hover:border-gold-500/40 transition-all">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/40 rounded-xl flex items-center justify-center text-amber-400">
+                  <Flame className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">Racha diaria</p>
+                  {streakLoading ? (
+                    <p className="text-gray-500 text-xs flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Cargando...
+                    </p>
+                  ) : (
+                    <p className="text-amber-400/90 text-sm">
+                      {streak ? `${streak.streakDays} día${streak.streakDays !== 1 ? 's' : ''}` : '0 días'}
+                      {' · '}
+                      <span className="text-gray-400">50 pts cada 24h</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {streakLoading ? null : streak?.canClaim ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleClaimStreak}
+                    disabled={streakClaiming}
+                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-xl"
+                  >
+                    {streakClaiming ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>+50 pts</>
+                    )}
+                  </Button>
+                ) : streak?.nextClaimAt ? (
+                  <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatTimeUntil(streak.nextClaimAt)}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Estadísticas rápidas */}
       <div className="px-4 sm:px-6 mb-6">
