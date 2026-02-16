@@ -18,6 +18,7 @@ import { SkeletonBalance } from '../components/SkeletonLoader';
 import { BottomNav } from '@/components/BottomNav';
 import { AppHeader, headerIconClass } from '@/components/AppHeader';
 import { stellarService } from '@/services/stellarService';
+import { getLeaderboardTop50, type LeaderboardEntry } from '@/services/supabaseCourseProgress';
 
 // Extensión temporal del tipo Transaction para props extra de portalService
 type TransactionWithToken = import('@/types/categories').Transaction & { isUSDC?: boolean; tokenSymbol?: string };
@@ -57,12 +58,31 @@ const HomePage = () => {
   const [showFundingSuccess, setShowFundingSuccess] = useState(false);
   const [showFundingAnimation, setShowFundingAnimation] = useState(false);
   const [funded, setFunded] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
   useEffect(() => {
     // Verificar si la cuenta ya fue fondeada
     const fundedKey = `pumapay_funded_${user?.address}`;
     setFunded(localStorage.getItem(fundedKey) === 'true');
   }, [user?.address]);
+
+  // Leaderboard top 50 desde Supabase
+  useEffect(() => {
+    let cancelled = false;
+    setLeaderboardLoading(true);
+    getLeaderboardTop50()
+      .then((data) => {
+        if (!cancelled) setLeaderboard(data);
+      })
+      .catch(() => {
+        if (!cancelled) setLeaderboard([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLeaderboardLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFundAccount = async () => {
     console.log('💰 Iniciando fondeo de cuenta Stellar:', user);
@@ -926,6 +946,58 @@ const HomePage = () => {
             </Card>
           )}
         </div>
+      </div>
+
+      {/* Leaderboard Top 50 */}
+      <div className="px-4 sm:px-6 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-base font-semibold flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-gold-400" />
+            Ranking del campus
+          </h3>
+          <span className="text-xs text-gray-500">Top 50 por puntos</span>
+        </div>
+        <Card className="bg-black/30 border-2 border-gold-500/20 overflow-hidden hover:border-gold-500/40 transition-all">
+          {leaderboardLoading ? (
+            <div className="p-6 flex items-center justify-center gap-2 text-gray-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Cargando ranking…</span>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="p-6 text-center text-gray-400 text-sm">
+              Aún no hay puntos. Completa cuestionarios en Guías de estudio para aparecer en el ranking.
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/10 max-h-[320px] overflow-y-auto">
+              {leaderboard.map((entry, index) => {
+                const isCurrentUser = (user?.email || user?.address) === entry.user_email;
+                const mask = entry.user_email.includes('@')
+                  ? entry.user_email.slice(0, 2) + '***' + entry.user_email.slice(entry.user_email.indexOf('@'))
+                  : entry.user_email.slice(0, 6) + '***';
+                const position = index + 1;
+                const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : null;
+                return (
+                  <li
+                    key={entry.user_email}
+                    className={`flex items-center justify-between px-4 py-3 text-sm ${isCurrentUser ? 'bg-gold-500/15 border-l-2 border-gold-500' : ''}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex-shrink-0 w-7 text-center font-bold text-gray-400">
+                        {medal ?? position}
+                      </span>
+                      <span className={`truncate ${isCurrentUser ? 'text-gold-300 font-medium' : 'text-white'}`} title={isCurrentUser ? 'Tú' : undefined}>
+                        {isCurrentUser ? 'Tú' : mask}
+                      </span>
+                    </div>
+                    <span className="flex-shrink-0 text-gold-400 font-semibold ml-2">
+                      {entry.total_points.toLocaleString()} pts
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
       </div>
 
       {!funded && (

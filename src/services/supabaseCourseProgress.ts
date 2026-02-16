@@ -88,3 +88,31 @@ export async function getBadgesFromSupabase(userEmail: string): Promise<UserBadg
     completed_at: row.completed_at ?? '',
   }));
 }
+
+/** Entrada del leaderboard (top por puntos) */
+export interface LeaderboardEntry {
+  user_email: string;
+  total_points: number;
+}
+
+/**
+ * Obtiene el top 50 del campus por puntos totales (desde Supabase).
+ * user_email se puede enmascarar en la UI para privacidad.
+ */
+export async function getLeaderboardTop50(): Promise<LeaderboardEntry[]> {
+  const { data, error } = await supabase
+    .from('campus_leaderboard')
+    .select('user_email, total_points')
+    .order('total_points', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('Error obteniendo leaderboard:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    user_email: row.user_email ?? '',
+    total_points: Number(row.total_points) || 0,
+  }));
+}
