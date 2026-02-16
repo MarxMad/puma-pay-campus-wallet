@@ -10,6 +10,7 @@ export async function registrarUsuario({
   clabe,
   api_key,
   auth_method,
+  email_verified,
 }: {
   nombre: string,
   apellido: string,
@@ -22,20 +23,22 @@ export async function registrarUsuario({
   email_verified?: boolean,
 }) {
   const password_hash = await bcrypt.hash(password, 10);
-  // No enviamos email_verified: si la tabla no tiene esa columna (migración no aplicada), el insert fallaría.
-  // Si la tabla sí la tiene, Supabase usará el default (true) al no enviarla.
+  const row: Record<string, unknown> = {
+    nombre,
+    apellido,
+    email,
+    password_hash,
+    wallet_address,
+    clabe,
+    api_key,
+    auth_method,
+  };
+  if (email_verified !== undefined) {
+    row.email_verified = email_verified;
+  }
   const { data, error } = await supabase
     .from('usuarios')
-    .insert([{
-      nombre,
-      apellido,
-      email,
-      password_hash,
-      wallet_address,
-      clabe,
-      api_key,
-      auth_method,
-    }])
+    .insert([row])
     .select();
   if (error) throw error;
   return data;
@@ -52,13 +55,21 @@ export async function getUsuarioByEmailFull(email: string) {
   return data;
 }
 
-/** Marcar email como verificado (tras confirmar enlace de Supabase). */
-export async function updateEmailVerified(email: string) {
+/**
+ * Marcar email como verificado (tras confirmar enlace de Supabase).
+ * Si la tabla no tiene la columna email_verified (migración no aplicada), no hace nada y no lanza.
+ */
+export async function updateEmailVerified(email: string): Promise<void> {
   const { error } = await supabase
     .from('usuarios')
     .update({ email_verified: true })
     .eq('email', email);
-  if (error) throw error;
+  if (error) {
+    if (error.code === 'PGRST204' || error.message?.includes('email_verified')) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function obtenerUsuarioPorEmail(email: string) {

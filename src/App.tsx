@@ -9,6 +9,7 @@ import PublicRoute from "@/components/PublicRoute";
 import AuthStatus from "@/components/AuthStatus";
 import Welcome from "./pages/Welcome";
 import Signup from "./pages/Signup";
+import SignupSuccess from "./pages/SignupSuccess";
 import Index from "./pages/Index";
 import HomePage from "./pages/Home";
 import SendPage from "./pages/Send";
@@ -45,6 +46,7 @@ const App = () => (
           <Routes>
             <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+            <Route path="/signup-success" element={<PublicRoute><SignupSuccess /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/send" element={<ProtectedRoute><SendPage /></ProtectedRoute>} />

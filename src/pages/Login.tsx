@@ -4,10 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff, Mail } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/services/supabaseClient';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +14,6 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [resending, setResending] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const verified = searchParams.get('verified') === '1';
@@ -39,6 +37,11 @@ const Login = () => {
           description = 'El usuario no está registrado. Por favor crea una cuenta.';
         } else if (error.message === 'Contraseña incorrecta') {
           description = 'La contraseña es incorrecta. Intenta de nuevo.';
+        } else if (
+          error.message.includes('Correo o contraseña incorrectos') ||
+          error.message.toLowerCase().includes('invalid login')
+        ) {
+          description = 'Correo o contraseña incorrectos. Revisa e intenta de nuevo.';
         } else {
           description = error.message;
         }
@@ -46,27 +49,6 @@ const Login = () => {
       toast('Error de autenticación', {
         description,
       });
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!formData.email?.trim()) {
-      toast.error('Escribe tu correo', { description: 'Introduce tu email para reenviar el enlace.' });
-      return;
-    }
-    setResending(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email.trim(),
-      });
-      if (error) throw error;
-      toast('Correo reenviado', { description: 'Revisa tu bandeja (y spam) para el enlace de verificación.' });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'No se pudo reenviar. Intenta más tarde.';
-      toast.error('Error', { description: msg });
-    } finally {
-      setResending(false);
     }
   };
 
@@ -144,15 +126,6 @@ const Login = () => {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleResendVerification}
-              disabled={resending}
-              className="text-sm text-zinc-400 hover:text-gold-500 flex items-center gap-1.5 justify-center"
-            >
-              <Mail className="h-3.5 w-3.5" />
-              {resending ? 'Enviando...' : 'Reenviar correo de verificación'}
-            </button>
           </div>
 
           <Button 

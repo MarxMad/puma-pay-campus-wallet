@@ -3,8 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // import { portalService } from '@/services/portal';
 // import { junoService } from '@/services/junoService';
 // import { asignarApiKeyAUsuario } from '@/services/portalApiKeyService';
-import { registrarUsuario, loginUsuario, obtenerUsuarioPorEmail, getUsuarioByEmailFull, updateEmailVerified } from '@/services/userService';
-import { supabase } from '@/services/supabaseClient';
+import { registrarUsuario, loginUsuario, obtenerUsuarioPorEmail } from '@/services/userService';
 import { stellarService } from '@/services/stellarService';
 import bcrypt from 'bcryptjs';
 import CryptoJS from 'crypto-js';
@@ -75,38 +74,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = !!user;
 
-  // Cargar usuario desde localStorage al inicializar
+  // Cargar usuario desde localStorage al inicializar (síncrono para no bloquear la UI)
   useEffect(() => {
-    const loadStoredAuth = async () => {
-      try {
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (stored) {
-          const userData = JSON.parse(stored);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error cargando autenticación:', error);
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      } finally {
-        setIsLoading(false);
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        const userData = JSON.parse(stored);
+        setUser(userData);
       }
-    };
+    } catch (error) {
+      console.error('Error cargando autenticación:', error);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+    setIsLoading(false);
 
-    loadStoredAuth();
-  }, []);
-
-  // Sincronizar email_verified cuando el usuario confirma el correo (Supabase Auth)
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user?.email) {
-        try {
-          await updateEmailVerified(session.user.email);
-        } catch (e) {
-          console.warn('No se pudo actualizar email_verified:', e);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
+    // Timeout de seguridad: si por cualquier razón isLoading sigue true, forzar false a los 2s
+    const safety = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(safety);
   }, []);
 
   // Guardar usuario en localStorage
@@ -116,39 +100,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
   };
 
-  // Login tradicional: primero Supabase Auth (verificación de correo), si falla intentar tabla usuarios (legacy)
+  // Timeout para no quedarse colgado si Supabase Auth no responde
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('Tiempo de espera agotado. Revisa tu conexión.')), ms)),
+    ]);
+  };
+
+  // Login solo con tabla usuarios (Supabase DB, sin Supabase Auth)
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    const safetyTimer = setTimeout(() => setIsLoading(false), 15000);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (!authError && authData.user) {
-        // Supabase Auth OK: cargar perfil desde tabla usuarios
-        const usuario = await getUsuarioByEmailFull(authData.user.email!);
-        if (!usuario) {
-          await supabase.auth.signOut();
-          throw new Error('No se encontró tu perfil. Contacta soporte.');
-        }
-        await updateEmailVerified(authData.user.email!);
-        updateUser({
-          address: usuario.wallet_address,
-          email: usuario.email,
-          name: usuario.nombre,
-          authMethod: 'traditional',
-          clabe: usuario.clabe,
-        });
-        return;
-      }
-
-      // Si el error es "email not confirmed", no intentar login legacy
-      const msg = authError?.message?.toLowerCase() ?? '';
-      if (msg.includes('confirm') || msg.includes('verified') || authError?.status === 403) {
-        throw new Error('EMAIL_NOT_CONFIRMED');
-      }
-
-      // Fallback: usuarios sin Supabase Auth (legacy)
-      const userData = await loginUsuario(email, password);
-      await updateEmailVerified(email);
+      const userData = await withTimeout(loginUsuario(email, password), 10000);
       updateUser({
         address: userData.wallet_address,
         email: userData.email,
@@ -160,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error en login:', error);
       throw error;
     } finally {
+      clearTimeout(safetyTimer);
       setIsLoading(false);
     }
   };
@@ -185,8 +151,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const apellido = '';
       const auth_method = 'traditional';
       
-      if (onStepChange) onStepChange('Verificando correo...');
-
       // Validar si el correo ya está registrado antes de crear la wallet Stellar
       const existingUser = await obtenerUsuarioPorEmail(email);
       if (existingUser) {
@@ -233,7 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clabe: encryptedSecretKey,
           auth_method,
           api_key: undefined,
-          email_verified: false, // Se marcará true cuando confirme el correo vía Supabase
+          email_verified: true, // Sin Supabase Auth: cuenta lista para usar
         });
       } catch (error: any) {
         // Si es error de correo duplicado, mostrar mensaje amigable
@@ -250,26 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('✅ Usuario registrado en Supabase con ID:', userId);
 
-      if (onStepChange) onStepChange('Enviando correo de verificación...');
-
-      // 4. Registrar en Supabase Auth para enviar correo de verificación
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: nombre },
-          emailRedirectTo: `${baseUrl}/login?verified=1`,
-        },
-      });
-      if (signUpError && signUpError.message?.toLowerCase().includes('already registered')) {
-        // Usuario ya existía en Auth (ej. reintento); seguimos y pedimos que verifique
-      } else if (signUpError) {
-        console.warn('Supabase signUp (correo verificación):', signUpError);
-        // No bloqueamos: el usuario ya está en nuestra tabla; puede usar login legacy
-      }
-
-      // 5. Limpiar caché local
+      // 4. Limpiar caché local
       if (email) {
         localStorage.removeItem(`pumapay_balance_${email}`);
         localStorage.removeItem(`pumapay_transactions_${email}`);
@@ -284,9 +229,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pumapay_transactions');
 
       setIsLoading(false);
-      console.log('✅ Registro completado; correo de verificación enviado');
-      // No hacer login: el usuario debe confirmar el correo y luego iniciar sesión
-      return { address, requiresEmailVerification: true };
+      console.log('✅ Registro completado');
+
+      // 5. Auto-login en segundo plano (no bloquear la respuesta para evitar carga infinita)
+      loginUsuario(email, password)
+        .then((userData) => {
+          updateUser({
+            address: userData.wallet_address,
+            email: userData.email,
+            name: userData.nombre,
+            authMethod: 'traditional',
+            clabe: userData.clabe,
+          });
+        })
+        .catch((loginErr) => {
+          console.warn('Auto-login tras registro:', loginErr);
+        });
+
+      return { address };
     } catch (error: any) {
       setIsLoading(false);
       // Si es error de correo duplicado, mostrar mensaje amigable
@@ -313,7 +273,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('pumapay_transactions');
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    await supabase.auth.signOut();
   };
 
   return (
