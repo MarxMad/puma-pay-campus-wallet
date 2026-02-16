@@ -92,17 +92,18 @@ export async function getBadgesFromSupabase(userEmail: string): Promise<UserBadg
 /** Entrada del leaderboard (top por puntos) */
 export interface LeaderboardEntry {
   user_email: string;
+  user_name: string;
   total_points: number;
 }
 
 /**
  * Obtiene el top 50 del campus por puntos totales (desde Supabase).
- * user_email se puede enmascarar en la UI para privacidad.
+ * user_name viene de la tabla usuarios; en la UI se muestra el nombre.
  */
 export async function getLeaderboardTop50(): Promise<LeaderboardEntry[]> {
   const { data, error } = await supabase
     .from('campus_leaderboard')
-    .select('user_email, total_points')
+    .select('user_email, user_name, total_points')
     .order('total_points', { ascending: false })
     .limit(50);
 
@@ -113,6 +114,7 @@ export async function getLeaderboardTop50(): Promise<LeaderboardEntry[]> {
 
   return (data || []).map((row) => ({
     user_email: row.user_email ?? '',
+    user_name: row.user_name ?? row.user_email ?? '',
     total_points: Number(row.total_points) || 0,
   }));
 }

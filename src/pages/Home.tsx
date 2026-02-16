@@ -1112,9 +1112,7 @@ const HomePage = () => {
             <ul className="divide-y divide-white/10 max-h-[320px] overflow-y-auto">
               {leaderboard.map((entry, index) => {
                 const isCurrentUser = (user?.email || user?.address) === entry.user_email;
-                const mask = entry.user_email.includes('@')
-                  ? entry.user_email.slice(0, 2) + '***' + entry.user_email.slice(entry.user_email.indexOf('@'))
-                  : entry.user_email.slice(0, 6) + '***';
+                const displayName = (entry.user_name?.trim() || entry.user_email) || '—';
                 const position = index + 1;
                 const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : null;
                 return (
@@ -1126,8 +1124,8 @@ const HomePage = () => {
                       <span className="flex-shrink-0 w-7 text-center font-bold text-gray-400">
                         {medal ?? position}
                       </span>
-                      <span className={`truncate ${isCurrentUser ? 'text-gold-300 font-medium' : 'text-white'}`} title={isCurrentUser ? 'Tú' : undefined}>
-                        {isCurrentUser ? 'Tú' : mask}
+                      <span className={`truncate ${isCurrentUser ? 'text-gold-300 font-medium' : 'text-white'}`} title={isCurrentUser ? 'Tú' : entry.user_email}>
+                        {isCurrentUser ? 'Tú' : displayName}
                       </span>
                     </div>
                     <span className="flex-shrink-0 text-gold-400 font-semibold ml-2">
