@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/services/supabaseClient';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,28 +15,27 @@ const Login = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [resending, setResending] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const verified = searchParams.get('verified') === '1';
   const { login, loginWithPortal, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      console.log('🔄 Iniciando login tradicional...');
       await login(formData.email, formData.password);
-      
-      console.log('✅ Login exitoso');
       toast('¡Bienvenido!', {
         description: 'Has iniciado sesión correctamente',
       });
-      
-      // La navegación se maneja por el AuthProvider automáticamente
-      
     } catch (error) {
       console.error('❌ Error en login:', error);
       let description = 'Credenciales incorrectas';
       if (error instanceof Error) {
-        if (error.message === 'Usuario no registrado') {
+        if (error.message === 'EMAIL_NOT_CONFIRMED') {
+          description = 'Verifica tu correo: revisa el enlace que enviamos a tu email para activar tu cuenta.';
+        } else if (error.message === 'Usuario no registrado') {
           description = 'El usuario no está registrado. Por favor crea una cuenta.';
         } else if (error.message === 'Contraseña incorrecta') {
           description = 'La contraseña es incorrecta. Intenta de nuevo.';
@@ -46,6 +46,27 @@ const Login = () => {
       toast('Error de autenticación', {
         description,
       });
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!formData.email?.trim()) {
+      toast.error('Escribe tu correo', { description: 'Introduce tu email para reenviar el enlace.' });
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email.trim(),
+      });
+      if (error) throw error;
+      toast('Correo reenviado', { description: 'Revisa tu bandeja (y spam) para el enlace de verificación.' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'No se pudo reenviar. Intenta más tarde.';
+      toast.error('Error', { description: msg });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -70,6 +91,11 @@ const Login = () => {
           </div>
           <h2 className="text-base font-semibold text-white mb-1">Bienvenido de nuevo</h2>
           <p className="text-zinc-500 text-sm">Accede a tu wallet estudiantil</p>
+          {verified && (
+            <p className="mt-3 text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
+              Correo verificado. Ya puedes iniciar sesión.
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,16 +134,24 @@ const Login = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center space-x-2 text-sm text-zinc-500">
-              <input type="checkbox" className="rounded border-zinc-600 bg-zinc-800" />
-              <span>Recordarme</span>
-            </label>
-            <button 
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 text-sm text-zinc-500">
+                <input type="checkbox" className="rounded border-zinc-600 bg-zinc-800" />
+                <span>Recordarme</span>
+              </label>
+              <button type="button" className="text-sm text-gold-500 hover:text-gold-400">
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+            <button
               type="button"
-              className="text-sm text-gold-500 hover:text-gold-400"
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="text-sm text-zinc-400 hover:text-gold-500 flex items-center gap-1.5 justify-center"
             >
-              ¿Olvidaste tu contraseña?
+              <Mail className="h-3.5 w-3.5" />
+              {resending ? 'Enviando...' : 'Reenviar correo de verificación'}
             </button>
           </div>
 

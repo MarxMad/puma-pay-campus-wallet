@@ -1,8 +1,15 @@
 /**
  * Servicio del Feed: publicaciones y comentarios en vivo (Supabase + Realtime).
+ * Contenido y IDs se sanitizan/validan para evitar XSS e inyección.
  */
 
 import { supabase } from './supabaseClient';
+import {
+  sanitizeContent,
+  sanitizeEmail,
+  sanitizeDisplayName,
+  isValidPostId,
+} from '@/utils/feedSanitize';
 
 export interface FeedPost {
   id: string;
@@ -36,19 +43,22 @@ export const feedService = {
     return (data ?? []) as FeedPost[];
   },
 
-  /** Crear una publicación */
+  /** Crear una publicación (contenido y usuario sanitizados) */
   async createPost(params: {
     user_email: string;
     user_display_name: string | null;
     content: string;
   }): Promise<FeedPost> {
-    const content = params.content.trim().slice(0, MAX_CONTENT_LENGTH);
+    const content = sanitizeContent(params.content, MAX_CONTENT_LENGTH);
     if (!content) throw new Error('El contenido no puede estar vacío');
+    const user_email = sanitizeEmail(params.user_email);
+    if (!user_email) throw new Error('Usuario no válido');
+    const user_display_name = sanitizeDisplayName(params.user_display_name);
     const { data, error } = await supabase
       .from(POSTS_TABLE)
       .insert({
-        user_email: params.user_email,
-        user_display_name: params.user_display_name ?? null,
+        user_email,
+        user_display_name,
         content,
       })
       .select()
@@ -57,8 +67,9 @@ export const feedService = {
     return data as FeedPost;
   },
 
-  /** Obtener comentarios de un post */
+  /** Obtener comentarios de un post (postId validado como UUID) */
   async getComments(postId: string): Promise<FeedComment[]> {
+    if (!isValidPostId(postId)) return [];
     const { data, error } = await supabase
       .from(COMMENTS_TABLE)
       .select('*')
@@ -68,21 +79,25 @@ export const feedService = {
     return (data ?? []) as FeedComment[];
   },
 
-  /** Añadir comentario (chat en vivo) */
+  /** Añadir comentario (contenido y IDs sanitizados) */
   async createComment(params: {
     post_id: string;
     user_email: string;
     user_display_name: string | null;
     content: string;
   }): Promise<FeedComment> {
-    const content = params.content.trim().slice(0, MAX_CONTENT_LENGTH);
+    if (!isValidPostId(params.post_id)) throw new Error('Publicación no válida');
+    const content = sanitizeContent(params.content, MAX_CONTENT_LENGTH);
     if (!content) throw new Error('El comentario no puede estar vacío');
+    const user_email = sanitizeEmail(params.user_email);
+    if (!user_email) throw new Error('Usuario no válido');
+    const user_display_name = sanitizeDisplayName(params.user_display_name);
     const { data, error } = await supabase
       .from(COMMENTS_TABLE)
       .insert({
         post_id: params.post_id,
-        user_email: params.user_email,
-        user_display_name: params.user_display_name ?? null,
+        user_email,
+        user_display_name,
         content,
       })
       .select()
@@ -112,11 +127,12 @@ export const feedService = {
     };
   },
 
-  /** Suscripción a comentarios de un post (chat en vivo) */
+  /** Suscripción a comentarios de un post (postId validado para evitar inyección en filtro) */
   subscribeComments(
     postId: string,
     callback: (payload: { new?: FeedComment; old?: FeedComment; eventType: string }) => void
   ) {
+    if (!isValidPostId(postId)) return () => {};
     const channel = supabase
       .channel(`feed_comments_${postId}`)
       .on(

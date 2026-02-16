@@ -10,6 +10,7 @@ import { stellarService, decryptSecretKey } from '@/services/stellarService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from '@/hooks/use-toast';
+import { rateLimit } from '@/utils/rateLimit';
 
 const STELLAR_EXPLORER_BASE =
   (import.meta.env.VITE_STELLAR_NETWORK || 'testnet').toLowerCase() === 'mainnet'
@@ -175,6 +176,16 @@ const SendPage = () => {
   // Confirmar y enviar la transacción (XLM nativo)
   const handleConfirmSend = async () => {
     if (!walletAddress || !amount) return;
+
+    const rl = rateLimit.send();
+    if (!rl.allowed && rl.retryAfterMs != null) {
+      toast({
+        title: 'Espera un momento',
+        description: `Intenta de nuevo en ${Math.ceil(rl.retryAfterMs / 1000)} segundos.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsLoading(true);
     setSummaryError('');

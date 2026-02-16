@@ -1,14 +1,12 @@
-import { Home, MapPin, GraduationCap, Settings, MessageSquare } from 'lucide-react';
+import { Home, MapPin, GraduationCap, Settings, MessageSquare, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
   { path: '/home', icon: Home, label: 'Home' },
   { path: '/feed', icon: MessageSquare, label: 'Feed' },
+  { path: '/marketplace', icon: ShoppingBag, label: 'Tienda' },
   { path: '/courses', icon: GraduationCap, label: 'Guías' },
-  // { path: '/campus-map', icon: MapPin, label: 'Mapa' },
-  // TEMPORALMENTE COMENTADO - Estadísticas
-  // { path: '/statistics', icon: Search, label: 'Estadísticas' },
   { path: '/profile', icon: Settings, label: 'Perfil' },
 ];
 

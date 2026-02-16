@@ -53,3 +53,38 @@ export async function upsertCourseProgress(params: UpsertProgressParams): Promis
     throw error;
   }
 }
+
+/** Badge real desde Supabase (user_course_progress con badge_level) */
+export interface UserBadgeFromSupabase {
+  course_id: string;
+  badge_level: 1 | 2 | 3;
+  score: number;
+  points_earned: number;
+  completed_at: string;
+}
+
+/**
+ * Obtiene los badges/insignias reales del usuario desde Supabase.
+ * Solo filas donde passed = true y badge_level no es null.
+ */
+export async function getBadgesFromSupabase(userEmail: string): Promise<UserBadgeFromSupabase[]> {
+  const { data, error } = await supabase
+    .from('user_course_progress')
+    .select('course_id, badge_level, score, points_earned, completed_at')
+    .eq('user_email', userEmail)
+    .not('badge_level', 'is', null)
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error obteniendo badges desde Supabase:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    course_id: row.course_id,
+    badge_level: (row.badge_level ?? 1) as 1 | 2 | 3,
+    score: row.score ?? 0,
+    points_earned: row.points_earned ?? 0,
+    completed_at: row.completed_at ?? '',
+  }));
+}

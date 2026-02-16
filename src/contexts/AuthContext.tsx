@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // import { portalService } from '@/services/portal';
 // import { junoService } from '@/services/junoService';
 // import { asignarApiKeyAUsuario } from '@/services/portalApiKeyService';
-import { registrarUsuario, loginUsuario, obtenerUsuarioPorEmail } from '@/services/userService';
+import { registrarUsuario, loginUsuario, obtenerUsuarioPorEmail, getUsuarioByEmailFull, updateEmailVerified } from '@/services/userService';
 import { supabase } from '@/services/supabaseClient';
 import { stellarService } from '@/services/stellarService';
 import bcrypt from 'bcryptjs';
@@ -39,7 +39,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithPortal: (method: 'google' | 'apple') => Promise<void>;
   logout: () => void;
-  createAccount: (email: string, password: string, name: string, studentId: string) => Promise<{ address: string }>;
+  createAccount: (email: string, password: string, name: string, studentId: string, onStepChange?: (step: string) => void) => Promise<{ address: string; requiresEmailVerification?: boolean }>;
   updateUser: (userData: User) => void;
 }
 
@@ -83,29 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (stored) {
           const userData = JSON.parse(stored);
           setUser(userData);
-          
-          // ⚠️ COMENTADO - Ya no usamos Portal, ahora usamos Stellar directamente
-          /*
-          // Si es usuario de Portal, re-inicializar Portal con las credenciales correctas
-          if (userData.authMethod === 'portal' || userData.authMethod === 'traditional') {
-            // Restaurar estado en el servicio Portal
-            portalService.setCurrentUser({ address: userData.address });
-            
-            // Si tenemos credenciales, re-inicializar Portal con ellas
-            if (userData.apiKey) {
-              console.log('🔄 Re-inicializando Portal con credenciales del usuario...');
-              try {
-                await portalService.initialize({
-                  apiKey: userData.apiKey,
-                  clientId: userData.clientId
-                });
-                console.log('✅ Portal re-inicializado correctamente');
-              } catch (error) {
-                console.warn('⚠️ Error re-inicializando Portal:', error);
-              }
-            }
-          }
-          */
         }
       } catch (error) {
         console.error('Error cargando autenticación:', error);
@@ -118,6 +95,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadStoredAuth();
   }, []);
 
+  // Sincronizar email_verified cuando el usuario confirma el correo (Supabase Auth)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user?.email) {
+        try {
+          await updateEmailVerified(session.user.email);
+        } catch (e) {
+          console.warn('No se pudo actualizar email_verified:', e);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Guardar usuario en localStorage
   const updateUser = (userData: User) => {
     console.log('💾 Guardando datos de autenticación:', userData);
@@ -125,108 +116,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
   };
 
-  // Login tradicional con email/password
+  // Login tradicional: primero Supabase Auth (verificación de correo), si falla intentar tabla usuarios (legacy)
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Autenticar contra Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (!authError && authData.user) {
+        // Supabase Auth OK: cargar perfil desde tabla usuarios
+        const usuario = await getUsuarioByEmailFull(authData.user.email!);
+        if (!usuario) {
+          await supabase.auth.signOut();
+          throw new Error('No se encontró tu perfil. Contacta soporte.');
+        }
+        await updateEmailVerified(authData.user.email!);
+        updateUser({
+          address: usuario.wallet_address,
+          email: usuario.email,
+          name: usuario.nombre,
+          authMethod: 'traditional',
+          clabe: usuario.clabe,
+        });
+        return;
+      }
+
+      // Si el error es "email not confirmed", no intentar login legacy
+      const msg = authError?.message?.toLowerCase() ?? '';
+      if (msg.includes('confirm') || msg.includes('verified') || authError?.status === 403) {
+        throw new Error('EMAIL_NOT_CONFIRMED');
+      }
+
+      // Fallback: usuarios sin Supabase Auth (legacy)
       const userData = await loginUsuario(email, password);
-      
-      // ⚠️ COMENTADO - Ya no usamos Portal Client Session Token
-      // Ahora usamos Stellar directamente, no necesitamos tokens de Portal
-      /*
-      // Obtener o refrescar Client Session Token
-      let clientSessionToken: string | undefined;
-      let portalClientId: string | undefined;
-      
-      // Si el usuario tiene portal_client_id, intentar refrescar el token
-      if (userData.portal_client_id) {
-        try {
-          console.log('🔄 Refrescando Client Session Token...');
-          const refreshed = await refreshPortalSession(userData.portal_client_id);
-          clientSessionToken = refreshed.clientSessionToken;
-          portalClientId = userData.portal_client_id;
-          console.log('✅ Client Session Token refrescado');
-        } catch (error) {
-          console.warn('⚠️ No se pudo refrescar Client Session Token, intentando crear nuevo cliente...', error);
-          // Si falla, crear un nuevo cliente
-          try {
-            const newClient = await createPortalClient();
-            clientSessionToken = newClient.clientSessionToken;
-            portalClientId = newClient.clientId;
-            console.log('✅ Nuevo cliente creado en Portal');
-          } catch (createError) {
-            console.error('❌ Error creando nuevo cliente:', createError);
-            // Continuar sin Client Session Token (modo demo)
-          }
-        }
-      } else if (userData.client_session_token) {
-        // Si tiene client_session_token guardado, intentar usarlo primero
-        // Si falla, se refrescará o se creará uno nuevo
-        clientSessionToken = userData.client_session_token;
-        portalClientId = userData.portal_client_id;
-        console.log('ℹ️ Usando Client Session Token guardado (puede estar expirado)');
-        console.log('🔑 Token guardado:', {
-          hasToken: !!clientSessionToken,
-          tokenPrefix: clientSessionToken?.substring(0, 20) + '...',
-          tokenLength: clientSessionToken?.length,
-          hasClientId: !!portalClientId,
-          clientId: portalClientId
-        });
-      } else {
-        // Si no tiene token, crear uno nuevo
-        console.log('⚠️ Usuario no tiene Client Session Token, creando uno nuevo...');
-        try {
-          const newClient = await createPortalClient();
-          clientSessionToken = newClient.clientSessionToken;
-          portalClientId = newClient.clientId;
-          console.log('✅ Nuevo Client Session Token creado');
-          
-          // Guardar el nuevo token en la base de datos
-          try {
-            await supabase
-              .from('usuarios')
-              .update({
-                client_session_token: clientSessionToken,
-                portal_client_id: portalClientId
-              })
-              .eq('id', userData.id);
-            console.log('✅ Client Session Token guardado en la base de datos');
-          } catch (updateError) {
-            console.warn('⚠️ No se pudo guardar el Client Session Token en la base de datos:', updateError);
-          }
-        } catch (createError) {
-          console.error('❌ Error creando nuevo Client Session Token:', createError);
-          // Continuar sin token (fallará al enviar transacciones)
-        }
-      }
-      */
-      
-      // ⚠️ COMENTADO - Ya no usamos Portal
-      /*
-      // Re-inicializar Portal con Client Session Token si está disponible
-      if (clientSessionToken) {
-        console.log('🔄 Re-inicializando Portal con Client Session Token...');
-        await portalService.initialize({
-          apiKey: clientSessionToken, // Client Session Token, NO Portal API Key
-          clientId: portalClientId
-        });
-        console.log('✅ Portal re-inicializado correctamente');
-      } else {
-        console.warn('⚠️ No se pudo obtener Client Session Token, Portal puede no funcionar correctamente');
-      }
-      
-      // Sincronizar usuario con Portal Service
-      portalService.setCurrentUser({ address: userData.wallet_address });
-      */
-      
-      // Guardar usuario autenticado en localStorage
+      await updateEmailVerified(email);
       updateUser({
         address: userData.wallet_address,
         email: userData.email,
         name: userData.nombre,
-        authMethod: 'traditional', // Todos usan Stellar ahora
-        clabe: userData.clabe
+        authMethod: 'traditional',
+        clabe: userData.clabe,
       });
     } catch (error) {
       console.error('Error en login:', error);
@@ -301,10 +229,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           apellido,
           email,
           password,
-          wallet_address: address, // Dirección Stellar (G...)
-          clabe: encryptedSecretKey, // Secret key encriptada (antes era CLABE bancaria)
+          wallet_address: address,
+          clabe: encryptedSecretKey,
           auth_method,
-          api_key: undefined // Ya no usamos api_key para la secret key
+          api_key: undefined,
+          email_verified: false, // Se marcará true cuando confirme el correo vía Supabase
         });
       } catch (error: any) {
         // Si es error de correo duplicado, mostrar mensaje amigable
@@ -320,11 +249,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('✅ Usuario registrado en Supabase con ID:', userId);
-      
-      if (onStepChange) onStepChange('Finalizando registro...');
-      
-      // 4. Limpiar cualquier balance o transacciones previas antes de crear la cuenta
-      // Esto asegura que cada nueva cuenta empiece con balance en 0
+
+      if (onStepChange) onStepChange('Enviando correo de verificación...');
+
+      // 4. Registrar en Supabase Auth para enviar correo de verificación
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: nombre },
+          emailRedirectTo: `${baseUrl}/login?verified=1`,
+        },
+      });
+      if (signUpError && signUpError.message?.toLowerCase().includes('already registered')) {
+        // Usuario ya existía en Auth (ej. reintento); seguimos y pedimos que verifique
+      } else if (signUpError) {
+        console.warn('Supabase signUp (correo verificación):', signUpError);
+        // No bloqueamos: el usuario ya está en nuestra tabla; puede usar login legacy
+      }
+
+      // 5. Limpiar caché local
       if (email) {
         localStorage.removeItem(`pumapay_balance_${email}`);
         localStorage.removeItem(`pumapay_transactions_${email}`);
@@ -335,24 +280,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem(`pumapay_transactions_${address}`);
         localStorage.removeItem(`pumapay_last_transaction_count_${address}`);
       }
-      // También limpiar la clave genérica
       localStorage.removeItem('pumapay_mxnb_balance');
       localStorage.removeItem('pumapay_transactions');
-      
-      // 5. Guardar usuario autenticado en localStorage
-      // NOTA: No guardamos la secret key en localStorage por seguridad
-      // El usuario necesitará hacer login para acceder a su cuenta
-      const userData: User = {
-        email,
-        name: nombre,
-        address,
-        authMethod: 'traditional'
-      };
-      updateUser(userData);
-      
+
       setIsLoading(false);
-      console.log('✅ Registro completado exitosamente');
-      return { address };
+      console.log('✅ Registro completado; correo de verificación enviado');
+      // No hacer login: el usuario debe confirmar el correo y luego iniciar sesión
+      return { address, requiresEmailVerification: true };
     } catch (error: any) {
       setIsLoading(false);
       // Si es error de correo duplicado, mostrar mensaje amigable
@@ -364,8 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Logout
-  const logout = () => {
-    // Limpiar balance y transacciones del usuario actual antes de hacer logout
+  const logout = async () => {
     if (user?.email) {
       localStorage.removeItem(`pumapay_balance_${user.email}`);
       localStorage.removeItem(`pumapay_transactions_${user.email}`);
@@ -376,14 +309,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(`pumapay_transactions_${user.address}`);
       localStorage.removeItem(`pumapay_last_transaction_count_${user.address}`);
     }
-    // También limpiar la clave genérica por si acaso
     localStorage.removeItem('pumapay_mxnb_balance');
     localStorage.removeItem('pumapay_transactions');
-    
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    // ⚠️ COMENTADO - Ya no usamos Portal
-    // portalService.logout();
+    await supabase.auth.signOut();
   };
 
   return (

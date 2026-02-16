@@ -27,6 +27,9 @@ import { ZKDemo } from "./pages/ZKDemo";
 import { SavingsGoals } from "./pages/SavingsGoals";
 import { CourseDetail } from "./pages/CourseDetail";
 import { Feed } from "./pages/Feed";
+import Marketplace from "./pages/Marketplace";
+import ProductDetail from "./pages/ProductDetail";
+import Checkout from "./pages/Checkout";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +58,9 @@ const App = () => (
             {/* Metas de ahorro: ruta oculta para usuarios (código conservado) */}
             {/* <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} /> */}
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            <Route path="/marketplace/:productId" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+            <Route path="/marketplace/:productId/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/juno-demo" element={<JunoDemo />} />
             <Route path="/zk-demo" element={<ZKDemo />} />

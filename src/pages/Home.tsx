@@ -252,6 +252,7 @@ const HomePage = () => {
     { to: '/feed', icon: MessageSquare, label: 'Feed', color: 'bg-gold-600 hover:bg-gold-500 text-black' },
     { to: '/send', icon: Send, label: 'Enviar', color: 'bg-zinc-700 hover:bg-zinc-600 text-white' },
     { to: '/receive', icon: Download, label: 'Recibir', color: 'bg-positive-600 hover:bg-positive-500 text-white' },
+    { to: '/marketplace', icon: Gift, label: 'Tienda', color: 'bg-rose-600 hover:bg-rose-500 text-white' },
   ];
 
   // Calcular gastos por día de la semana
@@ -565,7 +566,7 @@ const HomePage = () => {
       {/* Acciones rápidas */}
       <div className="px-4 sm:px-6 mb-6">
         <h3 className="text-white text-base font-semibold mb-3">Acciones rápidas</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {quickActions.map((action, index) => (
             <Button
               key={index}
@@ -621,150 +622,6 @@ const HomePage = () => {
               </Card>
             );
           })}
-        </div>
-      </div>
-
-      {/* Promociones del Campus */}
-      <div className="px-4 sm:px-6 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white text-base font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-gold-400" />
-            Promociones
-          </h3>
-          <span className="text-xs text-gold-400/80">Descuentos</span>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-base sm:text-lg">🍽️</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm sm:text-base text-white">Cafetería Las Islas</h4>
-                    <p className="text-xs sm:text-sm text-white/90 font-medium">Comida</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
-                    <span className="text-xs sm:text-sm font-bold text-white">-20%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Chilaquiles con pollo</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">75 USDC</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Café americano</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">25 USDC</span>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-          </Card>
-
-          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-base sm:text-lg">☕</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm sm:text-base text-white">Café y Cuernito</h4>
-                    <p className="text-xs sm:text-sm text-white/90 font-medium">Café</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
-                    <span className="text-xs sm:text-sm font-bold text-white">-15%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Café especial</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">80 USDC</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Jugo de naranja</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">25 USDC</span>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-          </Card>
-
-          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-base sm:text-lg">📚</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm sm:text-base text-white">Librería Central</h4>
-                    <p className="text-xs sm:text-sm text-white/90 font-medium">Libros</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
-                    <span className="text-xs sm:text-sm font-bold text-white">-10%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Álgebra Lineal</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">120 USDC</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Cálculo Diferencial</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">95 USDC</span>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-          </Card>
-
-          <Card className="bg-black/30 border border-gold-500/20 p-4 min-w-[260px] flex-shrink-0 hover:border-gold-500/40 transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-base sm:text-lg">🏃‍♂️</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm sm:text-base text-white">Gimnasio Central</h4>
-                    <p className="text-xs sm:text-sm text-white/90 font-medium">Deportes</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="bg-gradient-to-br from-gold-600 to-gold-500 rounded-full px-2 sm:px-3 py-1 shadow-md">
-                    <span className="text-xs sm:text-sm font-bold text-white">-25%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Membresía mensual</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">200 USDC</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2">
-                  <span className="text-xs sm:text-sm text-white font-medium">Clase de natación</span>
-                  <span className="font-bold text-zinc-300 text-sm sm:text-base">50 USDC</span>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-12 h-12 bg-gold-500/20 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
-          </Card>
         </div>
       </div>
 

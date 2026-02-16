@@ -20,6 +20,9 @@
     <meta name="twitter:title" content="PumaPay - Wallet Estudiantil" />
     <meta name="twitter:description" content="Tu wallet estudiantil para pagos rápidos, seguros y sin complicaciones" />
     <meta name="twitter:image" content="/PumaPay.png" />
+
+    <!-- Content Security Policy: reduce impacto de XSS (ajustar en producción con cabecera HTTP si es posible) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://horizon-testnet.stellar.org https://horizon.stellar.org; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';" />
   </head>
 
   <body>

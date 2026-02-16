@@ -93,13 +93,20 @@ const Signup = () => {
         formData.studentId,
         (step) => setSignupStep(step)
       );
-      console.log('✅ Cuenta creada exitosamente');
-      toast({
-        title: "¡Cuenta y wallet creadas!",
-        description: result && result.address ? `Tu wallet PumaPay está lista: ${result.address}` : "Tu wallet PumaPay está lista",
-      });
       setSignupStep(null);
-      navigate('/home');
+      if (result?.requiresEmailVerification) {
+        toast({
+          title: "Revisa tu correo",
+          description: "Te enviamos un enlace para verificar tu cuenta. Haz clic en el enlace y luego inicia sesión.",
+        });
+        navigate('/login');
+      } else {
+        toast({
+          title: "¡Cuenta y wallet creadas!",
+          description: result?.address ? `Tu wallet PumaPay está lista: ${result.address}` : "Tu wallet PumaPay está lista",
+        });
+        navigate('/home');
+      }
     } catch (error) {
       setSignupStep(null);
       console.error('❌ Error creando cuenta:', error);

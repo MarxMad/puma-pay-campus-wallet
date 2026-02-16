@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { ArrowLeft, MapPin, Search, Filter, Percent, QrCode, Star, Clock, Phone, Navigation, List, Map, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Search, QrCode, Star, Clock, Phone, Navigation, List, Map } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '@/components/BottomNav';
+import { AppHeader, headerIconClass } from '@/components/AppHeader';
 
 // Datos actualizados con ubicaciones reales del campus y fotos
 const campusPlaces = [
@@ -24,8 +25,8 @@ const campusPlaces = [
     location: { lat: 19.3320, lng: -99.1860 },
     qrCode: "CAFE-ISLAS-001",
     specialOffers: [
-      "Chilaquiles con pollo - 75 MXNB",
-      "Café americano - 25 MXNB",
+      "Chilaquiles con pollo - 75 XLM",
+      "Café americano - 25 XLM",
       "20% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -47,8 +48,8 @@ const campusPlaces = [
     location: { lat: 19.3315, lng: -99.1840 },
     qrCode: "CAFE-ARQ-002",
     specialOffers: [
-      "Torta especial - 60 MXNB",
-      "Agua fresca - 15 MXNB",
+      "Torta especial - 60 XLM",
+      "Agua fresca - 15 XLM",
       "15% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -70,8 +71,8 @@ const campusPlaces = [
     location: { lat: 19.3300, lng: -99.1820 },
     qrCode: "CAFE-ING-003",
     specialOffers: [
-      "Comida corrida - 85 MXNB",
-      "Refresco - 20 MXNB",
+      "Comida corrida - 85 XLM",
+      "Refresco - 20 XLM",
       "18% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -93,8 +94,8 @@ const campusPlaces = [
     location: { lat: 19.3280, lng: -99.1800 },
     qrCode: "JUGOS-COPILCO-004",
     specialOffers: [
-      "Jugo de naranja - 25 MXNB",
-      "Smoothie de fresa - 35 MXNB",
+      "Jugo de naranja - 25 XLM",
+      "Smoothie de fresa - 35 XLM",
       "25% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -118,8 +119,8 @@ const campusPlaces = [
     location: { lat: 19.3310, lng: -99.1850 },
     qrCode: "LIBRERIA-CENTRAL-005",
     specialOffers: [
-      "Álgebra Lineal - 120 MXNB",
-      "Cálculo Diferencial - 95 MXNB",
+      "Álgebra Lineal - 120 XLM",
+      "Cálculo Diferencial - 95 XLM",
       "10% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -141,8 +142,8 @@ const campusPlaces = [
     location: { lat: 19.3305, lng: -99.1830 },
     qrCode: "LIBRERIA-CIENCIAS-006",
     specialOffers: [
-      "Física General - 110 MXNB",
-      "Química Orgánica - 130 MXNB",
+      "Física General - 110 XLM",
+      "Química Orgánica - 130 XLM",
       "12% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -166,8 +167,8 @@ const campusPlaces = [
     location: { lat: 19.3270, lng: -99.1780 },
     qrCode: "GYM-CENTRAL-007",
     specialOffers: [
-      "Membresía mensual - 200 MXNB",
-      "Clase de natación - 50 MXNB",
+      "Membresía mensual - 200 XLM",
+      "Clase de natación - 50 XLM",
       "25% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -189,8 +190,8 @@ const campusPlaces = [
     location: { lat: 19.3285, lng: -99.1790 },
     qrCode: "GYM-FRONTONES-008",
     specialOffers: [
-      "Renta de cancha - 80 MXNB/hora",
-      "Clase de frontón - 40 MXNB",
+      "Renta de cancha - 80 XLM/hora",
+      "Clase de frontón - 40 XLM",
       "20% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -214,8 +215,8 @@ const campusPlaces = [
     location: { lat: 19.3318, lng: -99.1855 },
     qrCode: "COPIAS-CENTRAL-009",
     specialOffers: [
-      "Copia blanco y negro - 1 MXNB",
-      "Impresión color - 5 MXNB",
+      "Copia blanco y negro - 1 XLM",
+      "Impresión color - 5 XLM",
       "15% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -237,8 +238,8 @@ const campusPlaces = [
     location: { lat: 19.3312, lng: -99.1845 },
     qrCode: "INTERNET-CAFE-010",
     specialOffers: [
-      "1 hora de internet - 20 MXNB",
-      "Impresión - 3 MXNB",
+      "1 hora de internet - 20 XLM",
+      "Impresión - 3 XLM",
       "20% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -260,8 +261,8 @@ const campusPlaces = [
     location: { lat: 19.3315, lng: -99.1852 },
     qrCode: "PAPELERIA-UNI-011",
     specialOffers: [
-      "Cuaderno universitario - 25 MXNB",
-      "Plumas y lápices - 15 MXNB",
+      "Cuaderno universitario - 25 XLM",
+      "Plumas y lápices - 15 XLM",
       "10% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -285,8 +286,8 @@ const campusPlaces = [
     location: { lat: 19.3308, lng: -99.1848 },
     qrCode: "TIENDA-UNI-012",
     specialOffers: [
-      "Playera universitaria - 150 MXNB",
-      "Taza conmemorativa - 80 MXNB",
+      "Playera universitaria - 150 XLM",
+      "Taza conmemorativa - 80 XLM",
       "12% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -308,8 +309,8 @@ const campusPlaces = [
     location: { lat: 19.3302, lng: -99.1840 },
     qrCode: "PUESTO-REVISTAS-013",
     specialOffers: [
-      "Revista científica - 45 MXNB",
-      "Periódico - 15 MXNB",
+      "Revista científica - 45 XLM",
+      "Periódico - 15 XLM",
       "8% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -333,8 +334,8 @@ const campusPlaces = [
     location: { lat: 19.3250, lng: -99.1750 },
     qrCode: "CLINICA-UNI-014",
     specialOffers: [
-      "Consulta general - 50 MXNB",
-      "Medicamentos básicos - 30 MXNB",
+      "Consulta general - 50 XLM",
+      "Medicamentos básicos - 30 XLM",
       "30% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -356,8 +357,8 @@ const campusPlaces = [
     location: { lat: 19.3260, lng: -99.1760 },
     qrCode: "VETERINARIA-CAMPUS-015",
     specialOffers: [
-      "Consulta veterinaria - 100 MXNB",
-      "Vacunas - 80 MXNB",
+      "Consulta veterinaria - 100 XLM",
+      "Vacunas - 80 XLM",
       "20% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -379,8 +380,8 @@ const campusPlaces = [
     location: { lat: 19.3255, lng: -99.1755 },
     qrCode: "ODONTOLOGIA-UNI-016",
     specialOffers: [
-      "Limpieza dental - 120 MXNB",
-      "Consulta dental - 60 MXNB",
+      "Limpieza dental - 120 XLM",
+      "Consulta dental - 60 XLM",
       "25% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -403,7 +404,7 @@ const campusPlaces = [
     qrCode: "ENFERMERIA-CENTRAL-017",
     specialOffers: [
       "Primeros auxilios - Gratis",
-      "Medicamentos básicos - 25 MXNB",
+      "Medicamentos básicos - 25 XLM",
       "15% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo"],
@@ -427,8 +428,8 @@ const campusPlaces = [
     location: { lat: 19.3200, lng: -99.1700 },
     qrCode: "MUSEO-UNI-018",
     specialOffers: [
-      "Entrada general - 30 MXNB",
-      "Visita guiada - 50 MXNB",
+      "Entrada general - 30 XLM",
+      "Visita guiada - 50 XLM",
       "40% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -450,8 +451,8 @@ const campusPlaces = [
     location: { lat: 19.3210, lng: -99.1710 },
     qrCode: "CINE-UNI-019",
     specialOffers: [
-      "Boleto de película - 40 MXNB",
-      "Palomitas - 25 MXNB",
+      "Boleto de película - 40 XLM",
+      "Palomitas - 25 XLM",
       "35% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -473,8 +474,8 @@ const campusPlaces = [
     location: { lat: 19.3205, lng: -99.1705 },
     qrCode: "TEATRO-UNI-020",
     specialOffers: [
-      "Boleto de teatro - 60 MXNB",
-      "Programa de mano - 10 MXNB",
+      "Boleto de teatro - 60 XLM",
+      "Programa de mano - 10 XLM",
       "30% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -496,8 +497,8 @@ const campusPlaces = [
     location: { lat: 19.3195, lng: -99.1695 },
     qrCode: "AUDITORIO-PRINCIPAL-021",
     specialOffers: [
-      "Entrada a conferencia - 80 MXNB",
-      "Material de apoyo - 20 MXNB",
+      "Entrada a conferencia - 80 XLM",
+      "Material de apoyo - 20 XLM",
       "25% descuento con PumaPay"
     ],
     paymentMethods: ["PumaPay", "Efectivo", "Tarjeta"],
@@ -540,45 +541,25 @@ const CampusMapPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white bg-black/30 backdrop-blur-xl border-b border-white/10">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 border-2 border-blue-400/40 p-2 sm:p-2.5">
-            <img src="/PumaPay.png" alt="PumaPay" className="h-full w-full object-contain drop-shadow-lg rounded-2xl" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              PumaPay
-            </h1>
-            <p className="text-xs text-gray-400 hidden sm:block">Mapa del Campus</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
-            className="text-gray-300 hover:text-white"
-          >
-            {viewMode === 'list' ? <Map className="h-5 w-5" /> : <List className="h-5 w-5" />}
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] pb-20 overflow-x-hidden w-full max-w-full">
+      <AppHeader
+        leftAction={<ArrowLeft className={headerIconClass} />}
+        onLeftAction={() => navigate('/home')}
+        subtitle="Descubre el campus"
+        rightAction={viewMode === 'list' ? <Map className="h-5 w-5 sm:h-6 sm:w-6 text-white" /> : <List className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
+        onRightAction={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+      />
 
       {/* Search Bar */}
-      <div className="p-4">
+      <div className="px-4 pt-2 pb-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold-400/80" />
           <Input
             type="text"
             placeholder="Buscar lugares en el campus..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+            className="pl-10 bg-black/30 border-2 border-gold-500/20 text-white placeholder-gray-500 focus-visible:ring-gold-500/50 focus-visible:border-gold-500/40"
           />
         </div>
       </div>
@@ -592,8 +573,8 @@ const CampusMapPage = () => {
               onClick={() => setSelectedCategory(category.id)}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 selectedCategory === category.id
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-gold-500/30 border-2 border-gold-500/50 text-gold-300 shadow-lg shadow-gold-500/10'
+                  : 'bg-black/30 border border-gold-500/20 text-gray-300 hover:bg-gold-500/10 hover:border-gold-500/30'
               }`}
             >
               <span className="mr-2">{category.icon}</span>
@@ -608,7 +589,7 @@ const CampusMapPage = () => {
         {filteredPlaces.map((place) => (
           <Card
             key={place.id}
-            className="bg-gray-800/50 backdrop-blur-xl border-white/20 overflow-hidden cursor-pointer hover:bg-gray-800/70 transition-all duration-300"
+            className="bg-black/30 border-2 border-gold-500/20 overflow-hidden cursor-pointer hover:border-gold-500/40 hover:bg-black/40 transition-all duration-300 text-white"
             onClick={() => handlePlaceClick(place)}
           >
             <div className="flex">
@@ -620,7 +601,7 @@ const CampusMapPage = () => {
                     <h3 className="font-semibold text-sm text-white">{place.name}</h3>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Star className="h-3 w-3 text-yellow-400" />
+                    <Star className="h-3 w-3 text-gold-400" />
                     <span className="text-xs text-gray-400">{place.rating}</span>
                   </div>
                 </div>
@@ -630,20 +611,20 @@ const CampusMapPage = () => {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-1">
-                      <MapPin className="h-3 w-3 text-gray-400" />
+                      <MapPin className="h-3 w-3 text-gold-400/80" />
                       <span className="text-xs text-gray-400">{place.distance}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3 text-gray-400" />
+                      <Clock className="h-3 w-3 text-gold-400/80" />
                       <span className="text-xs text-gray-400">{place.hours}</span>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-400">{place.realLocation}</div>
+                  <div className="text-xs text-gray-500">{place.realLocation}</div>
                 </div>
 
                 {/* Special offers preview */}
                 <div className="mt-3">
-                  <div className="text-xs text-orange-400 font-medium mb-1">Ofertas:</div>
+                  <div className="text-xs text-gold-400 font-medium mb-1">Ofertas:</div>
                   <div className="text-xs text-gray-300">
                     {place.specialOffers[0]}
                   </div>
@@ -657,19 +638,19 @@ const CampusMapPage = () => {
                   alt={place.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.src = `https://via.placeholder.com/400x300/374151/ffffff?text=${place.name}`;
+                    e.target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${place.name}`;
                   }}
                 />
-                {/* Overlay with discount */}
+                {/* Overlay with discount - verde para positivo */}
                 <div className="absolute top-2 right-2">
-                  <div className="bg-green-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
+                  <div className="bg-emerald-600/95 text-white px-2 py-1 rounded-full text-xs font-bold">
                     -{place.discount}%
                   </div>
                 </div>
                 {/* Popular badge */}
                 {place.popular && (
                   <div className="absolute top-2 left-2">
-                    <div className="bg-orange-500/90 text-white px-2 py-1 rounded-full text-xs font-bold">
+                    <div className="bg-gold-500/90 text-black px-2 py-1 rounded-full text-xs font-bold">
                       Popular
                     </div>
                   </div>
@@ -682,23 +663,23 @@ const CampusMapPage = () => {
 
       {/* Place Details Modal */}
       {selectedPlace && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="bg-gray-800 border-white/20 p-6 text-white w-full max-w-md max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <Card className="bg-[#0f0f0f] border-2 border-gold-500/30 p-6 text-white w-full max-w-md max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center">
                   <span className="text-lg">{selectedPlace.icon}</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedPlace.name}</h3>
-                  <p className="text-gray-300 text-sm">{selectedPlace.description}</p>
+                  <h3 className="text-lg font-semibold text-white">{selectedPlace.name}</h3>
+                  <p className="text-gray-400 text-sm">{selectedPlace.description}</p>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={closePlaceDetails}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-gold-400 hover:bg-gold-500/10 rounded-full"
               >
                 ✕
               </Button>
@@ -721,16 +702,16 @@ const CampusMapPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-400" />
-                    <span className="text-sm">{selectedPlace.rating}</span>
+                    <Star className="h-4 w-4 text-gold-400" />
+                    <span className="text-sm text-white">{selectedPlace.rating}</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <MapPin className="h-4 w-4 text-gold-400/80" />
                     <span className="text-sm text-gray-400">{selectedPlace.distance}</span>
                   </div>
                 </div>
-                <div className="bg-green-500/20 border border-green-500/40 rounded-full px-3 py-1">
-                  <span className="text-sm text-green-400 font-bold">-{selectedPlace.discount}% descuento</span>
+                <div className="bg-emerald-600/20 border border-emerald-500/40 rounded-full px-3 py-1">
+                  <span className="text-sm text-emerald-400 font-bold">-{selectedPlace.discount}% descuento</span>
                 </div>
               </div>
 
@@ -754,11 +735,11 @@ const CampusMapPage = () => {
 
               {/* Special Offers */}
               <div>
-                <h4 className="font-semibold text-sm mb-2 text-orange-400">Ofertas especiales:</h4>
+                <h4 className="font-semibold text-sm mb-2 text-gold-400">Ofertas especiales:</h4>
                 <div className="space-y-2">
                   {selectedPlace.specialOffers.map((offer, index) => (
-                    <div key={index} className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-                      <p className="text-sm text-orange-300">{offer}</p>
+                    <div key={index} className="bg-gold-500/10 border border-gold-500/30 rounded-lg p-3">
+                      <p className="text-sm text-gold-200">{offer}</p>
                     </div>
                   ))}
                 </div>
@@ -766,11 +747,11 @@ const CampusMapPage = () => {
 
               {/* Payment Methods */}
               <div>
-                <h4 className="font-semibold text-sm mb-2">Métodos de pago:</h4>
+                <h4 className="font-semibold text-sm mb-2 text-gray-300">Métodos de pago:</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedPlace.paymentMethods.map((method, index) => (
-                    <div key={index} className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1">
-                      <span className="text-xs text-blue-400">{method}</span>
+                    <div key={index} className="bg-gold-500/20 border border-gold-500/40 rounded-full px-3 py-1">
+                      <span className="text-xs text-gold-300">{method}</span>
                     </div>
                   ))}
                 </div>
@@ -786,11 +767,11 @@ const CampusMapPage = () => {
 
               {/* Action Buttons */}
               <div className="flex space-x-3">
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                <Button className="flex-1 bg-black/50 border-2 border-gold-500/40 text-gold-400 hover:bg-gold-500/20 hover:text-gold-300">
                   <Navigation className="h-4 w-4 mr-2" />
                   Direcciones
                 </Button>
-                <Button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white">
+                <Button className="flex-1 bg-gold-500/30 border-2 border-gold-500/50 text-gold-200 hover:bg-gold-500/50 hover:text-white">
                   <QrCode className="h-4 w-4 mr-2" />
                   Pagar con PumaPay
                 </Button>

@@ -209,6 +209,18 @@ export class CourseGamificationService {
   }
 
   /**
+   * Suma puntos bonus (ej. por cada 5 donaciones) al total del usuario en localStorage.
+   * Así la UI de insignias y total coincide con Supabase.
+   */
+  addDonationBonusPoints(userId: string, points: number): void {
+    const stored = this.getStoredData();
+    const userData = stored.users[userId] || this.createDefaultUserData(userId);
+    userData.totalPoints = (userData.totalPoints || 0) + points;
+    stored.users[userId] = userData;
+    this.saveStoredData(stored);
+  }
+
+  /**
    * Hash simple del userId (en producción usar hash criptográfico)
    */
   private hashUserId(userId: string): string {

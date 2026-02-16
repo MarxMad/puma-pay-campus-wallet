@@ -11,13 +11,14 @@ import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { useQuery } from '@tanstack/react-query';
 import { coursesService } from '@/services/coursesService';
+import { getBadgesFromSupabase, type UserBadgeFromSupabase } from '@/services/supabaseCourseProgress';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { goals } = useSavingsGoals();
-  const { userPoints, getUserBadges } = useCourseProgress();
-  const [badges, setBadges] = useState<any[]>([]);
+  const { userPoints } = useCourseProgress();
+  const [badges, setBadges] = useState<UserBadgeFromSupabase[]>([]);
 
   // Obtener todos los cursos
   const { data: courses = [] } = useQuery({
@@ -25,21 +26,24 @@ const Profile = () => {
     queryFn: coursesService.listCourses,
   });
 
-  // Obtener badges
+  // Badges reales desde Supabase (user_course_progress)
   useEffect(() => {
     const loadBadges = async () => {
-      if (user) {
-        try {
-          const userBadges = await getUserBadges();
-          setBadges(userBadges || []);
-        } catch (error) {
-          console.error('Error loading badges:', error);
-          setBadges([]);
-        }
+      const userEmail = user?.email || user?.address;
+      if (!userEmail) {
+        setBadges([]);
+        return;
+      }
+      try {
+        const fromDb = await getBadgesFromSupabase(userEmail);
+        setBadges(fromDb);
+      } catch (error) {
+        console.error('Error loading badges from Supabase:', error);
+        setBadges([]);
       }
     };
     loadBadges();
-  }, [user]); // Removed getUserBadges from dependencies to avoid infinite loops
+  }, [user?.email, user?.address]);
 
   // Filtrar metas completadas
   const achievedGoals = (goals || []).filter(goal => goal.achieved);
@@ -295,28 +299,35 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Badges obtenidos - estilo Cursos */}
+        {/* Insignias / Badges obtenidos - datos reales desde Supabase */}
         {badges.length > 0 && (
           <Card className="bg-black/30 border-2 border-gold-500/20 text-white hover:border-gold-500/40 transition-all">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Trophy className="h-5 w-5 text-gold-400" />
-                Badges Obtenidos
+                Insignias obtenidas
               </CardTitle>
+              <p className="text-sm text-gray-400">Por cuestionarios completados (Supabase)</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {badges.map((badge, index) => {
-                  const badgeEmoji = badge.level === 3 ? '🥇' : badge.level === 2 ? '🥈' : '🥉';
+                  const badgeEmoji = badge.badge_level === 3 ? '🥇' : badge.badge_level === 2 ? '🥈' : '🥉';
+                  const levelName = badge.badge_level === 3 ? 'Oro' : badge.badge_level === 2 ? 'Plata' : 'Bronce';
+                  const courseTitle = courses.find((c) => c.id === badge.course_id)?.title ?? badge.course_id;
                   return (
                     <div
-                      key={index}
-                      className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-3 text-center"
+                      key={`${badge.course_id}-${badge.completed_at}-${index}`}
+                      className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-3 flex items-center gap-3 hover:bg-gold-500/15 transition-colors"
                     >
-                      <div className="text-3xl mb-2">{badgeEmoji}</div>
-                      <p className="text-xs text-gray-400">
-                        {badge.level === 3 ? 'Gold' : badge.level === 2 ? 'Silver' : 'Bronze'}
-                      </p>
+                      <div className="text-3xl flex-shrink-0">{badgeEmoji}</div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white truncate" title={courseTitle}>
+                          {courseTitle}
+                        </p>
+                        <p className="text-xs text-gold-400">{levelName}</p>
+                        <p className="text-xs text-gray-500">Puntuación: {badge.score}% · +{badge.points_earned} pts</p>
+                      </div>
                     </div>
                   );
                 })}
