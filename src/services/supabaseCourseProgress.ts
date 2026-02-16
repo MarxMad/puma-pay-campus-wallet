@@ -116,3 +116,76 @@ export async function getLeaderboardTop50(): Promise<LeaderboardEntry[]> {
     total_points: Number(row.total_points) || 0,
   }));
 }
+
+/** Datos de perfil desde Supabase: puntos totales (cursos + racha) y guías completadas */
+export interface ProfilePointsFromSupabase {
+  totalPoints: number;
+  completedGuides: number;
+}
+
+/**
+ * Obtiene puntos totales y número de guías completadas desde Supabase.
+ * Incluye puntos de cursos y de racha diaria (todo está en user_course_progress).
+ * completedGuides = filas donde course_id no es de racha (no empieza con 'streak-').
+ */
+export async function getProfilePointsFromSupabase(userEmail: string): Promise<ProfilePointsFromSupabase> {
+  const result: ProfilePointsFromSupabase = { totalPoints: 0, completedGuides: 0 };
+
+  const { data: leaderboardRow, error: lbError } = await supabase
+    .from('campus_leaderboard')
+    .select('total_points')
+    .eq('user_email', userEmail)
+    .maybeSingle();
+
+  if (!lbError && leaderboardRow?.total_points != null) {
+    result.totalPoints = Number(leaderboardRow.total_points) || 0;
+  }
+
+  const { count, error: countError } = await supabase
+    .from('user_course_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_email', userEmail)
+    .not('course_id', 'like', 'streak-%');
+
+  if (!countError && count != null) {
+    result.completedGuides = count;
+  }
+
+  return result;
+}
+
+/** Una guía concluida del usuario (desde user_course_progress, sin filas de racha) */
+export interface CompletedGuideFromSupabase {
+  course_id: string;
+  completed_at: string;
+  points_earned: number;
+  score: number;
+  badge_level: 1 | 2 | 3 | null;
+}
+
+/**
+ * Lista de guías concluidas/terminadas del usuario desde Supabase.
+ * Excluye filas de racha (course_id like 'streak-%').
+ * Ordenado por completed_at descendente (más reciente primero).
+ */
+export async function getCompletedGuidesFromSupabase(userEmail: string): Promise<CompletedGuideFromSupabase[]> {
+  const { data, error } = await supabase
+    .from('user_course_progress')
+    .select('course_id, completed_at, points_earned, score, badge_level')
+    .eq('user_email', userEmail)
+    .not('course_id', 'like', 'streak-%')
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error obteniendo guías completadas desde Supabase:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    course_id: row.course_id ?? '',
+    completed_at: row.completed_at ?? '',
+    points_earned: Number(row.points_earned) || 0,
+    score: Number(row.score) || 0,
+    badge_level: row.badge_level as 1 | 2 | 3 | null,
+  }));
+}

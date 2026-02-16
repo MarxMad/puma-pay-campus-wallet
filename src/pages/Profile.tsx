@@ -11,7 +11,7 @@ import { useSavingsGoals } from '@/hooks/useSavingsGoals';
 import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { useQuery } from '@tanstack/react-query';
 import { coursesService } from '@/services/coursesService';
-import { getBadgesFromSupabase, type UserBadgeFromSupabase } from '@/services/supabaseCourseProgress';
+import { getBadgesFromSupabase, getProfilePointsFromSupabase, getCompletedGuidesFromSupabase, type UserBadgeFromSupabase, type ProfilePointsFromSupabase, type CompletedGuideFromSupabase } from '@/services/supabaseCourseProgress';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -19,6 +19,11 @@ const Profile = () => {
   const { goals } = useSavingsGoals();
   const { userPoints } = useCourseProgress();
   const [badges, setBadges] = useState<UserBadgeFromSupabase[]>([]);
+  const [profilePoints, setProfilePoints] = useState<ProfilePointsFromSupabase | null>(null);
+  const [profilePointsLoading, setProfilePointsLoading] = useState(false);
+  const [completedGuidesFromSupabase, setCompletedGuidesFromSupabase] = useState<CompletedGuideFromSupabase[]>([]);
+  const [completedGuidesLoading, setCompletedGuidesLoading] = useState(false);
+  const userEmail = user?.email || user?.address;
 
   // Obtener todos los cursos
   const { data: courses = [] } = useQuery({
@@ -28,27 +33,34 @@ const Profile = () => {
 
   // Badges reales desde Supabase (user_course_progress)
   useEffect(() => {
-    const loadBadges = async () => {
-      const userEmail = user?.email || user?.address;
-      if (!userEmail) {
-        setBadges([]);
-        return;
-      }
-      try {
-        const fromDb = await getBadgesFromSupabase(userEmail);
-        setBadges(fromDb);
-      } catch (error) {
-        console.error('Error loading badges from Supabase:', error);
-        setBadges([]);
-      }
-    };
-    loadBadges();
-  }, [user?.email, user?.address]);
+    if (!userEmail) { setBadges([]); return; }
+    getBadgesFromSupabase(userEmail).then(setBadges).catch(() => setBadges([]));
+  }, [userEmail]);
+
+  // Puntos y guías completadas desde Supabase (cursos + racha)
+  useEffect(() => {
+    if (!userEmail) { setProfilePoints(null); return; }
+    setProfilePointsLoading(true);
+    getProfilePointsFromSupabase(userEmail)
+      .then(setProfilePoints)
+      .catch(() => setProfilePoints(null))
+      .finally(() => setProfilePointsLoading(false));
+  }, [userEmail]);
+
+  // Lista de guías concluidas desde Supabase (para mostrar en Logros de Guías)
+  useEffect(() => {
+    if (!userEmail) { setCompletedGuidesFromSupabase([]); return; }
+    setCompletedGuidesLoading(true);
+    getCompletedGuidesFromSupabase(userEmail)
+      .then(setCompletedGuidesFromSupabase)
+      .catch(() => setCompletedGuidesFromSupabase([]))
+      .finally(() => setCompletedGuidesLoading(false));
+  }, [userEmail]);
 
   // Filtrar metas completadas
   const achievedGoals = (goals || []).filter(goal => goal.achieved);
 
-  // Obtener cursos completados
+  // Obtener cursos completados (fallback desde localStorage para listado)
   const completedCourses = courses.filter(course => {
     try {
       const progressKey = `${user?.address || user?.email || 'anonymous'}_${course.id}`;
@@ -143,31 +155,33 @@ const Profile = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-400 font-medium">Guías completadas</p>
-                <p className="text-2xl font-bold text-white">{completedCourses.length}</p>
+                <p className="text-2xl font-bold text-white">
+                  {profilePointsLoading ? '—' : (profilePoints?.completedGuides ?? completedCourses.length)}
+                </p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Puntos del usuario - estilo Cursos */}
-        {userPoints && (
-          <Card className="bg-black/30 border-2 border-gold-500/20 p-6 text-white hover:border-gold-500/40 transition-all">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gold-500/20 border-2 border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
-                  <Star className="h-8 w-8" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Puntos totales</p>
-                  <p className="text-3xl font-bold text-white">{userPoints.totalPoints || 0}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {userPoints.coursesCompleted || 0} guías completadas
-                  </p>
-                </div>
+        {/* Puntos del usuario desde Supabase (cursos + racha) */}
+        <Card className="bg-black/30 border-2 border-gold-500/20 p-6 text-white hover:border-gold-500/40 transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gold-500/20 border-2 border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400">
+                <Star className="h-8 w-8" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm font-medium">Puntos totales</p>
+                <p className="text-3xl font-bold text-white">
+                  {profilePointsLoading ? '—' : (profilePoints?.totalPoints ?? userPoints?.totalPoints ?? 0)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {profilePointsLoading ? '—' : (profilePoints?.completedGuides ?? userPoints?.coursesCompleted ?? 0)} guías completadas
+                </p>
               </div>
             </div>
-          </Card>
-        )}
+          </div>
+        </Card>
 
         {/* Logros de Ahorro: sección oculta (código conservado) */}
         {false && (
@@ -227,16 +241,19 @@ const Profile = () => {
         </Card>
         )}
 
-        {/* Logros de Guías - estilo Cursos */}
+        {/* Logros de Guías - desde Supabase (guías concluidas almacenadas) */}
         <Card className="bg-black/30 border-2 border-gold-500/20 text-white hover:border-gold-500/40 transition-all">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <GraduationCap className="h-5 w-5 text-gold-400" />
-              Logros de Guías
+              Guías concluidas
             </CardTitle>
+            <p className="text-sm text-gray-400">Guardadas en tu perfil (Supabase)</p>
           </CardHeader>
           <CardContent>
-            {completedCourses.length === 0 ? (
+            {completedGuidesLoading ? (
+              <div className="text-center py-8 text-gray-400 text-sm">Cargando guías…</div>
+            ) : completedGuidesFromSupabase.length === 0 ? (
               <div className="text-center py-8">
                 <GraduationCap className="h-12 w-12 mx-auto mb-4 text-gray-500 opacity-50" />
                 <p className="text-gray-400">Aún no has completado ninguna guía</p>
@@ -250,37 +267,36 @@ const Profile = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {completedCourses.map((course) => {
-                  const progressKey = `${user?.address || user?.email || 'anonymous'}_${course.id}`;
-                  const stored = localStorage.getItem('pumapay_course_gamification');
-                  let progress: any = null;
-                  if (stored) {
-                    const data = JSON.parse(stored);
-                    progress = data.courseProgress?.[progressKey];
-                  }
-
-                  const badgeEmoji = progress?.badgeLevel === 3 ? '🥇' : progress?.badgeLevel === 2 ? '🥈' : '🥉';
-
+                {completedGuidesFromSupabase.map((guide) => {
+                  const courseTitle = courses.find((c) => c.id === guide.course_id)?.title ?? guide.course_id;
+                  const badgeEmoji = guide.badge_level === 3 ? '🥇' : guide.badge_level === 2 ? '🥈' : '🥉';
+                  const dateStr = guide.completed_at
+                    ? new Date(guide.completed_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '';
                   return (
                     <div
-                      key={course.id}
+                      key={`${guide.course_id}-${guide.completed_at}`}
                       className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-4 flex items-center space-x-4"
                     >
                       <div className="w-12 h-12 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center flex-shrink-0 text-gold-400">
                         <Award className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white">{course.title}</p>
-                        <p className="text-sm text-gray-400">
-                          {progress?.quizScore ? `Puntuación: ${progress.quizScore}%` : 'Completado'}
+                        <p className="font-semibold text-white truncate" title={courseTitle}>
+                          {courseTitle}
                         </p>
-                        {progress?.badgeLevel && (
-                          <p className="text-xs text-gold-400 mt-1">
-                            {badgeEmoji} Badge obtenido
-                          </p>
+                        <p className="text-sm text-gray-400">
+                          {guide.score > 0 ? `Puntuación: ${guide.score}%` : 'Completado'}
+                          {guide.points_earned > 0 && ` · +${guide.points_earned} pts`}
+                        </p>
+                        {dateStr && (
+                          <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
+                        )}
+                        {guide.badge_level != null && (
+                          <p className="text-xs text-gold-400 mt-1">{badgeEmoji} Badge obtenido</p>
                         )}
                       </div>
-                      {progress?.badgeLevel && (
+                      {guide.badge_level != null && (
                         <div className="text-2xl flex-shrink-0">{badgeEmoji}</div>
                       )}
                     </div>
@@ -292,7 +308,7 @@ const Profile = () => {
                   variant="outline"
                   className="w-full border-gold-500/40 text-gold-400 hover:text-gold-400 hover:bg-gold-500/10"
                 >
-                  Ver todos los cursos
+                  Ver más guías
                 </Button>
               </div>
             )}
