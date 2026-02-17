@@ -2,6 +2,17 @@
 
 Una wallet digital universitaria moderna que permite a los estudiantes de la UNAM realizar pagos con tokens MXNB (Mexican Peso Backed) en el campus universitario.
 
+## ✅ MVP (Estado actual)
+
+El MVP incluye:
+
+- **Autenticación**: Registro e inicio de sesión con la tabla `usuarios` en Supabase (bcrypt). Sin Supabase Auth.
+- **Wallet Stellar**: Creación de cuenta Stellar (testnet) al registrarse; envío/recibo de pagos.
+- **Guías de estudio y cuestionarios**: Cursos por categoría, cuestionarios por guía, insignias (Bronze 50 pts, Silver 75 pts, Gold 100 pts).
+- **Puntaje y leaderboard**: Puntos por cuestionarios aprobados y por racha diaria; ranking del campus (Top 50) con nombre del usuario.
+- **Racha diaria**: Reclamar 50 puntos cada 24 h; suma al total y al leaderboard vía `user_course_progress`.
+- **Feed del campus**: Publicaciones y comentarios para la comunidad universitaria.
+
 ## 🌟 Características Principales
 
 ### 💰 Gestión de Dinero Digital
@@ -42,17 +53,13 @@ Una wallet digital universitaria moderna que permite a los estudiantes de la UNA
 - **React Router** para navegación
 - **TanStack Query** para manejo de estado del servidor
 
-### Backend
-- **Node.js** con Express
-- **Juno APIs** para integración blockchain
-- **Bitso/Juno** para manejo de tokens MXNB
-- **Webhooks** para notificaciones en tiempo real
+### Backend y datos (MVP)
+- **Supabase**: Base de datos (tabla `usuarios` para auth con bcrypt, `user_course_progress`, `user_streak`, vista `campus_leaderboard`). Sin Supabase Auth.
+- **Stellar / Horizon**: Cuentas y transacciones en testnet; creación de wallet al registrarse.
 
-### Blockchain
-- **Arbitrum Sepolia** (testnet) - Actual
-- **Stellar + Soroban** (en migración) - Futuro
-- **Portal SDK** para wallets MPC (Multi-Party Computation)
-- **MXNB Tokens** respaldados por pesos mexicanos
+### Blockchain (MVP)
+- **Stellar (testnet)** para cuentas y pagos; secret key encriptada en Supabase (campo `clabe`).
+- **Arbitrum / Juno / Portal** en documentación para futuras integraciones MXNB.
 
 ### Zero-Knowledge Proofs (En Desarrollo)
 - **Noir** para circuitos de verificación
@@ -86,12 +93,12 @@ npm install
 
 ### 3. Configurar Variables de Entorno
 
-#### Frontend (.env)
+#### Frontend (.env) — MVP
 ```env
-VITE_PORTAL_API_KEY=tu_portal_api_key
-VITE_ALCHEMY_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
-VITE_MXNB_CONTRACT_ADDRESS=0x...
-VITE_BACKEND_URL=http://localhost:4000
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+VITE_ENCRYPTION_KEY=clave_para_encriptar_secret_stellar
+# Stellar: la app usa testnet por defecto (stellarService)
 ```
 
 #### Backend (.env)
@@ -187,6 +194,8 @@ puma-pay-campus-wallet/
 ```
 
 ## 📊 Diagramas de Arquitectura
+
+Los diagramas **6 a 10** describen los flujos del MVP: autenticación con tabla `usuarios`, cuestionarios e insignias, racha diaria, leaderboard y modelo de datos de gamificación.
 
 ### 1. Arquitectura General del Sistema
 
@@ -386,37 +395,154 @@ graph TD
     style useWallet fill:#f59e0b
 ```
 
-### 6. Flujo de Autenticación
+### 6. Flujo de Autenticación (MVP: tabla usuarios + Stellar)
 
 ```mermaid
 sequenceDiagram
     participant User as Usuario
     participant App as PumaPay App
-    participant Supabase as Supabase Auth
-    participant Portal as Portal SDK
-    participant Backend as Backend API
+    participant Supabase as Supabase (tabla usuarios)
+    participant Stellar as Stellar / Horizon
     
-    User->>App: Inicia sesión (Google/OAuth)
-    App->>Supabase: Autenticación OAuth
-    Supabase-->>App: Token de sesión
-    App->>App: Guarda sesión en AuthContext
+    Note over User,Stellar: Registro
+    User->>App: Crear cuenta (email, contraseña, nombre)
+    App->>Stellar: Crear cuenta (testnet)
+    Stellar-->>App: publicKey + secretKey
+    App->>App: Encriptar secretKey (clabe)
+    App->>Supabase: INSERT usuarios (email, password_hash, wallet_address, clabe)
+    Supabase-->>App: Usuario creado
+    App->>Supabase: SELECT por email + bcrypt.compare (auto-login)
+    Supabase-->>App: Datos usuario
+    App->>App: updateUser + localStorage
+    App-->>User: Redirige a /signup-success → Ir al inicio
     
-    App->>Backend: POST /api/portal/create-client
-    Backend->>Portal: Crear Client Session Token
-    Portal-->>Backend: Client Session Token
-    Backend-->>App: Token de Portal
-    
-    App->>Portal: Inicializa con Client Session Token
-    Portal->>Portal: Crea/Recupera wallet MPC
-    Portal-->>App: Wallet configurada
-    
-    App->>App: Carga datos del usuario
-    App->>Supabase: Obtener perfil
-    Supabase-->>App: Datos del usuario
-    App-->>User: Dashboard cargado
+    Note over User,Stellar: Login
+    User->>App: Iniciar sesión (email, contraseña)
+    App->>Supabase: SELECT usuarios WHERE email
+    Supabase-->>App: Fila usuario
+    App->>App: bcrypt.compare(password)
+    App->>App: updateUser + localStorage
+    App-->>User: Sesión iniciada → Home
 ```
 
-### 7. Flujo de Categorización y Presupuesto
+### 7. Flujo de Cuestionarios y Puntaje
+
+```mermaid
+sequenceDiagram
+    participant User as Estudiante
+    participant App as PumaPay App
+    participant Quiz as QuizComponent
+    participant QuizSvc as quizService
+    participant Gamification as courseGamificationService
+    participant Progress as useCourseProgress
+    participant Supabase as Supabase (user_course_progress)
+    
+    User->>Quiz: Responde cuestionario y envía
+    Quiz->>QuizSvc: submitQuiz(courseId, answers, timeSpentSeconds)
+    QuizSvc->>QuizSvc: calculateScore → badgeLevel 1|2|3 (Bronze/Silver/Gold)
+    QuizSvc-->>Quiz: QuizResult (score, badgeLevel, passed)
+    
+    alt Aprobado (passed) con badgeLevel
+        Quiz->>Progress: recordCompletion(courseId, score, badgeLevel, timeSpentSeconds)
+        Progress->>Gamification: recordCourseCompletion(userId, courseId, score, badgeLevel)
+        Gamification->>Gamification: calculatePoints(badgeLevel): Bronze=50, Silver=75, Gold=100
+        Gamification->>Gamification: localStorage (badges, totalPoints)
+        Progress->>Supabase: upsertCourseProgress(user_email, course_id, score, points_earned, badge_level, time_spent_seconds)
+        Supabase-->>Progress: OK
+        Progress-->>Quiz: Éxito
+        Quiz-->>User: Insignia + puntos; leaderboard se actualiza
+    end
+```
+
+### 8. Flujo de Racha Diaria (Streak)
+
+```mermaid
+sequenceDiagram
+    participant User as Estudiante
+    participant App as PumaPay App
+    participant StreakSvc as streakService
+    participant Supabase as Supabase
+    
+    User->>App: Reclamar premio de racha (botón cada 24 h)
+    App->>StreakSvc: claimStreakReward(userEmail)
+    StreakSvc->>Supabase: SELECT user_streak (streak_days, last_claim_at)
+    Supabase-->>StreakSvc: Datos actuales
+    
+    alt Han pasado ≥ 24 h desde last_claim_at
+        StreakSvc->>Supabase: INSERT user_course_progress (50 pts, course_id único por reclamo)
+        StreakSvc->>Supabase: UPSERT user_streak (streak_days+1 o 1, last_claim_at=now)
+        Supabase-->>StreakSvc: OK
+        StreakSvc-->>App: success, pointsAwarded=50
+        App-->>User: +50 pts; racha actualizada (cuenta en leaderboard)
+    else Aún no pasan 24 h
+        StreakSvc-->>App: canClaim=false, nextClaimAt
+        App-->>User: "Podrás reclamar en X"
+    end
+```
+
+### 9. Leaderboard y Origen de Puntos
+
+```mermaid
+flowchart LR
+    subgraph Fuentes de puntos
+        Q[Cuestionarios aprobados]
+        S[Racha diaria]
+    end
+    
+    subgraph Supabase
+        UCP[(user_course_progress)]
+        V[campus_leaderboard vista]
+        U[(usuarios)]
+    end
+    
+    Q -->|upsert points_earned + badge_level| UCP
+    S -->|insert 50 pts por reclamo| UCP
+    
+    UCP -->|GROUP BY user_email SUM points_earned| V
+    U -->|LEFT JOIN nombre| V
+    
+    V -->|Top 50 user_name, total_points| App[App: Ranking del campus]
+    
+    style UCP fill:#10b981
+    style V fill:#3b82f6
+    style App fill:#f59e0b
+```
+
+### 10. Modelo de datos: gamificación y leaderboard
+
+```mermaid
+erDiagram
+    usuarios ||--o{ user_course_progress : "user_email"
+    usuarios {
+        string email PK
+        string nombre
+        string wallet_address
+        string clabe
+    }
+    user_course_progress {
+        string user_email PK,FK
+        string course_id PK
+        int score
+        int points_earned
+        int badge_level
+        int time_spent_seconds
+        timestamp completed_at
+    }
+    user_streak {
+        string user_email PK
+        int streak_days
+        timestamp last_claim_at
+    }
+    campus_leaderboard {
+        string user_email
+        string user_name
+        bigint total_points
+    }
+    user_course_progress }o--|| campus_leaderboard : "agrega"
+    usuarios ||--o| campus_leaderboard : "nombre"
+```
+
+### 11. Flujo de Categorización y Presupuesto
 
 ```mermaid
 graph LR
