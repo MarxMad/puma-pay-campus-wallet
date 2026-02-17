@@ -44,7 +44,7 @@ const ReceivePage = () => {
       try {
         await navigator.share({
           title: 'Mi dirección PumaPay',
-          text: `Envía MXNB a mi wallet PumaPay: ${walletAddress}`,
+          text: `Envía XLM a mi wallet PumaPay: ${walletAddress}`,
           url: walletAddress
         });
       } catch (error) {
@@ -90,12 +90,12 @@ const ReceivePage = () => {
               <h3 className="text-lg font-semibold mb-2">Código QR</h3>
               <p className="text-gray-300 text-sm">
                 {amount && parseFloat(amount) > 0
-                  ? `Escanea este código para enviar ${amount} MXNB`
-                  : 'Comparte este código para recibir MXNB'}
+                  ? `Escanea este código para enviar ${amount} XLM`
+                  : 'Comparte este código para recibir XLM'}
               </p>
               {amount && parseFloat(amount) > 0 && (
                 <p className="text-gold-500 text-xs mt-1 font-medium">
-                  Monto solicitado: {amount} MXNB
+                  Monto solicitado: {amount} XLM
                 </p>
               )}
             </div>
@@ -153,7 +153,7 @@ const ReceivePage = () => {
                 placeholder="0.00"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-lg font-semibold focus:outline-none focus:border-gold-500"
               />
-              <p className="text-xs text-gray-400 mt-1">MXNB</p>
+              <p className="text-xs text-gray-400 mt-1">XLM</p>
             </div>
 
             {/* Quick amount buttons */}
@@ -184,7 +184,7 @@ const ReceivePage = () => {
         {/* Instructions */}
         <Card className="bg-black/30 backdrop-blur-xl border-2 border-gold-500/20 p-6 text-white">
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">¿Cómo recibir MXNB?</h3>
+            <h3 className="text-lg font-semibold">¿Cómo recibir XLM?</h3>
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-start space-x-2">
                 <span className="text-gold-500 font-bold">1.</span>
@@ -196,7 +196,7 @@ const ReceivePage = () => {
               </div>
               <div className="flex items-start space-x-2">
                 <span className="text-gold-500 font-bold">3.</span>
-                <span>Recibe el MXNB directamente en tu wallet</span>
+                <span>Recibe el XLM directamente en tu wallet</span>
               </div>
             </div>
           </div>

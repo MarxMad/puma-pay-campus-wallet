@@ -98,50 +98,54 @@ const SendPage = () => {
 
   // Inicializar escáner QR
   useEffect(() => {
-    if (showScanner && !qrScannerRef.current) {
-      const scannerId = 'qr-reader';
-      qrScannerRef.current = new Html5Qrcode(scannerId);
-      
-      qrScannerRef.current.start(
-        { facingMode: 'environment' }, // Usar cámara trasera
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          handleQRScan(decodedText);
-        },
-        (errorMessage) => {
-          // Ignorar errores de escaneo continuo
-        }
-      ).catch((err) => {
-        console.error('Error iniciando escáner:', err);
-        toast({
-          title: 'Error al acceder a la cámara',
-          description: 'Asegúrate de dar permisos de cámara al navegador',
-          variant: 'destructive',
-        });
-        setShowScanner(false);
+    if (!showScanner) return;
+
+    const scannerId = 'qr-reader';
+    if (qrScannerRef.current) return;
+
+    const scanner = new Html5Qrcode(scannerId);
+    qrScannerRef.current = scanner;
+
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (decodedText) => handleQRScan(decodedText),
+      () => {}
+    ).catch((err) => {
+      console.error('Error iniciando escáner:', err);
+      qrScannerRef.current = null;
+      toast({
+        title: 'Error al acceder a la cámara',
+        description: 'Asegúrate de dar permisos de cámara al navegador',
+        variant: 'destructive',
       });
-    }
+      setShowScanner(false);
+    });
 
     return () => {
-      if (qrScannerRef.current && showScanner) {
-        qrScannerRef.current.stop().catch(() => {});
-        qrScannerRef.current.clear();
-        qrScannerRef.current = null;
+      const s = qrScannerRef.current;
+      qrScannerRef.current = null;
+      if (s) {
+        s.stop().catch(() => {}).finally(() => s.clear());
       }
     };
   }, [showScanner, handleQRScan]);
 
-  const handleCloseScanner = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop().catch(() => {});
-      qrScannerRef.current.clear();
+  const handleCloseScanner = useCallback(() => {
+    const scanner = qrScannerRef.current;
+    if (scanner) {
       qrScannerRef.current = null;
+      scanner.stop().then(() => {
+        scanner.clear();
+        setShowScanner(false);
+      }).catch(() => {
+        scanner.clear();
+        setShowScanner(false);
+      });
+    } else {
+      setShowScanner(false);
     }
-    setShowScanner(false);
-  };
+  }, []);
 
   // Abrir modal de confirmación
   const handleConfirmClick = () => {

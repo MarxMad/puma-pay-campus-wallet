@@ -355,42 +355,46 @@ class StellarService {
   }
 
   /**
-   * Fondea una cuenta en testnet usando Friendbot
-   * @param publicKey - Clave pública de la cuenta Stellar
-   * @returns Resultado del fondeo
+   * Fondea una cuenta en testnet usando Friendbot.
+   * Si la petición directa falla por CORS, intenta con un proxy.
    */
   async fundWithFriendbot(publicKey: string): Promise<{ success: boolean; message: string }> {
     try {
       if (STELLAR_NETWORK !== 'testnet') {
         throw new Error('Friendbot solo está disponible en testnet');
       }
-
       if (!this.isValidStellarAddress(publicKey)) {
         throw new Error('Dirección Stellar inválida');
       }
 
       const friendbotUrl = `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`;
-      
-      console.log('🔄 Fondeando cuenta con Friendbot...', publicKey);
-      
-      const response = await fetch(friendbotUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error al fondear cuenta: ${errorText}`);
+      const tryFetch = (url: string) => fetch(url, { method: 'GET', mode: 'cors' });
+
+      let response: Response;
+      try {
+        response = await tryFetch(friendbotUrl);
+      } catch (e) {
+        const corsProxy = `https://corsproxy.io/?${encodeURIComponent(friendbotUrl)}`;
+        console.warn('Friendbot directo falló (posible CORS), intentando con proxy...', e);
+        response = await tryFetch(corsProxy);
       }
 
-      const data = await response.json();
-      
-      console.log('✅ Cuenta fondeada exitosamente con 10,000 XLM');
-      
-      return {
-        success: true,
-        message: 'Cuenta fondeada exitosamente con 10,000 XLM en testnet'
-      };
+      const text = await response.text();
+      if (!response.ok) {
+        if (text.toLowerCase().includes('already') || response.status === 400) {
+          return { success: true, message: 'La cuenta ya tenía fondos en testnet.' };
+        }
+        if (response.status === 429) {
+          throw new Error('Demasiadas solicitudes. Espera un minuto e intenta de nuevo.');
+        }
+        throw new Error(text || `Error ${response.status}`);
+      }
+
+      console.log('✅ Cuenta fondeada con 10,000 XLM (testnet)');
+      return { success: true, message: 'Cuenta fondeada exitosamente con 10,000 XLM en testnet' };
     } catch (error: any) {
       console.error('❌ Error fondeando cuenta con Friendbot:', error);
-      throw new Error(`Error fondeando cuenta: ${error.message}`);
+      throw new Error(error?.message || 'No se pudo fondear la cuenta. Revisa tu conexión e intenta de nuevo.');
     }
   }
 }

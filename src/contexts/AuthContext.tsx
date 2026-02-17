@@ -206,12 +206,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      const userId = userInsert && Array.isArray(userInsert) && userInsert[0]?.id;
-      if (!userId) {
+      const inserted = userInsert && Array.isArray(userInsert) && userInsert[0];
+      if (!inserted?.id) {
         throw new Error('No se pudo obtener el ID del usuario después del registro');
       }
       
-      console.log('✅ Usuario registrado en Supabase con ID:', userId);
+      console.log('✅ Usuario registrado en Supabase con ID:', inserted.id);
 
       // 4. Limpiar caché local
       if (email) {
@@ -227,20 +227,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pumapay_mxnb_balance');
       localStorage.removeItem('pumapay_transactions');
 
-      // 5. Auto-login inmediato para que el usuario quede logueado antes de navegar
-      try {
-        const userData = await loginUsuario(email, password);
-        updateUser({
-          address: userData.wallet_address,
-          email: userData.email,
-          name: userData.nombre,
-          authMethod: 'traditional',
-          clabe: userData.clabe,
-        });
-      } catch (loginErr) {
-        console.warn('Auto-login tras registro:', loginErr);
-        // No lanzar: la cuenta ya está creada; el usuario puede iniciar sesión manualmente
-      }
+      // 5. Auto-login con los datos del insert (evita depender de un SELECT justo después)
+      const row = inserted as { wallet_address?: string; email?: string; nombre?: string; clabe?: string };
+      updateUser({
+        address: row.wallet_address ?? address,
+        email: row.email ?? email,
+        name: row.nombre ?? name,
+        authMethod: 'traditional',
+        clabe: row.clabe ?? '',
+      });
 
       setIsLoading(false);
       console.log('✅ Registro completado');
