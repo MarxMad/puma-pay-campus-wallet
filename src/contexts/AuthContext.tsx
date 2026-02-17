@@ -197,7 +197,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clabe: encryptedSecretKey,
           auth_method,
           api_key: undefined,
-          email_verified: true, // Sin Supabase Auth: cuenta lista para usar
         });
       } catch (error: any) {
         // Si es error de correo duplicado, mostrar mensaje amigable

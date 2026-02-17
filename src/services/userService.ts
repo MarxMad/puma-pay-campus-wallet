@@ -10,7 +10,6 @@ export async function registrarUsuario({
   clabe,
   api_key,
   auth_method,
-  email_verified,
 }: {
   nombre: string,
   apellido: string,
@@ -20,25 +19,20 @@ export async function registrarUsuario({
   clabe: string,
   api_key?: string,
   auth_method: string,
-  email_verified?: boolean,
 }) {
   const password_hash = await bcrypt.hash(password, 10);
-  const row: Record<string, unknown> = {
-    nombre,
-    apellido,
-    email,
-    password_hash,
-    wallet_address,
-    clabe,
-    api_key,
-    auth_method,
-  };
-  if (email_verified !== undefined) {
-    row.email_verified = email_verified;
-  }
   const { data, error } = await supabase
     .from('usuarios')
-    .insert([row])
+    .insert([{
+      nombre,
+      apellido,
+      email,
+      password_hash,
+      wallet_address,
+      clabe,
+      api_key,
+      auth_method,
+    }])
     .select();
   if (error) throw error;
   return data;
