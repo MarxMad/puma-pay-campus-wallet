@@ -2,16 +2,15 @@
 
 Una wallet digital universitaria moderna que permite a los estudiantes de la UNAM realizar pagos con tokens MXNB (Mexican Peso Backed) en el campus universitario.
 
-## ✅ MVP (Estado actual)
+## ✅ MVP — Resumen en puntos
 
-El MVP incluye:
-
-- **Autenticación**: Registro e inicio de sesión con la tabla `usuarios` en Supabase (bcrypt). Sin Supabase Auth.
-- **Wallet Stellar**: Creación de cuenta Stellar (testnet) al registrarse; envío/recibo de pagos.
-- **Guías de estudio y cuestionarios**: Cursos por categoría, cuestionarios por guía, insignias (Bronze 50 pts, Silver 75 pts, Gold 100 pts).
-- **Puntaje y leaderboard**: Puntos por cuestionarios aprobados y por racha diaria; ranking del campus (Top 50) con nombre del usuario.
-- **Racha diaria**: Reclamar 50 puntos cada 24 h; suma al total y al leaderboard vía `user_course_progress`.
-- **Feed del campus**: Publicaciones y comentarios para la comunidad universitaria.
+- **Auth**: Registro y login solo con tabla `usuarios` (Supabase + bcrypt). Sin Supabase Auth.
+- **Wallet**: Cuenta Stellar (testnet) al registrarse; envío y recibo de pagos. Secret key encriptada en DB.
+- **Cursos**: Guías por categoría → cuestionarios → al aprobar: insignia (Bronze 50 / Silver 75 / Gold 100 pts) y puntos en `user_course_progress`.
+- **Leaderboard**: Vista `campus_leaderboard` = suma de `points_earned` por usuario + nombre desde `usuarios`. Top 50 en Home.
+- **Racha**: 50 pts cada 24 h vía `user_streak` + fila en `user_course_progress`; cuenta en el mismo ranking.
+- **Feed**: Publicaciones y comentarios (tablas `feed_posts`, `feed_comments`).
+- **Diagramas**: Auth (registro/login), flujo cuestionarios→puntos, racha, leaderboard y modelo de datos están en la sección *Diagramas de Arquitectura* (diagramas 6–10).
 
 ## 🌟 Características Principales
 
