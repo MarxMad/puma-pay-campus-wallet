@@ -228,24 +228,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pumapay_mxnb_balance');
       localStorage.removeItem('pumapay_transactions');
 
+      // 5. Auto-login inmediato para que el usuario quede logueado antes de navegar
+      try {
+        const userData = await loginUsuario(email, password);
+        updateUser({
+          address: userData.wallet_address,
+          email: userData.email,
+          name: userData.nombre,
+          authMethod: 'traditional',
+          clabe: userData.clabe,
+        });
+      } catch (loginErr) {
+        console.warn('Auto-login tras registro:', loginErr);
+        // No lanzar: la cuenta ya está creada; el usuario puede iniciar sesión manualmente
+      }
+
       setIsLoading(false);
       console.log('✅ Registro completado');
-
-      // 5. Auto-login en segundo plano (no bloquear la respuesta para evitar carga infinita)
-      loginUsuario(email, password)
-        .then((userData) => {
-          updateUser({
-            address: userData.wallet_address,
-            email: userData.email,
-            name: userData.nombre,
-            authMethod: 'traditional',
-            clabe: userData.clabe,
-          });
-        })
-        .catch((loginErr) => {
-          console.warn('Auto-login tras registro:', loginErr);
-        });
-
       return { address };
     } catch (error: any) {
       setIsLoading(false);
