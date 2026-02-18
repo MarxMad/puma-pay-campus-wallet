@@ -214,7 +214,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('✅ Usuario registrado en Supabase con ID:', inserted.id);
 
-      // 4. Limpiar caché local
+      // 4. Fondear automáticamente la wallet en testnet (no bloquea si falla)
+      if (onStepChange) onStepChange('Fondeando wallet en testnet...');
+      try {
+        await stellarService.fundWithFriendbot(address);
+        console.log('✅ Wallet fondeada automáticamente con 10,000 XLM');
+      } catch (fundError: any) {
+        console.warn('⚠️ No se pudo fondear automáticamente (puedes hacerlo después):', fundError?.message);
+        // No lanzar: el registro ya está completo; el usuario puede fondear manualmente después
+      }
+
+      // 5. Limpiar caché local
       if (email) {
         localStorage.removeItem(`pumapay_balance_${email}`);
         localStorage.removeItem(`pumapay_transactions_${email}`);
@@ -228,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('pumapay_mxnb_balance');
       localStorage.removeItem('pumapay_transactions');
 
-      // 5. Auto-login con los datos del insert (evita depender de un SELECT justo después)
+      // 6. Auto-login con los datos del insert (evita depender de un SELECT justo después)
       const row = inserted as { wallet_address?: string; email?: string; nombre?: string; clabe?: string };
       updateUser({
         address: row.wallet_address ?? address,

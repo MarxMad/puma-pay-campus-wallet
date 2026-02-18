@@ -355,8 +355,69 @@ class StellarService {
   }
 
   /**
+   * Espera hasta que Horizon reporte balance nativo (XLM) en la cuenta, o timeout.
+   * Útil para confirmar que Friendbot ya aplicó el fondeo.
+   */
+  private async waitForNativeBalance(
+    address: string,
+    options: { maxWaitMs?: number; pollIntervalMs?: number } = {}
+  ): Promise<number> {
+    const maxWaitMs = options.maxWaitMs ?? 25000;
+    const pollIntervalMs = options.pollIntervalMs ?? 2000;
+    const start = Date.now();
+    while (Date.now() - start < maxWaitMs) {
+      try {
+        const { native } = await this.getBalances(address);
+        if (native > 0) return native;
+      } catch {
+        // Horizon puede fallar si la cuenta aún no existe; seguir intentando
+      }
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+    return 0;
+  }
+
+  /**
+   * Parsea la respuesta de Friendbot (o de un proxy). Acepta JSON directo o envuelto (ej. { contents: "..." }).
+   */
+  private parseFriendbotResponse(text: string): { success: boolean; hasHash: boolean; error?: string } {
+    const lower = text.toLowerCase();
+    if (lower.includes('already') || (text.includes('400') && lower.includes('exist'))) {
+      return { success: true, hasHash: false };
+    }
+    if (text.includes('429')) {
+      return { success: false, hasHash: false, error: 'Demasiadas solicitudes. Espera un minuto e intenta de nuevo.' };
+    }
+    let json: any = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return { success: false, hasHash: false };
+    }
+    // Respuesta directa de Friendbot: { hash, transaction_hash, ... }
+    const hash = json?.hash ?? json?.transaction_hash ?? json?.tx_hash;
+    if (hash) return { success: true, hasHash: true };
+    // Algunos proxies devuelven { contents: "<body>" }; intentar parsear contents como JSON
+    const contents = json?.contents;
+    if (typeof contents === 'string') {
+      try {
+        const inner = JSON.parse(contents);
+        if (inner?.hash ?? inner?.transaction_hash) return { success: true, hasHash: true };
+        if (inner?.error) return { success: false, hasHash: false, error: inner.error };
+      } catch {
+        if (contents.toLowerCase().includes('hash') || contents.includes('transaction')) {
+          return { success: true, hasHash: true };
+        }
+      }
+    }
+    if (json?.error) return { success: false, hasHash: false, error: json.error };
+    return { success: false, hasHash: false };
+  }
+
+  /**
    * Fondea una cuenta en testnet usando Friendbot.
    * En el navegador Friendbot suele bloquear por CORS; usamos proxy CORS como método principal.
+   * Tras una respuesta exitosa, verifica en Horizon que el balance aparezca antes de devolver.
    */
   async fundWithFriendbot(publicKey: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -370,55 +431,101 @@ class StellarService {
       const friendbotUrl = `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`;
       const encoded = encodeURIComponent(friendbotUrl);
 
-      // Proxies CORS (Friendbot no envía CORS desde el navegador → "Failed to fetch")
       const proxies = [
-        `https://corsproxy.io/?url=${encoded}`,
         `https://api.allorigins.win/raw?url=${encoded}`,
+        `https://corsproxy.io/?url=${encoded}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encoded}`,
+        `https://thingproxy.freeboard.io/fetch/${friendbotUrl}`,
       ];
 
       let text: string | undefined;
-      let ok = false;
+      let lastError: Error | null = null;
 
       for (const proxyUrl of proxies) {
         try {
-          const res = await fetch(proxyUrl, { method: 'GET', mode: 'cors' });
+          if (import.meta.env.DEV) {
+            console.log('🔄 Intentando proxy:', proxyUrl.substring(0, 50) + '...');
+          }
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+          const res = await fetch(proxyUrl, {
+            method: 'GET',
+            mode: 'cors',
+            signal: controller.signal,
+            headers: { Accept: 'application/json' },
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!res.ok && res.status !== 200) {
+            continue;
+          }
+
           text = await res.text();
-          ok = res.ok;
-          break;
-        } catch (e) {
-          console.warn('Proxy falló, intentando siguiente...', e);
+          if (text && text.length > 0) break;
+        } catch (e: any) {
+          lastError = e;
           continue;
         }
       }
 
       if (text === undefined) {
-        throw new Error('No se pudo conectar con el servicio de fondeo. Revisa tu conexión e intenta más tarde.');
+        try {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = friendbotUrl;
+          document.body.appendChild(iframe);
+          await new Promise((r) => setTimeout(r, 3000));
+          document.body.removeChild(iframe);
+          const native = await this.waitForNativeBalance(publicKey);
+          if (native > 0) {
+            return { success: true, message: 'Cuenta fondeada con ' + native.toLocaleString('es-MX') + ' XLM en testnet.' };
+          }
+          return {
+            success: true,
+            message: 'Solicitud enviada. Si el balance no aparece en 1 minuto, fondear manualmente: ' + friendbotUrl,
+          };
+        } catch (iframeError: any) {
+          const errorMsg = lastError?.message || (iframeError?.message ?? 'Todos los métodos fallaron');
+          throw new Error(
+            'No se pudo conectar con el fondeo automático. Abre en tu navegador para fondear manualmente: ' + friendbotUrl
+          );
+        }
       }
 
-      // "Cuenta ya fondeada" → éxito
-      if (text.toLowerCase().includes('already') || (text.includes('400') && text.toLowerCase().includes('exist'))) {
-        return { success: true, message: 'La cuenta ya tenía fondos en testnet.' };
-      }
-      if (text.includes('429')) {
-        throw new Error('Demasiadas solicitudes. Espera un minuto e intenta de nuevo.');
-      }
-
-      // Proxies como allorigins siempre devuelven 200; revisar cuerpo
-      let isSuccess = ok;
-      try {
-        const json = JSON.parse(text);
-        if (json.hash || json.transaction_hash) isSuccess = true;
-        if (json.error && !json.transaction_hash) isSuccess = false;
-      } catch {
-        if (!ok && text.length > 0) isSuccess = false;
-      }
-
-      if (!isSuccess) {
+      const parsed = this.parseFriendbotResponse(text);
+      if (parsed.error) throw new Error(parsed.error);
+      if (!parsed.success) {
         throw new Error(text.slice(0, 200) || 'Error al fondear');
       }
 
-      console.log('✅ Cuenta fondeada con 10,000 XLM (testnet)');
-      return { success: true, message: 'Cuenta fondeada exitosamente con 10,000 XLM en testnet' };
+      // Cuenta ya fondeada: verificar balance actual
+      if (!parsed.hasHash) {
+        const { native } = await this.getBalances(publicKey);
+        if (native > 0) {
+          return { success: true, message: 'La cuenta ya tenía fondos en testnet (' + native.toLocaleString('es-MX') + ' XLM).' };
+        }
+        return { success: true, message: 'La cuenta ya estaba registrada en testnet.' };
+      }
+
+      // Friendbot respondió con hash: esperar a que Horizon refleje el balance
+      if (import.meta.env.DEV) {
+        console.log('⏳ Esperando a que Horizon refleje el balance...');
+      }
+      const native = await this.waitForNativeBalance(publicKey);
+      if (native > 0) {
+        if (import.meta.env.DEV) {
+          console.log('✅ Balance en Horizon:', native, 'XLM');
+        }
+        return { success: true, message: 'Cuenta fondeada con ' + native.toLocaleString('es-MX') + ' XLM en testnet.' };
+      }
+
+      return {
+        success: true,
+        message:
+          'Fondeo solicitado. Si no ves el balance en unos segundos, pulsa "Actualizar balance" o abre: ' + friendbotUrl,
+      };
     } catch (error: any) {
       console.error('❌ Error fondeando cuenta con Friendbot:', error);
       throw new Error(error?.message || 'No se pudo fondear la cuenta. Revisa tu conexión e intenta de nuevo.');

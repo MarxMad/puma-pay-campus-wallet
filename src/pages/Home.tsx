@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock } from 'lucide-react';
+import { Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock, ImageIcon, MoreVertical, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 // ⚠️ COMENTADO - Ahora usamos Stellar
@@ -52,7 +59,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [showBalance, setShowBalance] = useState(true);
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fundingLoading, setFundingLoading] = useState(false);
   const [fundingMsg, setFundingMsg] = useState('');
@@ -142,26 +149,19 @@ const HomePage = () => {
       localStorage.setItem(fundedKey, 'true');
       setFunded(true);
       
-      toast({ title: 'Cuenta fondeada', description: 'Has recibido 10,000 XLM en testnet correctamente.' });
+      toast({ title: 'Cuenta fondeada', description: result.message || 'Has recibido XLM en testnet correctamente.' });
       
       // Mostrar animación de éxito
       setShowFundingAnimation(true);
       setShowFundingSuccess(true);
       
       // Ocultar animación después de 3 segundos
-      setTimeout(() => {
-        setShowFundingAnimation(false);
-      }, 3000);
+      setTimeout(() => setShowFundingAnimation(false), 3000);
+      setTimeout(() => setShowFundingSuccess(false), 5000);
       
-      // Ocultar mensaje de éxito después de 5 segundos
-      setTimeout(() => {
-        setShowFundingSuccess(false);
-      }, 5000);
-      
-      // Actualizar balance después de un pequeño delay
-      setTimeout(() => {
-        refreshBalance();
-      }, 2000);
+      // Actualizar balance de inmediato (force para saltar cooldown) y de nuevo a los 3s por si Hub tardó
+      refreshBalance({ force: true });
+      setTimeout(() => refreshBalance({ force: true }), 3000);
       
       console.log('🎉 Proceso de fondeo completado exitosamente');
       
@@ -387,9 +387,49 @@ const HomePage = () => {
         leftAction={<User className={headerIconClass} />}
         onLeftAction={() => navigate('/profile')}
         subtitle="Inicio"
-        rightAction={<Bell className={headerIconClass} />}
-        onRightAction={() => navigate('/notifications')}
-        showNotificationDot
+        rightAction={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-white hover:text-white hover:bg-white/10 transition-colors w-10 h-10 min-w-[2.5rem]"
+                aria-label="Menú"
+              >
+                <MoreVertical className={headerIconClass} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-zinc-700 text-white">
+              <DropdownMenuItem
+                className="focus:bg-zinc-800 focus:text-white cursor-pointer"
+                onClick={() => setShowBalance((s) => !s)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                {showBalance ? 'Ocultar balance' : 'Ver balance'}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="focus:bg-zinc-800 focus:text-white cursor-pointer"
+                onClick={() => navigate('/profile')}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Configuración
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-zinc-700" />
+              <DropdownMenuItem
+                className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer text-red-300"
+                onClick={() => {
+                  if (confirm('¿Cerrar sesión?')) {
+                    logout();
+                    navigate('/welcome');
+                  }
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
       />
 
       {/* Wallet Info - Tema oscuro */}
@@ -828,6 +868,35 @@ const HomePage = () => {
             </div>
           </div>
           
+        </Card>
+      </div>
+
+      {/* Galería UNAM y PumaPay */}
+      <div className="px-4 sm:px-6 mb-6">
+        <Card
+          role="button"
+          tabIndex={0}
+          className="bg-black/30 border-2 border-gold-500/20 p-4 sm:p-5 text-white relative overflow-hidden hover:border-gold-500/40 transition-all cursor-pointer"
+          onClick={() => navigate('/galeria')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/galeria'); } }}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400 flex-shrink-0">
+                <ImageIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-bold mb-1">📷 Galería UNAM y PumaPay</h3>
+                <p className="text-gray-300 text-sm sm:text-base">
+                  Fotos del campus y del proyecto
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-gold-400 text-sm flex-shrink-0">
+              <span>Ver fotos</span>
+              <ChevronRight className="h-4 w-4" />
+            </div>
+          </div>
         </Card>
       </div>
 

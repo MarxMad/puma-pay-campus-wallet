@@ -4,9 +4,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, X, AlertCircle, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +32,9 @@ const Signup = () => {
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [signupStep, setSignupStep] = useState<string | null>(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,9 +82,8 @@ const Signup = () => {
     setPasswordErrors(validatePassword(password));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!isFormValid) {
       toast({
         title: "Formulario incompleto",
@@ -81,12 +92,20 @@ const Signup = () => {
       });
       return;
     }
+    setAcceptedTerms(false);
+    setAcceptedPrivacy(false);
+    setShowTermsModal(true);
+  };
+
+  const doCreateAccount = async () => {
+    if (!acceptedTerms || !acceptedPrivacy) return;
     try {
       setSignupStep('Guardando usuario...');
       setEmailError(null);
+      setShowTermsModal(false);
       console.log('🔄 Iniciando creación de cuenta...');
       const fullName = `${formData.name} ${formData.lastName}`.trim();
-      const result = await createAccount(
+      await createAccount(
         formData.email,
         formData.password,
         fullName,
@@ -361,6 +380,69 @@ const Signup = () => {
           </p>
         </form>
       </Card>
+
+      {/* Modal: Aceptar términos y aviso de privacidad antes de crear cuenta */}
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="max-w-md bg-zinc-900 border-zinc-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg text-white">
+              <FileText className="h-5 w-5 text-gold-500" />
+              Términos y privacidad
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 text-sm">
+              Para crear tu cuenta debes aceptar los Términos y condiciones y el Aviso de privacidad de PumaPay.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <label className="flex items-start gap-3 rounded-xl border border-zinc-700 bg-zinc-800/50 p-4 cursor-pointer hover:bg-zinc-800 transition-colors">
+              <Checkbox
+                checked={acceptedTerms}
+                onCheckedChange={(v) => setAcceptedTerms(!!v)}
+                className="mt-0.5 border-zinc-600 data-[state=checked]:bg-gold-500 data-[state=checked]:border-gold-500"
+              />
+              <span className="text-sm text-zinc-300">
+                He leído y acepto los{' '}
+                <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-gold-500 hover:underline font-medium">
+                  Términos y condiciones
+                </a>
+                .
+              </span>
+            </label>
+            <label className="flex items-start gap-3 rounded-xl border border-zinc-700 bg-zinc-800/50 p-4 cursor-pointer hover:bg-zinc-800 transition-colors">
+              <Checkbox
+                checked={acceptedPrivacy}
+                onCheckedChange={(v) => setAcceptedPrivacy(!!v)}
+                className="mt-0.5 border-zinc-600 data-[state=checked]:bg-gold-500 data-[state=checked]:border-gold-500"
+              />
+              <span className="text-sm text-zinc-300">
+                He leído y acepto el{' '}
+                <a href="/aviso-privacidad" target="_blank" rel="noopener noreferrer" className="text-gold-500 hover:underline font-medium">
+                  Aviso de privacidad
+                </a>
+                .
+              </span>
+            </label>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+              onClick={() => setShowTermsModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={!acceptedTerms || !acceptedPrivacy}
+              className="bg-gold-600 hover:bg-gold-500 text-black font-semibold disabled:opacity-50 disabled:pointer-events-none"
+              onClick={doCreateAccount}
+            >
+              Acepto y continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

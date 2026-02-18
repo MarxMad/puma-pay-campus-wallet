@@ -283,17 +283,19 @@ export const useBalance = () => {
   // ⚠️ COMENTADO - refreshBalance ahora solo usa recalculateBalance (transacciones locales)
   // La obtención de balance desde Bitso, Juno, Portal, Ethereum está deshabilitada
   // Ahora usamos Stellar para obtener el balance real
-  const refreshBalance = useCallback(async () => {
-    // Prevenir múltiples llamadas simultáneas
+  const refreshBalance = useCallback(async (options?: { force?: boolean }) => {
+    const force = options?.force === true;
+
     if (isRefreshingRef.current) {
-      console.log('⚠️ Refresh ya en curso, ignorando llamada duplicada');
-      return;
+      if (!force) {
+        console.log('⚠️ Refresh ya en curso, ignorando llamada duplicada');
+        return;
+      }
     }
 
-    // Cooldown: No refrescar si pasaron menos de 5 segundos desde la última vez
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
-    if (timeSinceLastRefresh < REFRESH_COOLDOWN) {
+    if (!force && timeSinceLastRefresh < REFRESH_COOLDOWN) {
       console.log(`⚠️ Cooldown activo. Esperando ${Math.ceil((REFRESH_COOLDOWN - timeSinceLastRefresh) / 1000)}s...`);
       return;
     }

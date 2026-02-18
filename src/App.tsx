@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicRoute from "@/components/PublicRoute";
 import AuthStatus from "@/components/AuthStatus";
 import Welcome from "./pages/Welcome";
+import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
 import SignupSuccess from "./pages/SignupSuccess";
 import Index from "./pages/Index";
@@ -18,7 +19,7 @@ import DebugPage from "./pages/Debug";
 import CategoriesPage from "./pages/Categories";
 import Statistics from "./pages/Statistics";
 import Profile from "./pages/Profile";
-import Notifications from "./pages/Notifications";
+// Notifications: página desactivada (menú desplegable en Home en su lugar)
 import CampusMap from "./pages/CampusMap";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,10 @@ import { Feed } from "./pages/Feed";
 import Marketplace from "./pages/Marketplace";
 import ProductDetail from "./pages/ProductDetail";
 import Checkout from "./pages/Checkout";
+import Terminos from "./pages/Terminos";
+import AvisoPrivacidad from "./pages/AvisoPrivacidad";
+import Galeria from "./pages/Galeria";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +48,7 @@ const App = () => (
         <Sonner />
         <AuthStatus />
         <BrowserRouter>
+          <CookieConsent />
           <Routes>
             <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
             <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
@@ -54,7 +60,7 @@ const App = () => (
             <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
             <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            {/* Notifications desactivado: menú en Home (Cerrar sesión, Ver balance, Configuración) */}
             <Route path="/campus-map" element={<ProtectedRoute><CampusMap /></ProtectedRoute>} />
             <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
             <Route path="/courses/category/:categorySlug" element={<ProtectedRoute><CategoryCoursesPage /></ProtectedRoute>} />
@@ -62,13 +68,17 @@ const App = () => (
             {/* Metas de ahorro: ruta oculta para usuarios (código conservado) */}
             {/* <Route path="/savings-goals" element={<ProtectedRoute><SavingsGoals /></ProtectedRoute>} /> */}
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            <Route path="/galeria" element={<ProtectedRoute><Galeria /></ProtectedRoute>} />
             <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
             <Route path="/marketplace/:productId" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
             <Route path="/marketplace/:productId/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/debug" element={<DebugPage />} />
             <Route path="/juno-demo" element={<JunoDemo />} />
             <Route path="/zk-demo" element={<ZKDemo />} />
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/index" element={<Index />} />
+            <Route path="/terminos" element={<Terminos />} />
+            <Route path="/aviso-privacidad" element={<AvisoPrivacidad />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
