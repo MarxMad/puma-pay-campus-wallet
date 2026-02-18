@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock, ImageIcon, MoreVertical, LogOut } from 'lucide-react';
+import { Home, Search, Settings, User, ArrowUp, ArrowDown, ArrowLeftRight, Eye, EyeOff, TrendingUp, TrendingDown, Plus, Banknote, BarChart3, Send, Download, Repeat, Zap, Sparkles, Activity, MapPin, QrCode, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Tag, CheckCircle, XCircle, Loader2, Star, StarHalf, StarOff, Info, AlertTriangle, ShieldCheck, Gift, Trophy, GraduationCap, Users, Globe, Calendar, FileText, FilePlus, FileMinus, FileCheck, FileX, File, Copy, RefreshCw, PartyPopper, MessageSquare, Flame, Clock, MoreVertical, LogOut, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -871,35 +871,6 @@ const HomePage = () => {
         </Card>
       </div>
 
-      {/* Galería UNAM y PumaPay */}
-      <div className="px-4 sm:px-6 mb-6">
-        <Card
-          role="button"
-          tabIndex={0}
-          className="bg-black/30 border-2 border-gold-500/20 p-4 sm:p-5 text-white relative overflow-hidden hover:border-gold-500/40 transition-all cursor-pointer"
-          onClick={() => navigate('/galeria')}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/galeria'); } }}
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gold-500/20 border border-gold-500/40 rounded-xl flex items-center justify-center text-gold-400 flex-shrink-0">
-                <ImageIcon className="h-6 w-6 sm:h-7 sm:w-7" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold mb-1">📷 Galería UNAM y PumaPay</h3>
-                <p className="text-gray-300 text-sm sm:text-base">
-                  Fotos del campus y del proyecto
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 text-gold-400 text-sm flex-shrink-0">
-              <span>Ver fotos</span>
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
       {/* Spending Overview - TEMPORALMENTE COMENTADO */}
       {/* 
       <div className="px-4 mb-6">
@@ -1234,7 +1205,11 @@ const HomePage = () => {
       {/* Modal de animación de éxito del fondeo */}
       {showFundingSuccess && (
         <Dialog open={showFundingSuccess} onOpenChange={setShowFundingSuccess}>
-          <DialogContent className="bg-[#0a0a0a] border-2 border-gold-500/30 text-white p-0 overflow-hidden max-w-md">
+          <DialogContent className="bg-[#0a0a0a] border-2 border-gold-500/30 text-white p-0 overflow-hidden max-w-md" aria-describedby="funding-success-desc">
+            <DialogTitle className="sr-only">Cuenta fondeada</DialogTitle>
+            <DialogDescription id="funding-success-desc" className="sr-only">
+              Has recibido XLM en testnet. Fondeo exitoso.
+            </DialogDescription>
             <div className="relative p-8 text-center">
               {/* Confetti animation */}
               {showFundingAnimation && (
@@ -1282,6 +1257,18 @@ const HomePage = () => {
                     <span className="text-sm">10,000 XLM disponibles</span>
                   </div>
                 </div>
+
+                {user?.address && (
+                  <a
+                    href={`https://stellar.expert/explorer/testnet/account/${user.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 underline"
+                  >
+                    Ver cuenta en explorador (testnet)
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
                 
                 <div className="mt-6">
                   <Button

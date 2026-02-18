@@ -144,6 +144,15 @@ const Login = () => {
               'Iniciar sesión'
             )}
           </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full text-zinc-400 hover:text-white hover:bg-zinc-800 mt-4 py-2"
+            onClick={() => navigate('/')}
+          >
+            Regresar a página principal
+          </Button>
         </form>
       </Card>
     </div>
