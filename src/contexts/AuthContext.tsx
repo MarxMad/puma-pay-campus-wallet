@@ -111,9 +111,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login solo con tabla usuarios (Supabase DB, sin Supabase Auth)
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    const safetyTimer = setTimeout(() => setIsLoading(false), 15000);
+    const safetyTimer = setTimeout(() => setIsLoading(false), 35000);
     try {
-      const userData = await withTimeout(loginUsuario(email, password), 10000);
+      // 25s: da margen si Supabase está "despertando" (proyecto free pausado) o la red es lenta
+      const userData = await withTimeout(loginUsuario(email, password), 25000);
       updateUser({
         address: userData.wallet_address,
         email: userData.email,

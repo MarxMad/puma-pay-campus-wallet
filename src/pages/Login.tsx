@@ -42,6 +42,8 @@ const Login = () => {
           error.message.toLowerCase().includes('invalid login')
         ) {
           description = 'Correo o contraseña incorrectos. Revisa e intenta de nuevo.';
+        } else if (error.message.includes('Tiempo de espera agotado')) {
+          description = 'La conexión tardó demasiado. Revisa tu internet e intenta de nuevo. Si usas Supabase gratis, la primera vez puede tardar más.';
         } else {
           description = error.message;
         }

@@ -356,7 +356,7 @@ class StellarService {
 
   /**
    * Fondea una cuenta en testnet usando Friendbot.
-   * Si la petición directa falla por CORS, intenta con un proxy.
+   * En el navegador Friendbot suele bloquear por CORS; usamos proxy CORS como método principal.
    */
   async fundWithFriendbot(publicKey: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -368,26 +368,53 @@ class StellarService {
       }
 
       const friendbotUrl = `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`;
-      const tryFetch = (url: string) => fetch(url, { method: 'GET', mode: 'cors' });
+      const encoded = encodeURIComponent(friendbotUrl);
 
-      let response: Response;
-      try {
-        response = await tryFetch(friendbotUrl);
-      } catch (e) {
-        const corsProxy = `https://corsproxy.io/?${encodeURIComponent(friendbotUrl)}`;
-        console.warn('Friendbot directo falló (posible CORS), intentando con proxy...', e);
-        response = await tryFetch(corsProxy);
+      // Proxies CORS (Friendbot no envía CORS desde el navegador → "Failed to fetch")
+      const proxies = [
+        `https://corsproxy.io/?url=${encoded}`,
+        `https://api.allorigins.win/raw?url=${encoded}`,
+      ];
+
+      let text: string | undefined;
+      let ok = false;
+
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetch(proxyUrl, { method: 'GET', mode: 'cors' });
+          text = await res.text();
+          ok = res.ok;
+          break;
+        } catch (e) {
+          console.warn('Proxy falló, intentando siguiente...', e);
+          continue;
+        }
       }
 
-      const text = await response.text();
-      if (!response.ok) {
-        if (text.toLowerCase().includes('already') || response.status === 400) {
-          return { success: true, message: 'La cuenta ya tenía fondos en testnet.' };
-        }
-        if (response.status === 429) {
-          throw new Error('Demasiadas solicitudes. Espera un minuto e intenta de nuevo.');
-        }
-        throw new Error(text || `Error ${response.status}`);
+      if (text === undefined) {
+        throw new Error('No se pudo conectar con el servicio de fondeo. Revisa tu conexión e intenta más tarde.');
+      }
+
+      // "Cuenta ya fondeada" → éxito
+      if (text.toLowerCase().includes('already') || (text.includes('400') && text.toLowerCase().includes('exist'))) {
+        return { success: true, message: 'La cuenta ya tenía fondos en testnet.' };
+      }
+      if (text.includes('429')) {
+        throw new Error('Demasiadas solicitudes. Espera un minuto e intenta de nuevo.');
+      }
+
+      // Proxies como allorigins siempre devuelven 200; revisar cuerpo
+      let isSuccess = ok;
+      try {
+        const json = JSON.parse(text);
+        if (json.hash || json.transaction_hash) isSuccess = true;
+        if (json.error && !json.transaction_hash) isSuccess = false;
+      } catch {
+        if (!ok && text.length > 0) isSuccess = false;
+      }
+
+      if (!isSuccess) {
+        throw new Error(text.slice(0, 200) || 'Error al fondear');
       }
 
       console.log('✅ Cuenta fondeada con 10,000 XLM (testnet)');
