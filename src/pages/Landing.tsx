@@ -72,7 +72,7 @@ const Landing = () => {
       <div className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
       <div className="fixed bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none z-0" />
 
-      <nav className="relative z-20 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
+      <nav className="relative z-20 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto landing-fade-in">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
             <img src="/PumaPay.png" alt="PumaPay" className="h-6 w-6 object-contain" />
@@ -113,21 +113,44 @@ const Landing = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-[#050505]" />
           <div className="absolute inset-0 bg-[#050505]/50" />
         </div>
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/5 px-4 py-1.5 text-sm text-amber-400/90 mb-8">
+        <div className="relative z-10 flex flex-col items-center">
+          {/* Logo grande con animación suave */}
+          <div
+            className="mb-8 landing-fade-in animate-float"
+            style={{ animationDuration: '4s' }}
+          >
+            <img
+              src="/PumaPay.png"
+              alt="PumaPay"
+              className="h-28 w-28 sm:h-36 sm:w-36 md:h-40 md:w-40 object-contain drop-shadow-2xl"
+            />
+          </div>
+          <div
+            className="landing-slide-up opacity-0 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/5 px-4 py-1.5 text-sm text-amber-400/90 mb-8"
+            style={{ animationDelay: '0.2s' }}
+          >
             <Code2 className="h-4 w-4" />
             <span>Wallet digital · Stellar · Para la UNAM</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg">
+          <h1
+            className="landing-slide-up opacity-0 text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg"
+            style={{ animationDelay: '0.35s' }}
+          >
             El campus en tu{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
               wallet
             </span>
           </h1>
-          <p className="text-xl text-zinc-300 max-w-2xl mx-auto mb-10 drop-shadow-md">
+          <p
+            className="landing-slide-up opacity-0 text-xl text-zinc-300 max-w-2xl mx-auto mb-10 drop-shadow-md"
+            style={{ animationDelay: '0.5s' }}
+          >
             Paga con XLM en CU, gana puntos con guías y cuestionarios, compite en el ranking y conecta con la comunidad. Todo en una app.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div
+            className="landing-slide-up opacity-0 flex flex-wrap justify-center gap-4"
+            style={{ animationDelay: '0.65s' }}
+          >
             <Button
               size="lg"
               className="bg-amber-500 hover:bg-amber-400 text-black font-semibold px-8 py-6 rounded-xl"
@@ -150,7 +173,7 @@ const Landing = () => {
 
       {/* Code / tech strip */}
       <section className="relative z-10 border-y border-zinc-800/80 bg-zinc-900/30 py-4 px-6 overflow-hidden">
-        <div className="max-w-6xl mx-auto font-mono text-sm text-zinc-500 flex items-center gap-8">
+        <div className="landing-slide-up opacity-0 max-w-6xl mx-auto font-mono text-sm text-zinc-500 flex items-center gap-8" style={{ animationDelay: '0.75s' }}>
           <span><span className="text-amber-500/80">const</span> wallet = createStellarAccount();</span>
           <span><span className="text-amber-500/80">await</span> fundWithFriendbot(wallet);</span>
           <span><span className="text-amber-500/80">return</span> &lt;PumaPay /&gt;;</span>
@@ -167,7 +190,7 @@ const Landing = () => {
           className="absolute inset-0 w-full min-h-[140%] -top-[20%] bg-gradient-to-r from-amber-900/25 via-amber-700/20 to-amber-900/25 border-y border-amber-500/10 bg-[length:100%_100%]"
           style={{ transform: `translateY(${parallaxOffset}px)` }}
         />
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 text-center">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 text-center landing-fade-in opacity-0" style={{ animationDelay: '0.9s' }}>
           <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase">
             Stellar · Testnet · UNAM
           </p>
@@ -179,8 +202,8 @@ const Landing = () => {
 
       {/* Features */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 py-24">
-        <h2 className="text-3xl font-bold text-center mb-4">Hecho para estudiantes</h2>
-        <p className="text-zinc-400 text-center max-w-xl mx-auto mb-16">
+        <h2 className="landing-slide-up opacity-0 text-3xl font-bold text-center mb-4" style={{ animationDelay: '1s' }}>Hecho para estudiantes</h2>
+        <p className="landing-slide-up opacity-0 text-zinc-400 text-center max-w-xl mx-auto mb-16" style={{ animationDelay: '1.1s' }}>
           Una sola app: pagos en campus, estudio gamificado y comunidad universitaria.
         </p>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -221,10 +244,11 @@ const Landing = () => {
               desc: 'PWA-friendly. Regístrate, fondear testnet y a usar en CU.',
               color: 'from-rose-500/20 to-rose-600/5 border-rose-500/20',
             },
-          ].map(({ icon: Icon, title, desc, color }) => (
+          ].map(({ icon: Icon, title, desc, color }, i) => (
             <div
               key={title}
-              className={`rounded-2xl border bg-gradient-to-br ${color} p-6 backdrop-blur-sm transition hover:scale-[1.02]`}
+              className={`landing-slide-up opacity-0 rounded-2xl border bg-gradient-to-br ${color} p-6 backdrop-blur-sm transition hover:scale-[1.02]`}
+              style={{ animationDelay: `${1.2 + i * 0.08}s` }}
             >
               <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
                 <Icon className="h-6 w-6 text-amber-400" />
@@ -241,12 +265,12 @@ const Landing = () => {
 
       {/* UNAM y PumaPay: dos columnas — izquierda bullets, derecha imagen */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
-        <h2 className="text-2xl font-bold text-center mb-2">UNAM y PumaPay</h2>
-        <p className="text-zinc-400 text-center max-w-lg mx-auto mb-12">
+        <h2 className="landing-slide-up opacity-0 text-2xl font-bold text-center mb-2" style={{ animationDelay: '1.7s' }}>UNAM y PumaPay</h2>
+        <p className="landing-slide-up opacity-0 text-zinc-400 text-center max-w-lg mx-auto mb-12" style={{ animationDelay: '1.8s' }}>
           El campus en tu wallet.
         </p>
         <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div className="order-2 md:order-1">
+          <div className="landing-slide-up opacity-0 order-2 md:order-1" style={{ animationDelay: '1.9s' }}>
             <ul className="space-y-3 text-zinc-300 text-sm sm:text-base">
               <li className="flex items-start gap-3">
                 <span className="text-amber-400 mt-1.5 shrink-0">•</span>
@@ -266,7 +290,7 @@ const Landing = () => {
               </li>
             </ul>
           </div>
-          <div className="relative aspect-[4/3] rounded-xl border border-zinc-700 bg-zinc-900/80 overflow-hidden order-1 md:order-2">
+          <div className="landing-slide-up opacity-0 relative aspect-[4/3] rounded-xl border border-zinc-700 bg-zinc-900/80 overflow-hidden order-1 md:order-2" style={{ animationDelay: '2s' }}>
             <img
               src="/unam-1.jpg"
               alt="Campus UNAM"
@@ -291,7 +315,7 @@ const Landing = () => {
 
       {/* CTA */}
       <section className="relative z-10 max-w-4xl mx-auto px-6 py-24 text-center">
-        <div className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent p-12">
+        <div className="landing-slide-up opacity-0 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent p-12" style={{ animationDelay: '2.1s' }}>
           <Zap className="h-12 w-12 text-amber-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">¿Eres de la UNAM?</h2>
           <p className="text-zinc-400 mb-8 max-w-md mx-auto">
@@ -309,20 +333,20 @@ const Landing = () => {
 
       {/* Flujos y cuadros dinámicos */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
-        <h2 className="text-2xl font-bold text-center mb-3">Cómo funciona</h2>
-        <p className="text-zinc-400 text-center max-w-lg mx-auto mb-14">
+        <h2 className="landing-slide-up opacity-0 text-2xl font-bold text-center mb-3" style={{ animationDelay: '2.2s' }}>Cómo funciona</h2>
+        <p className="landing-slide-up opacity-0 text-zinc-400 text-center max-w-lg mx-auto mb-14" style={{ animationDelay: '2.3s' }}>
           Regístrate, fondear tu wallet y empieza a usar PumaPay en minutos.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { step: '01', title: 'Crear cuenta', desc: 'Email y contraseña. Wallet Stellar se crea al instante.', delay: '0ms' },
-            { step: '02', title: 'Fondear testnet', desc: 'Un clic y recibes XLM de prueba para usar en la app.', delay: '75ms' },
-            { step: '03', title: 'Pagar o estudiar', desc: 'Envía XLM por QR, haz cuestionarios y gana insignias.', delay: '150ms' },
-            { step: '04', title: 'Subir en el ranking', desc: 'Puntos y racha diaria. Compite en el leaderboard.', delay: '225ms' },
+            { step: '01', title: 'Crear cuenta', desc: 'Email y contraseña. Wallet Stellar se crea al instante.', delay: '2.4s' },
+            { step: '02', title: 'Fondear testnet', desc: 'Un clic y recibes XLM de prueba para usar en la app.', delay: '2.5s' },
+            { step: '03', title: 'Pagar o estudiar', desc: 'Envía XLM por QR, haz cuestionarios y gana insignias.', delay: '2.6s' },
+            { step: '04', title: 'Subir en el ranking', desc: 'Puntos y racha diaria. Compite en el leaderboard.', delay: '2.7s' },
           ].map(({ step, title, desc, delay }) => (
             <div
               key={step}
-              className="rounded-2xl border border-zinc-700/80 bg-zinc-900/50 p-6 backdrop-blur-sm transition-all hover:border-amber-500/30 hover:bg-zinc-800/50"
+              className="landing-slide-up opacity-0 rounded-2xl border border-zinc-700/80 bg-zinc-900/50 p-6 backdrop-blur-sm transition-all hover:border-amber-500/30 hover:bg-zinc-800/50"
               style={{ animationDelay: delay }}
             >
               <span className="text-3xl font-bold text-amber-500/60">{step}</span>
@@ -332,22 +356,22 @@ const Landing = () => {
           ))}
         </div>
         <div className="mt-12 flex flex-wrap justify-center gap-4">
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-6 py-4 text-center min-w-[140px]">
+          <div className="landing-slide-up opacity-0 rounded-xl border border-amber-500/20 bg-amber-500/5 px-6 py-4 text-center min-w-[140px]" style={{ animationDelay: '2.8s' }}>
             <span className="text-2xl font-bold text-amber-400">XLM</span>
             <p className="text-xs text-zinc-500 mt-1">Pagos en testnet</p>
           </div>
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-4 text-center min-w-[140px]">
+          <div className="landing-slide-up opacity-0 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-4 text-center min-w-[140px]" style={{ animationDelay: '2.9s' }}>
             <span className="text-2xl font-bold text-emerald-400">Puntos</span>
             <p className="text-xs text-zinc-500 mt-1">Cuestionarios y racha</p>
           </div>
-          <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 px-6 py-4 text-center min-w-[140px]">
+          <div className="landing-slide-up opacity-0 rounded-xl border border-violet-500/20 bg-violet-500/5 px-6 py-4 text-center min-w-[140px]" style={{ animationDelay: '3s' }}>
             <span className="text-2xl font-bold text-violet-400">Feed</span>
             <p className="text-xs text-zinc-500 mt-1">Comunidad campus</p>
           </div>
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-zinc-800 bg-zinc-900/30">
+      <footer className="relative z-10 border-t border-zinc-800 bg-zinc-900/30 landing-fade-in opacity-0" style={{ animationDelay: '3.1s' }}>
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
             <div className="flex flex-col gap-3">
